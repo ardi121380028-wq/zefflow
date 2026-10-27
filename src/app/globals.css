@@ -1,0 +1,459 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* =========================================================
+   DESIGN TOKENS — Zefflow (ElevenLabs / Suno Studio Aesthetic)
+   Obsidian Dark by default, crisp typography, electric violet glow,
+   hairline glass borders, and studio-grade micro-interactions.
+   ========================================================= */
+@layer base {
+  :root, .dark {
+    /* ElevenLabs / Modern AI SaaS Obsidian Dark Palette */
+    --background: 230 15% 3.8%; /* #08090C */
+    --foreground: 0 0% 98%;
+    --surface: 230 14% 6.5%; /* #0E0F15 */
+    --surface-raised: 230 12% 9.5%; /* #141520 */
+    --surface-sunken: 230 20% 2.4%; /* #040507 */
+
+    --card: 230 14% 6.5%;
+    --card-foreground: 0 0% 98%;
+    --popover: 230 14% 7.5%;
+    --popover-foreground: 0 0% 98%;
+
+    --primary: 0 0% 100%;
+    --primary-foreground: 0 0% 5%;
+    --secondary: 230 10% 12%;
+    --secondary-foreground: 0 0% 96%;
+    --muted: 230 10% 12%;
+    --muted-foreground: 230 8% 64%;
+    --accent: 250 92% 66%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 155 75% 48%;
+    --warning: 38 95% 54%;
+
+    --border: 230 10% 13%;
+    --input: 230 10% 15%;
+    --ring: 250 92% 66%;
+    --shadow: 0 0% 0%;
+
+    --brand-from: 250 95% 64%;
+    --brand-to: 280 92% 60%;
+
+    --radius: 0.875rem;
+
+    /* Diagram Canvas */
+    --canvas-bg: 230 16% 4.2%;
+    --canvas-dot: 230 10% 18%;
+
+    --diamond-stop-1: #22190A;
+    --diamond-stop-2: #151208;
+    --diamond-stop-3: #0B0905;
+    --diamond-stroke: #f59e0b;
+    --diamond-text: #ffffff;
+  }
+
+  .light {
+    --background: 210 40% 98%; /* #F8FAFC */
+    --foreground: 222 47% 11%; /* #0F172A */
+    --surface: 0 0% 100%; /* #FFFFFF */
+    --surface-raised: 210 40% 96%; /* #F1F5F9 */
+    --surface-sunken: 214 32% 91%; /* #E2E8F0 */
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 222 47% 11%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+    --accent: 250 85% 60%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 155 75% 40%;
+    --warning: 38 95% 45%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 88%;
+    --ring: 250 85% 60%;
+    --shadow: 220 20% 10%;
+
+    --brand-from: 250 85% 58%;
+    --brand-to: 280 80% 55%;
+
+    --canvas-bg: 210 40% 98%;
+    --canvas-dot: 215 20% 82%;
+
+    --diamond-stop-1: #FFFBEB;
+    --diamond-stop-2: #FEF3C7;
+    --diamond-stop-3: #FDE68A;
+    --diamond-stroke: #d97706;
+    --diamond-text: #78350f;
+  }
+
+  * {
+    @apply border-border;
+  }
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    letter-spacing: -0.018em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+  h1, h2, h3, h4, h5, h6 {
+    letter-spacing: -0.032em;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11", "ss01";
+  }
+  ::selection {
+    background: rgba(124, 58, 237, 0.35);
+    color: #ffffff;
+  }
+  /* Ultra-sleek minimalist scrollbar */
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.12);
+    border-radius: 999px;
+  }
+  .light ::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.15);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.25);
+  }
+}
+
+@layer components {
+  /* Studio cards: adaptive between Light and Dark obsidian */
+  .card-premium {
+    @apply relative rounded-2xl border border-border bg-card text-card-foreground backdrop-blur-xl transition-all duration-200 ease-out shadow-sm;
+  }
+  .card-premium:hover {
+    @apply -translate-y-0.5 border-primary/30 shadow-md;
+  }
+  .dark .card-premium {
+    @apply border-white/[0.08] bg-[#0E1016]/90 text-white;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 8px 24px -4px rgba(0, 0, 0, 0.6);
+  }
+  .dark .card-premium:hover {
+    @apply -translate-y-0.5 border-white/[0.18] bg-[#12141D]/90;
+    box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.12), 0 16px 36px -8px rgba(0, 0, 0, 0.8), 0 0 24px -4px rgba(124, 58, 237, 0.15);
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #c026d3 100%);
+  }
+  .dark .text-gradient {
+    background-image: linear-gradient(180deg, #FFFFFF 0%, #E4E4E7 40%, #A1A1AA 100%);
+  }
+  .text-gradient-brand {
+    @apply bg-clip-text text-transparent;
+    background-image: linear-gradient(135deg, #7c3aed 0%, #4f46e5 50%, #c026d3 100%);
+  }
+  .dark .text-gradient-brand {
+    background-image: linear-gradient(135deg, #c4b5fd 0%, #818cf8 50%, #f472b6 100%);
+  }
+  .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+    background-size: 200% 100%;
+    @apply animate-shimmer rounded-xl;
+  }
+}
+
+/* =========================================================
+   React Flow — Studio Canvas Theming
+   ========================================================= */
+.react-flow {
+  --xy-background-color: hsl(var(--canvas-bg));
+  --xy-edge-stroke: rgba(255, 255, 255, 0.18);
+  --xy-edge-stroke-selected: hsl(var(--primary));
+  --xy-connectionline-stroke: hsl(var(--primary));
+  --xy-minimap-background-color: hsl(var(--surface));
+  --xy-controls-button-background-color: hsl(var(--surface-raised));
+  --xy-controls-button-background-color-hover: hsl(var(--secondary));
+  --xy-controls-button-color: hsl(var(--foreground));
+  --xy-controls-button-border-color: hsl(var(--border));
+  --xy-attribution-background-color: transparent;
+}
+
+.react-flow.dark {
+  --canvas-bg: 230 16% 4.2%;
+  --canvas-dot: 230 10% 18%;
+  --card: 230 14% 6.5%;
+  --card-foreground: 0 0% 98%;
+  --surface: 230 14% 6.5%;
+  --surface-raised: 230 12% 9.5%;
+  --border: 230 10% 13%;
+  --input: 230 10% 15%;
+  --muted: 230 10% 12%;
+  --muted-foreground: 230 8% 64%;
+  --foreground: 0 0% 98%;
+  --primary: 0 0% 100%;
+  --primary-foreground: 0 0% 5%;
+  --xy-background-color: hsl(230 16% 4.2%);
+  --xy-edge-stroke: rgba(255, 255, 255, 0.22);
+}
+
+.react-flow.light {
+  --canvas-bg: 210 40% 98%;
+  --canvas-dot: 215 20% 82%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --surface: 0 0% 100%;
+  --surface-raised: 210 40% 96%;
+  --border: 214 32% 91%;
+  --input: 214 32% 88%;
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+  --foreground: 222 47% 11%;
+  --primary: 222 47% 11%;
+  --primary-foreground: 0 0% 100%;
+  --xy-background-color: hsl(210 40% 98%);
+  --xy-edge-stroke: rgba(100, 116, 139, 0.4);
+}
+
+.react-flow__controls {
+  @apply overflow-hidden rounded-xl border border-border bg-card/90 shadow-xl backdrop-blur-xl;
+}
+.react-flow__controls-button {
+  @apply border-border/80 !important;
+}
+.react-flow__minimap {
+  @apply overflow-hidden rounded-2xl border border-border bg-card/90 shadow-xl backdrop-blur-xl;
+}
+.react-flow__handle {
+  width: 13.5px !important;
+  height: 13.5px !important;
+  border-radius: 9999px !important;
+  border: 2.5px solid #8b5cf6 !important;
+  background: hsl(var(--card)) !important;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.7) !important;
+  transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.15s ease, background-color 0.15s ease !important;
+  cursor: crosshair !important;
+  z-index: 40 !important;
+}
+
+/* Hit Target Area yang Luas (~38px) — Super mudah dipencet tanpa harus presisi pixel! */
+.react-flow__handle::after {
+  content: "";
+  position: absolute;
+  inset: -12px;
+  border-radius: 9999px;
+  cursor: crosshair;
+  z-index: 50;
+  pointer-events: auto;
+}
+
+.react-flow__handle:hover,
+.react-flow__handle.connecting,
+.react-flow__handle-connecting {
+  scale: 1.35 !important;
+  background: #8b5cf6 !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(139, 92, 246, 0.95), 0 0 0 3px rgba(139, 92, 246, 0.35) !important;
+}
+
+.react-flow__handle-decision {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.7) !important;
+}
+.react-flow__handle-decision:hover,
+.react-flow__handle-decision.connecting,
+.react-flow__handle-decision-connecting {
+  scale: 1.35 !important;
+  background: #f59e0b !important;
+  border-color: #ffffff !important;
+  box-shadow: 0 0 18px rgba(245, 158, 11, 0.95), 0 0 0 3px rgba(245, 158, 11, 0.35) !important;
+}
+.react-flow__node:not(.react-flow__node-decision).selected > div {
+  box-shadow: 0 0 0 2px hsl(var(--primary)), 0 0 24px -4px hsl(var(--primary) / 0.4) !important;
+}
+.react-flow__node-decision.selected > div {
+  box-shadow: none !important;
+}
+.react-flow__edge-path {
+  stroke: rgba(148, 163, 184, 0.45) !important;
+  stroke-width: 1.75px !important;
+}
+.dark .react-flow__edge-path {
+  stroke: rgba(255, 255, 255, 0.28) !important;
+}
+.react-flow__edge.selected .react-flow__edge-path {
+  stroke: hsl(var(--primary)) !important;
+  stroke-width: 2.25px !important;
+}
+.react-flow__edge-textbg {
+  fill: hsl(var(--card)) !important;
+  fill-opacity: 0.98 !important;
+  stroke: hsl(var(--border)) !important;
+  stroke-width: 1px !important;
+}
+.react-flow__edge-text {
+  fill: hsl(var(--foreground)) !important;
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  font-family: var(--font-sans), system-ui, sans-serif !important;
+}
+.react-flow__attribution {
+  display: none;
+}
+
+/* React Flow Controls & MiniMap — Dark Mode Obsidian & Light Mode styling */
+.react-flow__controls {
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15) !important;
+}
+.light .react-flow__controls {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+.dark .react-flow__controls {
+  background: #0E1016 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.7), 0 0 15px rgba(139, 92, 246, 0.15) !important;
+}
+
+.react-flow__controls-button {
+  width: 28px !important;
+  height: 28px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: all 0.15s ease !important;
+}
+.light .react-flow__controls-button {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #334155 !important;
+  fill: #334155 !important;
+}
+.light .react-flow__controls-button:hover {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  fill: #0f172a !important;
+}
+.dark .react-flow__controls-button {
+  background: #0E1016 !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #CBD5E1 !important;
+  fill: #CBD5E1 !important;
+}
+.dark .react-flow__controls-button:hover {
+  background: #1C1E2D !important;
+  color: #FFFFFF !important;
+  fill: #FFFFFF !important;
+}
+.react-flow__controls-button:last-child {
+  border-bottom: none !important;
+}
+.react-flow__controls-button svg {
+  fill: currentColor !important;
+  max-width: 14px !important;
+  max-height: 14px !important;
+}
+
+.react-flow__minimap {
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+.light .react-flow__minimap {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08) !important;
+}
+.dark .react-flow__minimap {
+  background: #090A10 !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.7), 0 0 20px rgba(139, 92, 246, 0.12) !important;
+}
+
+/* =========================================================
+   SONNER TOAST — Dynamic Light/Dark Theme Adaptation
+   ========================================================= */
+[data-sonner-toaster] [data-sonner-toast] {
+  border-radius: 1rem !important;
+  font-family: inherit !important;
+  font-size: 0.8125rem !important;
+  padding: 0.875rem 1rem !important;
+  font-weight: 500 !important;
+}
+
+.light [data-sonner-toaster] [data-sonner-toast] {
+  background: #ffffff !important;
+  color: #09090b !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+.light [data-sonner-toaster] [data-sonner-toast] [data-title] {
+  color: #09090b !important;
+  font-weight: 600 !important;
+}
+
+.light [data-sonner-toaster] [data-sonner-toast] [data-description] {
+  color: #64748b !important;
+}
+
+.light [data-sonner-toaster] [data-sonner-toast] [data-icon] {
+  color: inherit !important;
+}
+
+.light [data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast] {
+  background: #0E1017 !important;
+  color: #F4F4F5 !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.85) !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast] [data-title] {
+  color: #F4F4F5 !important;
+  font-weight: 600 !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast] [data-description] {
+  color: #a1a1aa !important;
+}
+
+.dark [data-sonner-toaster] [data-sonner-toast] [data-close-button] {
+  background: #18181b !important;
+  color: #a1a1aa !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+/* =========================================================
+   ANIMATED SVG CONNECTOR DASHES
+   ========================================================= */
+@keyframes flowDash {
+  from {
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+.animate-flow-dash {
+  animation: flowDash 0.85s linear infinite;
+}
+
+
