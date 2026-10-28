@@ -383,8 +383,8 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
         </header>
 
         {/* Dynamic Studio Workspace Body */}
-        <main className="flex-1 overflow-y-auto bg-background dark:bg-[#090A0E] p-4 sm:p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">{children}</div>
+        <main className="flex-1 overflow-y-auto bg-background dark:bg-[#090A0E] p-4 sm:p-6 lg:p-7">
+          <div className="w-full max-w-[1720px] mx-auto">{children}</div>
         </main>
       </div>
 

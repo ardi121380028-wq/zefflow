@@ -266,18 +266,25 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
           <Toolbar />
         </Panel>
       )}
-      {nodes.length === 0 && !readOnly && <EmptyHint />}
+      {nodes.length === 0 && !readOnly && <EmptyHint kind={kind} />}
       <Inspector />
     </ReactFlow>
   );
 }
 
-function EmptyHint() {
+function EmptyHint({ kind }: { kind?: "sop" | "journey" | "architect" }) {
+  const isArchitect = kind === "architect";
   return (
     <Panel position="top-center" className="!top-1/3 pointer-events-none">
-      <div className="animate-fade-up text-center">
-        <p className="font-display text-xl font-semibold">Mulai dengan menambahkan lane</p>
-        <p className="mt-1 text-sm text-muted-foreground">Setiap lane mewakili satu divisi. Lalu seret langkah kerja ke dalamnya.</p>
+      <div className="animate-fade-up text-center max-w-md px-4">
+        <p className="font-display text-xl font-bold tracking-tight text-foreground">
+          {isArchitect ? "Mulai Mendesain Arsitektur & Database" : "Mulai dengan menambahkan lane"}
+        </p>
+        <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+          {isArchitect
+            ? "Studio 2 adalah kanvas bebas tanpa divisi. Gunakan tombol Tabel ERD, Service API, atau Gateway di toolbar bawah untuk mulai merancang komponen."
+            : "Setiap lane mewakili satu divisi atau jalur kerja. Lalu seret langkah kerja ke dalamnya."}
+        </p>
       </div>
     </Panel>
   );

@@ -16,6 +16,7 @@ import {
   Search,
   Sparkles,
   Workflow,
+  X,
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -85,12 +86,13 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
   };
 
   const filteredFlows = React.useMemo(() => {
-    return flows.filter((f) => {
-      const matchesSearch =
-        f.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (f.description && f.description.toLowerCase().includes(searchQuery.toLowerCase()));
-
-      if (!matchesSearch) return false;
+    let list = flows.filter((f) => {
+      const q = searchQuery.trim().toLowerCase();
+      if (q) {
+        const matchTitle = f.title.toLowerCase().includes(q);
+        const matchDesc = f.description ? f.description.toLowerCase().includes(q) : false;
+        if (!matchTitle && !matchDesc) return false;
+      }
 
       if (activeTab === "drafts") return f.status === "draft";
       if (activeTab === "sop") return f.kind === "sop";
@@ -98,8 +100,16 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
       if (activeTab === "architect") return f.kind === "architect";
       return true;
     });
+
+    if (activeTab === "overview" || activeTab === "recent") {
+      // Urutkan berdasarkan waktu edit terbaru (most recent first)
+      list = [...list].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+    }
+
+    return list;
   }, [flows, searchQuery, activeTab]);
 
+  const allCount = flows.length;
   const draftCount = flows.filter((f) => f.status === "draft").length;
   const sopCount = flows.filter((f) => f.kind === "sop").length;
   const journeyCount = flows.filter((f) => f.kind === "journey").length;
@@ -118,16 +128,19 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
   }, []);
 
   return (
-    <div className="space-y-6 animate-fade-up">
-      {/* Top Header & Overview Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-4">
+    <div className="space-y-5 animate-fade-up">
+      {/* =========================================================================
+          TOP HEADER: SEARCH SEJAJAR DENGAN HEADING & QUICK ACTIONS
+          Menghilangkan white-space sia-sia & menjaga keselarasan baris
+         ========================================================================= */}
+      <div className="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4 border-b border-border/80 pb-4">
         <div>
           <div className="flex items-center gap-2.5">
             <h1 className="font-display text-xl font-bold tracking-tight text-foreground md:text-2xl">
               {isTemplatesTab ? "Pustaka Template Alur Kerja & Arsitektur" : "Recents & File Diagram"}
             </h1>
             <span className="rounded-full border border-border bg-muted/60 px-2.5 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
-              {isTemplatesTab ? `${TEMPLATES.length} Template` : `${flows.length} File`}
+              {isTemplatesTab ? `${TEMPLATES.length} Template` : `${filteredFlows.length} File`}
             </span>
           </div>
           <p className="mt-1 text-xs text-muted-foreground">
@@ -135,8 +148,31 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
           </p>
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex flex-wrap items-center gap-2">
+        {/* Action Controls: Search Sejajar Heading + Tombol Pembuatan */}
+        <div className="flex flex-wrap items-center gap-2.5">
+          {/* Kotak Pencarian Sejajar Heading */}
+          {!isTemplatesTab && (
+            <div className="relative w-full sm:w-64 md:w-72">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/75" />
+              <input
+                type="text"
+                placeholder="Cari file diagram atau SOP..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 w-full rounded-xl border border-border/80 dark:border-white/[0.08] bg-slate-100/70 dark:bg-[#12131F] pl-9 pr-7 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500/60 focus:bg-white dark:focus:bg-[#0E0F16] focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-150 shadow-sm"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery("")}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              )}
+            </div>
+          )}
+
           <Button
             variant="brand"
             size="sm"
@@ -189,7 +225,7 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {TEMPLATES.map((tmpl) => (
               <div
                 key={tmpl.id}
@@ -214,7 +250,7 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
                         : "SOP STANDAR"}
                     </span>
                     <span className="font-mono text-[10px] text-muted-foreground">
-                      {tmpl.lanes.length} Divisi
+                      {tmpl.lanes.length > 0 ? `${tmpl.lanes.length} Divisi` : "Freeform ERD"}
                     </span>
                   </div>
 
@@ -225,21 +261,23 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
                     {tmpl.description}
                   </p>
 
-                  <div className="mt-3 flex flex-wrap gap-1">
-                    {tmpl.lanes.slice(0, 3).map((l, idx) => (
-                      <span
-                        key={idx}
-                        className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground"
-                      >
-                        {l.title}
-                      </span>
-                    ))}
-                    {tmpl.lanes.length > 3 && (
-                      <span className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
-                        +{tmpl.lanes.length - 3}
-                      </span>
-                    )}
-                  </div>
+                  {tmpl.lanes.length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-1">
+                      {tmpl.lanes.slice(0, 3).map((l, idx) => (
+                        <span
+                          key={idx}
+                          className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground"
+                        >
+                          {l.title}
+                        </span>
+                      ))}
+                      {tmpl.lanes.length > 3 && (
+                        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
+                          +{tmpl.lanes.length - 3}
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-border/60">
@@ -259,69 +297,55 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
           </div>
         </section>
       ) : (
-        /* FIGMA-STYLE SPLIT LAYOUT: TENGAH PROJEK, KANAN SIDEBAR TEMPLATE MULAI CEPAT */
-        <div className="flex flex-col lg:flex-row gap-6 items-start">
+        /* FIGMA-STYLE SPLIT LAYOUT: TENGAH PROJEK (4 KOLOM), KANAN QUICK START */
+        <div className="flex flex-col lg:flex-row gap-5 items-start">
           {/* =========================================================================
               KOLOM UTAMA (TENGAH): File & Projek Diagram
              ========================================================================= */}
           <main className="flex-1 min-w-0 w-full space-y-4">
-            {/* Filter Pills & Search Bar */}
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 p-1 overflow-x-auto max-w-full">
-                <TabPill
-                  active={activeTab === "overview" || activeTab === "recent"}
-                  onClick={() => handleTabChange("overview")}
-                  label="Terbaru"
-                  count={flows.length}
-                />
-                <TabPill
-                  active={activeTab === "all"}
-                  onClick={() => handleTabChange("all")}
-                  label="Semua Diagram"
-                  count={flows.length}
-                />
-                <TabPill
-                  active={activeTab === "sop"}
-                  onClick={() => handleTabChange("sop")}
-                  label="Studio 1: SOP"
-                  count={sopCount}
-                />
-                <TabPill
-                  active={activeTab === "architect"}
-                  onClick={() => handleTabChange("architect")}
-                  label="Studio 2: Architect"
-                  count={architectCount}
-                />
-                <TabPill
-                  active={activeTab === "journey"}
-                  onClick={() => handleTabChange("journey")}
-                  label="Customer Journey"
-                  count={journeyCount}
-                />
-                <TabPill
-                  active={activeTab === "drafts"}
-                  onClick={() => handleTabChange("drafts")}
-                  label="Drafts"
-                  count={draftCount}
-                />
-              </div>
-
-              {/* Search Box */}
-              <div className="relative w-full sm:w-64">
-                <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/75" />
-                <input
-                  type="text"
-                  placeholder="Cari file diagram..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="h-8.5 w-full rounded-xl border border-border/80 dark:border-white/[0.08] bg-slate-100/70 dark:bg-[#12131F] pl-8.5 pr-3 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500/60 focus:bg-white dark:focus:bg-[#0E0F16] focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-150 shadow-sm"
-                />
-              </div>
+            {/* Filter Pills Baris Sendiri (Spacious, Tanpa Terhimpit Search) */}
+            <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+              <TabPill
+                active={activeTab === "overview" || activeTab === "recent"}
+                onClick={() => handleTabChange("overview")}
+                label="Terbaru"
+                count={allCount}
+              />
+              <TabPill
+                active={activeTab === "all"}
+                onClick={() => handleTabChange("all")}
+                label="Semua Diagram"
+                count={allCount}
+              />
+              <TabPill
+                active={activeTab === "sop"}
+                onClick={() => handleTabChange("sop")}
+                label="Studio 1: SOP"
+                count={sopCount}
+              />
+              <TabPill
+                active={activeTab === "architect"}
+                onClick={() => handleTabChange("architect")}
+                label="Studio 2: Architect"
+                count={architectCount}
+              />
+              <TabPill
+                active={activeTab === "journey"}
+                onClick={() => handleTabChange("journey")}
+                label="Customer Journey"
+                count={journeyCount}
+              />
+              <TabPill
+                active={activeTab === "drafts"}
+                onClick={() => handleTabChange("drafts")}
+                label="Drafts"
+                count={draftCount}
+              />
             </div>
 
-            {/* Grid Kartu Projek Kompak (Compact Grid) */}
+            {/* Grid Kartu Projek: Mampu Menampilkan 4 Kolom Ke Samping */}
             {filteredFlows.length > 0 ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-3.5">
                 {filteredFlows.map((flow) => (
                   <FlowCard
                     key={flow.id}
@@ -379,33 +403,33 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
 
           {/* =========================================================================
               SIDEBAR KANAN (RIGHT SIDEBAR): Mulai Cepat & Template Populer
-              Tidak menutupi projek, selalu siap diakses di sisi kanan
+              Kompak & leluasa, tidak merebut ruang grid 4 kolom projek
              ========================================================================= */}
-          <aside className="w-full lg:w-80 shrink-0 space-y-4 lg:sticky lg:top-4">
+          <aside className="w-full lg:w-72 xl:w-[280px] shrink-0 space-y-3.5 lg:sticky lg:top-4">
             {/* Quick Create Studio Cards */}
-            <div className="rounded-2xl border border-border/80 dark:border-white/[0.08] bg-card p-3.5 shadow-sm space-y-2.5">
+            <div className="rounded-2xl border border-border/80 dark:border-white/[0.08] bg-card p-3 shadow-sm space-y-2">
               <div className="flex items-center justify-between">
-                <span className="text-[11px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+                <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
                   Mulai Cepat Dari Nol
                 </span>
-                <Sparkles className="h-3.5 w-3.5 text-primary" />
+                <Sparkles className="h-3 w-3 text-primary" />
               </div>
 
               {/* Button Studio 1 */}
               <button
                 type="button"
                 onClick={() => handleOpenCreate("sop")}
-                className="group flex w-full items-center gap-3 rounded-xl border border-violet-500/30 bg-violet-500/[0.06] hover:bg-violet-500/15 p-2.5 text-left transition-all duration-150 hover:border-violet-500/60"
+                className="group flex w-full items-center gap-2.5 rounded-xl border border-violet-500/30 bg-violet-500/[0.06] hover:bg-violet-500/15 p-2 text-left transition-all duration-150 hover:border-violet-500/60"
               >
-                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-violet-600 text-white shadow-sm group-hover:scale-105 transition-transform">
-                  <Workflow className="h-4 w-4" />
+                <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-violet-600 text-white shadow-sm group-hover:scale-105 transition-transform">
+                  <Workflow className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-foreground group-hover:text-violet-500 transition-colors">
                     Studio 1: Swimlane SOP
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    Alur proses bisnis & matriks tugas divisi
+                    Alur proses & tugas divisi
                   </p>
                 </div>
                 <Plus className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0" />
@@ -415,17 +439,17 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
               <button
                 type="button"
                 onClick={() => handleOpenCreate("architect")}
-                className="group flex w-full items-center gap-3 rounded-xl border border-sky-500/30 bg-sky-500/[0.06] hover:bg-sky-500/15 p-2.5 text-left transition-all duration-150 hover:border-sky-500/60"
+                className="group flex w-full items-center gap-2.5 rounded-xl border border-sky-500/30 bg-sky-500/[0.06] hover:bg-sky-500/15 p-2 text-left transition-all duration-150 hover:border-sky-500/60"
               >
-                <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-sky-600 text-white shadow-sm group-hover:scale-105 transition-transform">
-                  <Database className="h-4 w-4" />
+                <div className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-sky-600 text-white shadow-sm group-hover:scale-105 transition-transform">
+                  <Database className="h-3.5 w-3.5" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <p className="text-xs font-bold text-foreground group-hover:text-sky-500 transition-colors">
                     Studio 2: Architect
                   </p>
                   <p className="text-[10px] text-muted-foreground truncate">
-                    Skema database ERD & sistem arsitektur
+                    Skema database ERD & sistem
                   </p>
                 </div>
                 <Plus className="h-3.5 w-3.5 text-muted-foreground group-hover:text-foreground shrink-0" />
@@ -433,7 +457,7 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
             </div>
 
             {/* Popular Templates Shelf in Right Sidebar */}
-            <div className="rounded-2xl border border-border/80 dark:border-white/[0.08] bg-card p-3.5 shadow-sm space-y-3">
+            <div className="rounded-2xl border border-border/80 dark:border-white/[0.08] bg-card p-3 shadow-sm space-y-2.5">
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="text-xs font-bold text-foreground">
@@ -454,11 +478,11 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
               </div>
 
               {/* Quick Template Cards */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {quickTemplates.map((tmpl) => (
                   <div
                     key={tmpl.id}
-                    className="group rounded-xl border border-border/70 dark:border-white/[0.06] bg-muted/30 p-2.5 transition-all duration-150 hover:bg-muted/70 hover:border-primary/40"
+                    className="group rounded-xl border border-border/70 dark:border-white/[0.06] bg-muted/30 p-2 transition-all duration-150 hover:bg-muted/70 hover:border-primary/40"
                   >
                     <div className="flex items-center justify-between gap-1">
                       <span
@@ -474,7 +498,7 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
                         {tmpl.kind === "architect" ? "ARCHITECT" : tmpl.kind === "journey" ? "JOURNEY" : "SOP"}
                       </span>
                       <span className="font-mono text-[9px] text-muted-foreground">
-                        {tmpl.lanes.length} Divisi
+                        {tmpl.lanes.length > 0 ? `${tmpl.lanes.length} Divisi` : "Freeform ERD"}
                       </span>
                     </div>
 
@@ -485,13 +509,13 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
                       {tmpl.description}
                     </p>
 
-                    <div className="mt-2 flex items-center justify-end">
+                    <div className="mt-1.5 flex items-center justify-end">
                       <Button
                         variant="secondary"
                         size="sm"
                         loading={isCloning === tmpl.id}
                         onClick={() => handleUseTemplate(tmpl)}
-                        className="h-6 px-2.5 text-[10px] font-semibold gap-1 bg-background hover:bg-primary hover:text-primary-foreground transition-all"
+                        className="h-5.5 px-2 text-[10px] font-semibold gap-1 bg-background hover:bg-primary hover:text-primary-foreground transition-all"
                       >
                         <span>Gunakan</span>
                         <Sparkles className="h-2.5 w-2.5 text-primary group-hover:text-primary-foreground" />
@@ -548,8 +572,8 @@ function TabPill({
       className={cn(
         "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-all duration-150 shrink-0",
         active
-          ? "bg-background text-foreground font-semibold shadow-sm border border-border"
-          : "text-muted-foreground hover:text-foreground hover:bg-background/50",
+          ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+          : "bg-muted/50 text-muted-foreground hover:text-foreground hover:bg-muted border border-border/70",
       )}
     >
       <span>{label}</span>
@@ -557,7 +581,7 @@ function TabPill({
         <span
           className={cn(
             "rounded-full px-1.5 py-0.2 text-[9px] font-mono",
-            active ? "bg-muted text-foreground font-bold" : "bg-muted/60 text-muted-foreground",
+            active ? "bg-white/20 text-white font-bold" : "bg-muted text-muted-foreground",
           )}
         >
           {count}

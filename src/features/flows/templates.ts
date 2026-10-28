@@ -175,12 +175,7 @@ export const TEMPLATES: FlowTemplate[] = [
     title: "Skema Database & ERD SaaS (PostgreSQL / Prisma)",
     description: "Arsitektur database relasional multi-tenant: Users, Workspaces, Memberships, Subscriptions, dan Audit Logs dengan Foreign Keys siap diekspor ke SQL DDL.",
     kind: "architect",
-    lanes: [
-      { title: "Auth & Identity", division: "Modul Autentikasi", color: "violet" },
-      { title: "Organizations", division: "Multi-tenancy & Workspace", color: "sky" },
-      { title: "Billing & Plans", division: "Langganan & Pembayaran", color: "emerald" },
-      { title: "Audit & Security", division: "Log Aktivitas & Kepatuhan", color: "amber" },
-    ],
+    lanes: [],
     steps: [
       {
         id: "users",
@@ -192,15 +187,15 @@ export const TEMPLATES: FlowTemplate[] = [
       },
       {
         id: "sessions",
-        lane: 0,
-        col: 1,
+        lane: 1,
+        col: 0,
         title: "sessions",
         description: "id (UUID PK)\nuser_id (UUID FK)\ntoken (VARCHAR)\nexpires_at (TIMESTAMP)",
         output: "Auth Session Tokens",
       },
       {
         id: "workspaces",
-        lane: 1,
+        lane: 0,
         col: 1,
         title: "workspaces",
         description: "id (UUID PK)\nname (VARCHAR)\nslug (VARCHAR)\nowner_id (UUID FK)\ncreated_at (TIMESTAMP)",
@@ -209,14 +204,14 @@ export const TEMPLATES: FlowTemplate[] = [
       {
         id: "memberships",
         lane: 1,
-        col: 2,
+        col: 1,
         title: "memberships",
         description: "id (UUID PK)\nworkspace_id (UUID FK)\nuser_id (UUID FK)\nrole (VARCHAR)\njoined_at (TIMESTAMP)",
         output: "RBAC Access Control",
       },
       {
         id: "subscriptions",
-        lane: 2,
+        lane: 0,
         col: 2,
         title: "subscriptions",
         description: "id (UUID PK)\nworkspace_id (UUID FK)\nplan (VARCHAR)\nstatus (VARCHAR)\ncurrent_period_end (TIMESTAMP)",
@@ -224,8 +219,8 @@ export const TEMPLATES: FlowTemplate[] = [
       },
       {
         id: "audit_logs",
-        lane: 3,
-        col: 3,
+        lane: 1,
+        col: 2,
         title: "audit_logs",
         description: "id (UUID PK)\nworkspace_id (UUID FK)\nuser_id (UUID FK)\naction (VARCHAR)\nip_address (VARCHAR)\ncreated_at (TIMESTAMP)",
         output: "Security Audit Trail",
@@ -245,12 +240,7 @@ export const TEMPLATES: FlowTemplate[] = [
     title: "Database & ERD Billing SaaS (Subscriptions & Invoicing)",
     description: "Skema relasional lengkap untuk mesin billing aplikasi SaaS: Plans, Customers, Subscriptions, Invoices, Payments, dan Usage Records.",
     kind: "architect",
-    lanes: [
-      { title: "Paket & Pelanggan", division: "Pricing & Customer Profile", color: "violet" },
-      { title: "Langganan Aktif", division: "Subscription Lifecycle", color: "sky" },
-      { title: "Faktur & Tagihan", division: "Invoicing & Prorata", color: "emerald" },
-      { title: "Transaksi Gateway", division: "Payment & Webhook Settlements", color: "amber" },
-    ],
+    lanes: [],
     steps: [
       {
         id: "plans",
@@ -279,7 +269,7 @@ export const TEMPLATES: FlowTemplate[] = [
       {
         id: "subscriptions",
         lane: 1,
-        col: 1,
+        col: 0,
         title: "subscriptions",
         description: "id (UUID PK)\ncustomer_id (UUID FK)\nplan_id (UUID FK)\nstatus (VARCHAR)\ncurrent_period_start (TIMESTAMP)\ncurrent_period_end (TIMESTAMP)\ncancel_at_period_end (BOOLEAN)",
         output: "Active Subscriptions",
@@ -287,7 +277,7 @@ export const TEMPLATES: FlowTemplate[] = [
       {
         id: "usage_records",
         lane: 1,
-        col: 2,
+        col: 1,
         title: "usage_records",
         description: "id (UUID PK)\nsubscription_id (UUID FK)\nmetric_name (VARCHAR)\nunits_consumed (INTEGER)\nrecorded_at (TIMESTAMP)",
         output: "Metered Consumption",
@@ -295,15 +285,15 @@ export const TEMPLATES: FlowTemplate[] = [
       {
         id: "invoices",
         lane: 2,
-        col: 2,
+        col: 0,
         title: "invoices",
         description: "id (UUID PK)\nsubscription_id (UUID FK)\ncustomer_id (UUID FK)\ninvoice_number (VARCHAR)\nsubtotal_amount (INTEGER)\ntax_amount (INTEGER)\ntotal_due (INTEGER)\nstatus (VARCHAR)\ndue_date (TIMESTAMP)",
         output: "Tax Invoices",
       },
       {
         id: "payments",
-        lane: 3,
-        col: 3,
+        lane: 2,
+        col: 1,
         title: "payments",
         description: "id (UUID PK)\ninvoice_id (UUID FK)\namount_paid (INTEGER)\npayment_method (VARCHAR)\ngateway_charge_id (VARCHAR)\nstatus (VARCHAR)\npaid_at (TIMESTAMP)",
         output: "Settled Transactions",
@@ -323,21 +313,16 @@ export const TEMPLATES: FlowTemplate[] = [
     title: "Arsitektur Microservices & Event Stream",
     description: "Desain sistem terdistribusi modern: API Gateway, Auth Service, Order Service, Kafka Broker, Redis Cache, dan PostgreSQL Database.",
     kind: "architect",
-    lanes: [
-      { title: "Client & Gateway", division: "Frontend & Reverse Proxy", color: "violet" },
-      { title: "Core Services", division: "Domain Microservices", color: "sky" },
-      { title: "Event Broker", division: "Asynchronous Messaging", color: "emerald" },
-      { title: "Data Storage", division: "Persistence & Cache", color: "amber" },
-    ],
+    lanes: [],
     steps: [
       { id: "client", lane: 0, col: 0, type: "terminal", title: "Web / Mobile Client", description: "Next.js Client & Flutter App" },
       { id: "gateway", lane: 0, col: 1, title: "API Gateway (Kong / Envoy)", description: "Rate limiting, JWT verify, & request routing" },
-      { id: "auth_svc", lane: 1, col: 1, title: "Auth Service", description: "OAuth2, session tokens, & user RBAC" },
-      { id: "order_svc", lane: 1, col: 2, title: "Order & Billing Service", description: "Checkout orchestration, Stripe webhooks" },
-      { id: "kafka", lane: 2, col: 2, type: "decision", title: "Kafka Event Stream", description: "Topics: order.created, payment.succeeded" },
+      { id: "auth_svc", lane: 0, col: 2, title: "Auth Service", description: "OAuth2, session tokens, & user RBAC" },
+      { id: "order_svc", lane: 1, col: 1, title: "Order & Billing Service", description: "Checkout orchestration, Stripe webhooks" },
+      { id: "kafka", lane: 1, col: 2, type: "decision", title: "Kafka Event Stream", description: "Topics: order.created, payment.succeeded" },
+      { id: "redis", lane: 0, col: 3, title: "Redis Cluster", description: "Session cache, rate limit store, & idempotency" },
       { id: "notif_svc", lane: 1, col: 3, title: "Notification Service", description: "Transactional email (Resend), WhatsApp, & Push" },
-      { id: "redis", lane: 3, col: 1, title: "Redis Cluster", description: "Session cache, rate limit store, & idempotency" },
-      { id: "db_postgres", lane: 3, col: 2, type: "terminal", title: "PostgreSQL Database", description: "ACID transactions & relational persistence" },
+      { id: "db_postgres", lane: 2, col: 2, type: "terminal", title: "PostgreSQL Database", description: "ACID transactions & relational persistence" },
     ],
     links: [
       ["client", "gateway", "HTTPS / WSS"],
@@ -355,9 +340,53 @@ export function getTemplate(id: string) {
   return TEMPLATES.find((t) => t.id === id);
 }
 
-/** Bangun dokumen diagram dari template dengan kalkulasi posisi & perataan node. Default: alur ke bawah. */
+/** Bangun dokumen diagram dari template dengan kalkulasi posisi & perataan node. */
 export function buildDocument(t: FlowTemplate, orientation: Orientation = "vertical"): FlowDocument {
-  // Hitung max col untuk menentukan lebar dinamis lane agar tidak terpotong
+  // STUDIO 2 ARCHITECT: FREEFORM INFINITE CANVAS (TANPA JALUR SWIMLANE)
+  if (t.kind === "architect" || t.lanes.length === 0) {
+    const steps = t.steps.map((s, i) => {
+      const data = {
+        title: s.title,
+        description: s.description ?? "",
+        durationValue: s.duration?.[0] ?? null,
+        durationUnit: s.duration?.[1] ?? ("menit" as const),
+        output: s.output ?? "",
+        owner: s.owner ?? "",
+      };
+
+      // Posisi 2D schema grid yang seimbang dan proporsional
+      const col = s.col ?? (i % 3);
+      const row = s.lane ?? Math.floor(i / 3);
+
+      return {
+        id: `n_${s.id}`,
+        type: s.type ?? ("step" as const),
+        position: {
+          x: 80 + col * 420,
+          y: 60 + row * 340,
+        },
+        data,
+      };
+    });
+
+    const edges = t.links.map(([from, to, label, sourceHandle, targetHandle], i) => ({
+      id: `e_${i}`,
+      source: `n_${from}`,
+      target: `n_${to}`,
+      sourceHandle: sourceHandle ?? "r",
+      targetHandle: targetHandle ?? "l",
+      ...(label ? { label } : {}),
+    }));
+
+    return {
+      version: 1,
+      orientation: "horizontal",
+      nodes: steps,
+      edges,
+    } as FlowDocument;
+  }
+
+  // STUDIO 1: SWIMLANE SOP DENGAN JALUR DIVISI
   const maxCol = Math.max(...t.steps.map((s) => s.col), 7);
   const calculatedWidth = Math.max(LANE_DEFAULT_WIDTH, FIRST_COL_X + (maxCol + 1) * COL_GAP + 300);
 

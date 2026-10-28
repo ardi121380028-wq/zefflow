@@ -398,52 +398,33 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
   // KASUS 1: FREEFORM MODE (STUDIO 2 ARCHITECT TANPA SWIMLANE)
   // =========================================================================
   if (lanes.length === 0) {
-    // Kelompokkan node per rank / layer
-    const layerMap = new Map<number, Info[]>();
-    for (const it of infos) {
-      const r = ranks.get(it.node.id) ?? 0;
-      if (!layerMap.has(r)) layerMap.set(r, []);
-      layerMap.get(r)!.push(it);
-    }
+    // 2D Balanced Schema Matrix untuk Arsitektur / ERD Database
+    // Menghindari diagram memanjang berlebihan baik ke bawah maupun ke samping
+    const totalNodes = infos.length;
+    const cols = totalNodes <= 2 ? totalNodes : totalNodes <= 6 ? 3 : 4;
 
-    const sortedRankKeys = Array.from(layerMap.keys()).sort((a, b) => a - b);
+    // Urutkan node berdasarkan topological rank, lalu posisi vertikal asal
+    const sorted = [...infos].sort((a, b) => {
+      const ra = ranks.get(a.node.id) ?? 0;
+      const rb = ranks.get(b.node.id) ?? 0;
+      if (ra !== rb) return ra - rb;
+      return a.cy - b.cy;
+    });
 
-    if (to === "vertical") {
-      let currentY = 60;
-      for (const r of sortedRankKeys) {
-        const layerNodes = layerMap.get(r)!;
-        // Urutkan node di layer ini berdasarkan posisi horizontal sebelumnya
-        layerNodes.sort((a, b) => a.cx - b.cx);
+    const colWidth = 400;
+    const rowHeight = 330;
+    let col = 0;
+    let row = 0;
 
-        const maxH = Math.max(...layerNodes.map((n) => n.h), STEP_EST_HEIGHT);
-        let currentX = 80;
-        for (const it of layerNodes) {
-          newPos.set(it.node.id, {
-            x: currentX,
-            y: currentY + Math.round((maxH - it.h) / 2),
-          });
-          currentX += it.w + 48;
-        }
-        currentY += maxH + 80;
-      }
-    } else {
-      // Horizontal freeform
-      let currentX = 60;
-      for (const r of sortedRankKeys) {
-        const layerNodes = layerMap.get(r)!;
-        // Urutkan node di layer ini berdasarkan posisi vertikal sebelumnya
-        layerNodes.sort((a, b) => a.cy - b.cy);
-
-        const maxW = Math.max(...layerNodes.map((n) => n.w), STEP_WIDTH);
-        let currentY = 80;
-        for (const it of layerNodes) {
-          newPos.set(it.node.id, {
-            x: currentX + Math.round((maxW - it.w) / 2),
-            y: currentY,
-          });
-          currentY += it.h + 40;
-        }
-        currentX += maxW + 90;
+    for (const it of sorted) {
+      newPos.set(it.node.id, {
+        x: 80 + col * colWidth,
+        y: 60 + row * rowHeight,
+      });
+      col++;
+      if (col >= cols) {
+        col = 0;
+        row++;
       }
     }
   } else {
