@@ -89,8 +89,59 @@ export const getWorkspaceContext = cache(async (userId: string): Promise<Workspa
   });
 
   if (rows.length === 0) {
-    // Seharusnya tidak terjadi (trigger signup membuat workspace). Beri pesan jelas.
-    throw new AppError("NOT_FOUND", "Workspace tidak ditemukan. Pastikan migrasi RLS/trigger sudah dijalankan.");
+    // Self-healing: jika trigger signup belum sempat jalan atau user dibuat sebelum trigger
+    const authUser = await getUser();
+    const email = authUser?.email || "user@zefflow.app";
+    const fullName = (authUser?.user_metadata?.full_name as string) || email.split("@")[0] || "User";
+    const slugBase = email.split("@")[0].toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Math.random().toString(36).substring(2, 7);
+
+    const newWs = await withUser(userId, async (tx) => {
+      await tx
+        .insert(profiles)
+        .values({
+          id: userId,
+          email,
+          fullName,
+          avatarUrl: (authUser?.user_metadata?.avatar_url as string) || null,
+        })
+        .onConflictDoNothing();
+
+      const [createdWs] = await tx
+        .insert(workspaces)
+        .values({
+          name: `${fullName}'s Workspace`,
+          slug: slugBase,
+          createdBy: userId,
+        })
+        .returning();
+
+      if (createdWs) {
+        await tx.insert(memberships).values({
+          workspaceId: createdWs.id,
+          userId,
+          role: "owner",
+        });
+      }
+      return createdWs;
+    });
+
+    if (newWs) {
+      const activeWs: Workspace & { role: MemberRole } = { ...newWs, role: "owner" };
+      return {
+        profile: {
+          id: userId,
+          email,
+          fullName,
+          avatarUrl: (authUser?.user_metadata?.avatar_url as string) || null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+        workspaces: [activeWs],
+        active: activeWs,
+      };
+    }
+
+    throw new AppError("NOT_FOUND", "Workspace tidak ditemukan.");
   }
   const list = rows.map((r) => ({ ...r.ws, role: r.role }));
   const preferred = cookies().get(ACTIVE_WORKSPACE_COOKIE)?.value;
