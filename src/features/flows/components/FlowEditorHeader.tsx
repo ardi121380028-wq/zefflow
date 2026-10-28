@@ -12,11 +12,13 @@ import {
   Globe2,
   Image as ImageIcon,
   Loader2,
+  PanelLeft,
   Redo2,
   Save,
   Share2,
   Undo2,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -61,6 +63,8 @@ export function FlowEditorHeader({
   const canRedo = useCanvasStore((s) => s.future.length > 0);
   const nodes = useCanvasStore((s) => s.nodes);
   const orientation = useCanvasStore((s) => s.orientation);
+  const sidebarOpen = useCanvasStore((s) => s.sidebarOpen);
+  const toggleSidebar = useCanvasStore((s) => s.toggleSidebar);
   const { undo, redo } = useCanvasStore.getState();
 
   const handleTitleSubmit = async () => {
@@ -104,6 +108,20 @@ export function FlowEditorHeader({
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
+
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title={sidebarOpen ? "Sembunyikan panel samping (Ctrl+B)" : "Tampilkan panel samping (Ctrl+B)"}
+            className={cn(
+              "hidden sm:grid h-8 w-8 shrink-0 place-items-center rounded-xl border transition-colors",
+              sidebarOpen
+                ? "border-primary/40 bg-primary/10 text-primary shadow-sm"
+                : "border-border bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            <PanelLeft className="h-4 w-4" />
+          </button>
 
           <div className="flex items-center gap-2 min-w-0">
             {isEditingTitle ? (

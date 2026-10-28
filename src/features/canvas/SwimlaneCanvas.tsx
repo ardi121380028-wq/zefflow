@@ -20,9 +20,11 @@ import { DecisionNode, StepNode, TerminalNode } from "./nodes/StepNodes";
 import { LaneNode } from "./nodes/LaneNode";
 import { CustomEdge } from "./edges/CustomEdge";
 import { Inspector } from "./panels/Inspector";
+import { LayersPanel } from "./panels/LayersPanel";
 import { PALETTE_MIME, Toolbar } from "./panels/Toolbar";
 import { EDGE_MARKER, useCanvasStore } from "./store/canvas-store";
 import { absRect, pickHandles } from "./lib/layout";
+import { Layers } from "lucide-react";
 import { useAutosave } from "./store/use-autosave";
 import type { StepNodeType } from "./types";
 import { cn } from "@/lib/utils";
@@ -66,6 +68,8 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
   const edges = useCanvasStore((s) => s.edges);
   const hydrated = useCanvasStore((s) => s.flowId === flowId);
   const orientation = useCanvasStore((s) => s.orientation);
+  const sidebarOpen = useCanvasStore((s) => s.sidebarOpen);
+  const toggleSidebar = useCanvasStore((s) => s.toggleSidebar);
   const { screenToFlowPosition, fitView } = useReactFlow();
   const { saveNow } = useAutosave();
   const { theme } = useTheme();
@@ -104,6 +108,9 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
       } else if (!typing && mod && e.key.toLowerCase() === "y") {
         e.preventDefault();
         s.redo();
+      } else if (!typing && mod && e.key.toLowerCase() === "b") {
+        e.preventDefault();
+        s.toggleSidebar();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -229,7 +236,14 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
         size={1.4}
         color={theme === "dark" ? "rgba(255, 255, 255, 0.09)" : "rgba(15, 23, 42, 0.12)"}
       />
-      <Controls showInteractive={false} position="bottom-left" />
+      <Controls
+        showInteractive={false}
+        position="bottom-left"
+        className={cn(
+          "transition-all duration-300",
+          !readOnly && sidebarOpen ? "md:!left-[324px]" : "!left-3 sm:!left-4",
+        )}
+      />
       <MiniMap
         pannable
         zoomable
@@ -238,8 +252,31 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
         maskColor={theme === "dark" ? "rgba(8, 9, 12, 0.8)" : "rgba(248, 250, 252, 0.8)"}
         className="!hidden md:!block"
       />
+
+      {/* Tombol buka Layers saat panel kiri ditutup */}
+      {!readOnly && !sidebarOpen && (
+        <Panel position="top-left" className="!m-2.5 sm:!m-4">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            title="Buka panel struktur & layers (Ctrl+B)"
+            className="flex items-center gap-2 rounded-full border border-border dark:border-white/[0.12] bg-white/95 dark:bg-[#0D0E16]/90 px-3.5 py-1.5 text-xs font-semibold shadow-xl backdrop-blur-2xl transition-all duration-150 hover:bg-muted dark:hover:bg-white/[0.08] active:scale-95 text-foreground dark:text-white"
+          >
+            <Layers className="h-3.5 w-3.5 text-violet-500" />
+            <span>Layers</span>
+            <span className="font-mono text-[10px] text-muted-foreground bg-muted dark:bg-white/[0.08] px-1.5 py-0.2 rounded-full">
+              {nodes.filter((n) => n.type !== "lane").length}
+            </span>
+          </button>
+        </Panel>
+      )}
+
+      {/* Panel Layers & Ringkasan SOP Kiri (Figma-Style) */}
+      {!readOnly && <LayersPanel isOpen={sidebarOpen} onToggle={toggleSidebar} />}
+
+      {/* Toolbar studio melayang di Bawah Tengah (Figma-Style Command Dock) */}
       {!readOnly && (
-        <Panel position="top-center">
+        <Panel position="bottom-center" className="!mb-4 sm:!mb-6">
           <Toolbar />
         </Panel>
       )}

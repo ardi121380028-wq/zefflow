@@ -81,7 +81,11 @@ interface CanvasState {
   updateNodeData: (id: string, patch: Partial<LaneData & StepData>) => void;
   updateEdgeLabel: (id: string, label: string) => void;
   select: (id: string | null) => void;
-  deleteSelected: () => void;
+  deleteSelected: (id?: string) => void;
+  // sidebar
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
+  toggleSidebar: () => void;
   // persistence
   setSaveStatus: (s: SaveStatus) => void;
   markSaved: (version: number) => void;
@@ -145,9 +149,13 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     nodes: [],
     edges: [],
     selectedId: null,
+    sidebarOpen: true,
     saveStatus: "idle",
     past: [],
     future: [],
+
+    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
+    toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
 
     init: ({ flowId, doc, version, readOnly }) =>
       set({ flowId, version, readOnly, ...documentToFlow(doc), selectedId: null, saveStatus: "idle", past: [], future: [] }),
@@ -373,15 +381,16 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
 
     select: (id) => set({ selectedId: id }),
 
-    deleteSelected: () => {
+    deleteSelected: (id?: string) => {
       const s = get();
-      if (s.readOnly || !s.selectedId) return;
-      const n = s.nodes.find((x) => x.id === s.selectedId);
+      const targetId = id ?? s.selectedId;
+      if (s.readOnly || !targetId) return;
+      const n = s.nodes.find((x) => x.id === targetId);
       if (isLane(n)) return get().removeLane(n.id);
       mutate((st) => ({
-        nodes: st.nodes.filter((x) => x.id !== s.selectedId),
-        edges: st.edges.filter((e) => e.source !== s.selectedId && e.target !== s.selectedId && e.id !== s.selectedId),
-        selectedId: null,
+        nodes: st.nodes.filter((x) => x.id !== targetId),
+        edges: st.edges.filter((e) => e.source !== targetId && e.target !== targetId && e.id !== targetId),
+        selectedId: s.selectedId === targetId ? null : s.selectedId,
       }));
     },
 

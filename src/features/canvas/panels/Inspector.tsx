@@ -125,7 +125,7 @@ export function Inspector() {
 
       {!readOnly && !isLane(node) && (
         <footer className="border-t border-border dark:border-white/[0.08] p-3.5 bg-slate-50/50 dark:bg-[#12131D]">
-          <Button variant="ghost" className="w-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 text-xs" onClick={deleteSelected}>
+          <Button variant="ghost" className="w-full text-rose-500 hover:bg-rose-500/10 hover:text-rose-600 text-xs" onClick={() => deleteSelected()}>
             <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Hapus {edge ? "koneksi" : "langkah"}
           </Button>
         </footer>
