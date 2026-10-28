@@ -188,41 +188,39 @@ export function ShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl p-0 overflow-hidden rounded-3xl border border-border/80 dark:border-white/[0.08] bg-card text-foreground shadow-2xl">
+      <DialogContent className="top-6 sm:top-10 md:top-12 translate-y-0 max-w-xl p-0 overflow-hidden rounded-3xl border border-border/80 dark:border-white/[0.08] bg-card text-foreground shadow-2xl flex flex-col max-h-[calc(100vh-3rem)] sm:max-h-[calc(100vh-5rem)]">
         {/* Header Dialog */}
-        <div className="p-5 pb-3 border-b border-border/70 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#11121C]">
-          <DialogTitle className="flex items-center gap-2.5 text-base font-bold">
-            <span className="grid h-8 w-8 place-items-center rounded-xl bg-violet-600 text-white shadow-[0_0_12px_rgba(139,92,246,0.5)]">
-              <Users className="h-4 w-4" />
+        <div className="p-4 pb-2.5 sm:p-4.5 sm:pb-3 border-b border-border/70 dark:border-white/[0.08] bg-slate-50/60 dark:bg-[#11121C] shrink-0">
+          <DialogTitle className="flex items-center gap-2 text-sm sm:text-base font-bold">
+            <span className="grid h-7 w-7 place-items-center rounded-xl bg-violet-600 text-white shadow-[0_0_12px_rgba(139,92,246,0.5)]">
+              <Users className="h-3.5 w-3.5" />
             </span>
             <span>Kolaborasi & Berbagi Diagram</span>
           </DialogTitle>
-          <DialogDescription className="mt-1 text-xs text-muted-foreground">
-            Kerjakan SOP{" "}
-            <strong className="text-foreground font-semibold">"{flowTitle}"</strong> bersama tim
-            atau bagikan tautan baca untuk pihak eksternal.
+          <DialogDescription className="mt-0.5 text-[11px] text-muted-foreground truncate">
+            Kerjakan SOP <strong className="text-foreground font-semibold">"{flowTitle}"</strong> bersama tim atau bagikan tautan baca ke luar.
           </DialogDescription>
 
           {/* Navigation Tabs */}
-          <div className="flex items-center gap-2 mt-4">
+          <div className="flex items-center gap-1.5 mt-3">
             <button
               type="button"
               onClick={() => setActiveTab("invite")}
               className={cn(
-                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                "flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold transition-all",
                 activeTab === "invite"
                   ? "bg-violet-600 text-white shadow-sm"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
               )}
             >
               <UserPlus className="h-3.5 w-3.5" />
-              <span>Undang Tim (Multiplayer)</span>
+              <span>Undang Tim</span>
             </button>
             <button
               type="button"
               onClick={() => setActiveTab("public")}
               className={cn(
-                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                "flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold transition-all",
                 activeTab === "public"
                   ? "bg-violet-600 text-white shadow-sm"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -235,7 +233,7 @@ export function ShareDialog({
               type="button"
               onClick={() => setActiveTab("security")}
               className={cn(
-                "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                "flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold transition-all",
                 activeTab === "security"
                   ? "bg-violet-600 text-white shadow-sm"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground",
@@ -251,48 +249,45 @@ export function ShareDialog({
             TAB 1: UNDANG KOLABORATOR (MULTIPLAYER REALTIME)
            ========================================================================= */}
         {activeTab === "invite" && (
-          <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto no-scrollbar">
-            {/* Banner Fitur Pro Kolaborasi Realtime */}
-            <div className="relative overflow-hidden rounded-2xl border border-violet-500/30 bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-transparent p-3.5">
-              <div className="flex items-start gap-3">
-                <div className="grid h-8 w-8 place-items-center rounded-xl bg-violet-600 text-white shrink-0 mt-0.5 shadow-md">
-                  <Sparkles className="h-4 w-4" />
+          <div className="p-3.5 sm:p-4 space-y-3 overflow-y-auto no-scrollbar flex-1 max-h-[min(55vh,400px)]">
+            {/* Banner Fitur Pro Kolaborasi Realtime (Compact) */}
+            <div className="flex items-center gap-2.5 rounded-xl border border-violet-500/25 bg-gradient-to-r from-violet-500/10 via-indigo-500/10 to-transparent p-2.5">
+              <div className="grid h-7 w-7 place-items-center rounded-lg bg-violet-600 text-white shrink-0 shadow-sm">
+                <Sparkles className="h-3.5 w-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="text-xs font-bold text-foreground truncate">Multiplayer Live (Fitur Pro)</p>
+                  <span className="rounded-full bg-violet-500/20 px-1.5 py-0.2 font-mono text-[8px] font-bold text-violet-600 dark:text-violet-400">
+                    LIVE SYNC
+                  </span>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs font-bold text-foreground">Multiplayer Real-time (Fitur Pro)</p>
-                    <span className="rounded-full bg-violet-500/20 px-2 py-0.2 font-mono text-[9px] font-bold text-violet-600 dark:text-violet-400">
-                      LIVE SYNC
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground mt-0.5 leading-relaxed">
-                    Setiap anggota tim yang diundang dapat menggeser alur, menambah catatan SOP, dan melihat
-                    kursor teman bergerak langsung di kanvas secara real-time seperti Figma!
-                  </p>
-                </div>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  Kolaborasi SOP real-time dengan kursor rekan tim di kanvas seperti Figma.
+                </p>
               </div>
             </div>
 
-            {/* Form Input Email & Role */}
-            <form onSubmit={handleSendInvite} className="space-y-2">
-              <label className="text-xs font-bold text-foreground">Kirim Undangan ke Rekan Kerja</label>
+            {/* Form Input Email & Role (Compact) */}
+            <form onSubmit={handleSendInvite} className="space-y-1.5">
+              <label className="text-[11px] font-bold text-foreground">Kirim Undangan ke Rekan Kerja</label>
               <div className="flex flex-col sm:flex-row gap-2">
                 <div className="relative flex-1">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                  <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                   <input
                     type="email"
                     placeholder="nama@perusahaan.com"
                     value={inviteEmail}
                     onChange={(e) => setInviteEmail(e.target.value)}
-                    className="h-9 w-full rounded-xl border border-border/80 bg-background/80 pl-9 pr-3 text-xs font-medium placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="h-8 w-full rounded-xl border border-border/80 bg-background/80 pl-8 pr-3 text-xs font-medium placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5">
                   <select
                     value={inviteRole}
                     onChange={(e) => setInviteRole(e.target.value as any)}
-                    className="h-9 rounded-xl border border-border/80 bg-background px-3 text-xs font-semibold text-foreground focus:border-primary focus:outline-none"
+                    className="h-8 rounded-xl border border-border/80 bg-background px-2.5 text-xs font-semibold text-foreground focus:border-primary focus:outline-none"
                   >
                     <option value="editor">Editor (Bisa Edit)</option>
                     <option value="commenter">Reviewer (Beri Catatan)</option>
@@ -304,34 +299,34 @@ export function ShareDialog({
                     variant="brand"
                     size="sm"
                     loading={isSendingInvite}
-                    className="h-9 px-4 text-xs font-semibold shrink-0"
+                    className="h-8 px-3 text-xs font-semibold shrink-0"
                   >
-                    <UserPlus className="h-3.5 w-3.5 mr-1.5" />
+                    <UserPlus className="h-3.5 w-3.5 mr-1" />
                     Undang
                   </Button>
                 </div>
               </div>
             </form>
 
-            {/* Daftar Kolaborator */}
-            <div className="space-y-2 pt-2 border-t border-border/60">
-              <div className="flex items-center justify-between text-[11px] font-bold text-muted-foreground uppercase tracking-wider px-1">
-                <span>Anggota Tim dengan Akses ({collaborators.length})</span>
-                <span>Hak Akses</span>
+            {/* Daftar Kolaborator (Compact Scrollable) */}
+            <div className="space-y-1.5 pt-2 border-t border-border/60">
+              <div className="flex items-center justify-between text-[10px] font-bold text-muted-foreground uppercase tracking-wider px-1">
+                <span>Anggota Tim ({collaborators.length})</span>
+                <span>Peran</span>
               </div>
 
-              <div className="space-y-1.5">
+              <div className="max-h-[170px] overflow-y-auto no-scrollbar space-y-1">
                 {collaborators.map((c) => {
                   const isOwner = c.role === "owner";
                   return (
                     <div
                       key={c.id}
-                      className="flex items-center justify-between gap-3 p-2.5 rounded-2xl border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors"
+                      className="flex items-center justify-between gap-2.5 p-2 rounded-xl border border-border/60 bg-muted/20 hover:bg-muted/40 transition-colors"
                     >
-                      <div className="flex items-center gap-2.5 min-w-0">
+                      <div className="flex items-center gap-2 min-w-0">
                         <div
                           className={cn(
-                            "grid h-8 w-8 place-items-center rounded-xl font-bold text-xs uppercase shrink-0",
+                            "grid h-7 w-7 place-items-center rounded-lg font-bold text-[10px] uppercase shrink-0",
                             c.avatarColor,
                           )}
                         >
@@ -343,9 +338,9 @@ export function ShareDialog({
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex items-center gap-1.5 shrink-0">
                         {isOwner ? (
-                          <span className="rounded-lg bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold font-mono text-violet-600 dark:text-violet-400">
+                          <span className="rounded-md bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold font-mono text-violet-600 dark:text-violet-400">
                             PEMILIK
                           </span>
                         ) : (
@@ -402,7 +397,7 @@ export function ShareDialog({
             TAB 2: TAUTAN PUBLIK (VIEW-ONLY)
            ========================================================================= */}
         {activeTab === "public" && (
-          <div className="p-5 space-y-4 max-h-[70vh] overflow-y-auto no-scrollbar">
+          <div className="p-3.5 sm:p-4 space-y-3 max-h-[min(55vh,400px)] overflow-y-auto no-scrollbar flex-1">
             {/* Status Banner */}
             <div className="flex items-center justify-between rounded-2xl border border-border dark:border-white/[0.08] bg-muted/40 dark:bg-[#12141F] p-4">
               <div className="flex items-center gap-3">
@@ -493,7 +488,7 @@ export function ShareDialog({
             TAB 3: KEAMANAN & RBAC (ENTERPRISE GRADE)
            ========================================================================= */}
         {activeTab === "security" && (
-          <div className="p-5 space-y-3.5 max-h-[70vh] overflow-y-auto no-scrollbar">
+          <div className="p-3.5 sm:p-4 space-y-3 max-h-[min(55vh,400px)] overflow-y-auto no-scrollbar flex-1">
             <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-emerald-600 dark:text-emerald-400">
               <ShieldCheck className="h-5 w-5 shrink-0" />
               <p className="leading-relaxed">
@@ -540,8 +535,8 @@ export function ShareDialog({
           </div>
         )}
 
-        {/* Footer Dialog */}
-        <div className="flex items-center justify-between border-t border-border/70 dark:border-white/[0.08] px-5 py-3 bg-slate-50/60 dark:bg-[#11121C]">
+        {/* Footer Dialog (Compact) */}
+        <div className="flex items-center justify-between border-t border-border/70 dark:border-white/[0.08] px-4 py-2.5 sm:px-5 bg-slate-50/60 dark:bg-[#11121C] shrink-0">
           <span className="text-[11px] text-muted-foreground font-mono">
             {collaborators.length} kolaborator aktif
           </span>
