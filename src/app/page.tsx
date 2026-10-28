@@ -44,16 +44,16 @@ export default async function HomePage() {
       <div className="pointer-events-none absolute top-[700px] -right-40 h-[450px] w-[550px] rounded-full bg-violet-600/10 blur-[150px]" />
 
       {/* Floating Studio Header */}
-      <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/80 px-6 backdrop-blur-xl">
-        <Link href="/" className="flex items-center gap-2.5 group">
+      <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/80 px-3 sm:px-6 backdrop-blur-xl">
+        <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_18px_rgba(139,92,246,0.4)] transition-transform group-hover:scale-105">
             <Workflow className="h-4.5 w-4.5 text-white" />
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <span className="font-display text-base font-semibold tracking-tight text-foreground">
               Zefflow
             </span>
-            <span className="rounded-md border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.2 text-[9px] font-mono font-semibold tracking-widest text-violet-600 dark:text-violet-400">
+            <span className="hidden sm:inline-block rounded-md border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.2 text-[9px] font-mono font-semibold tracking-widest text-violet-600 dark:text-violet-400">
               STUDIO
             </span>
           </div>
@@ -61,21 +61,22 @@ export default async function HomePage() {
 
         {/* Center links */}
         <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-muted-foreground">
+          <Link href="/features" className="hover:text-foreground transition-colors font-semibold text-primary">Fitur Unggulan</Link>
+          <Link href="/guide" className="hover:text-foreground transition-colors">Panduan Aplikasi</Link>
           <a href="#canvas-showcase" className="hover:text-foreground transition-colors">Kanvas Interaktif</a>
-          <a href="#features" className="hover:text-foreground transition-colors">Fitur SOP</a>
-          <a href="#pricing" className="hover:text-foreground transition-colors font-semibold text-primary">Paket &amp; Harga</a>
+          <a href="#pricing" className="hover:text-foreground transition-colors">Paket &amp; Harga</a>
           <a href="#faq" className="hover:text-foreground transition-colors">FAQ</a>
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
           <ThemeToggle />
-          <Button variant="ghost" size="sm" asChild className="text-xs">
+          <Button variant="ghost" size="sm" asChild className="hidden xs:inline-flex text-xs px-2.5">
             <Link href="/login">Masuk</Link>
           </Button>
-          <Button variant="brand" size="sm" asChild className="text-xs font-semibold">
+          <Button variant="brand" size="sm" asChild className="text-xs font-semibold px-2.5 sm:px-3 h-8 sm:h-9">
             <Link href="/login">
-              <span>Mulai Gratis</span>
-              <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              <span>Mulai</span>
+              <ArrowRight className="h-3.5 w-3.5 ml-1 hidden sm:inline" />
             </Link>
           </Button>
         </div>
@@ -288,8 +289,9 @@ export default async function HomePage() {
             <div className="space-y-3">
               <p className="text-xs font-semibold uppercase tracking-wider text-foreground">Produk</p>
               <ul className="space-y-2 text-xs">
+                <li><Link href="/features" className="hover:text-foreground transition-colors">Fitur Unggulan</Link></li>
+                <li><Link href="/guide" className="hover:text-foreground transition-colors">Panduan Penggunaan</Link></li>
                 <li><a href="#canvas-showcase" className="hover:text-foreground transition-colors">Kanvas Swimlane</a></li>
-                <li><a href="#features" className="hover:text-foreground transition-colors">Notasi SOP BPMN</a></li>
                 <li><a href="#pricing" className="hover:text-foreground transition-colors">Paket &amp; Harga</a></li>
                 <li><Link href="/api-docs" className="hover:text-foreground transition-colors">Dokumentasi API</Link></li>
               </ul>

@@ -36,7 +36,14 @@ import {
 } from "../lib/layout";
 
 const HISTORY_LIMIT = 60;
-type Snapshot = { nodes: AppNode[]; edges: AppEdge[]; orientation: Orientation };
+type Snapshot = {
+  nodes: AppNode[];
+  edges: AppEdge[];
+  orientation: Orientation;
+  companyLogo?: string;
+  companyName?: string;
+  docCode?: string;
+};
 
 /** Panah koneksi sedikit lebih besar agar terlihat jelas di layar maupun hasil ekspor. */
 export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 20, height: 20 } as const;
@@ -46,12 +53,17 @@ interface CanvasState {
   version: number;
   readOnly: boolean;
   orientation: Orientation;
+  companyLogo: string;
+  companyName: string;
+  docCode: string;
   nodes: AppNode[];
   edges: AppEdge[];
   selectedId: string | null;
   saveStatus: SaveStatus;
   past: Snapshot[];
   future: Snapshot[];
+
+  updateBranding: (b: { companyLogo?: string; companyName?: string; docCode?: string }) => void;
 
   // lifecycle
   init: (p: { flowId: string; doc: FlowDocument; version: number; readOnly: boolean }) => void;
@@ -123,11 +135,25 @@ export function documentToFlow(doc: FlowDocument): Snapshot {
     type: "smoothstep",
     markerEnd: EDGE_MARKER,
   }));
-  return { nodes: relayoutLanes(sortParentsFirst(nodes), orientation), edges, orientation };
+  return {
+    nodes: relayoutLanes(sortParentsFirst(nodes), orientation),
+    edges,
+    orientation,
+    companyLogo: doc.companyLogo ?? "",
+    companyName: doc.companyName ?? "",
+    docCode: doc.docCode ?? "",
+  };
 }
 
 export const useCanvasStore = create<CanvasState>()((set, get) => {
-  const snapshot = (s: CanvasState): Snapshot => ({ nodes: s.nodes, edges: s.edges, orientation: s.orientation });
+  const snapshot = (s: CanvasState): Snapshot => ({
+    nodes: s.nodes,
+    edges: s.edges,
+    orientation: s.orientation,
+    companyLogo: s.companyLogo,
+    companyName: s.companyName,
+    docCode: s.docCode,
+  });
 
   /** Terapkan perubahan konten: simpan history + tandai dirty. */
   const mutate = (fn: (s: CanvasState) => Partial<CanvasState>) => {
@@ -146,6 +172,9 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     version: 1,
     readOnly: true,
     orientation: "horizontal",
+    companyLogo: "",
+    companyName: "",
+    docCode: "",
     nodes: [],
     edges: [],
     selectedId: null,
@@ -153,6 +182,14 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     saveStatus: "idle",
     past: [],
     future: [],
+
+    updateBranding: (b) => {
+      mutate((s) => ({
+        companyLogo: b.companyLogo !== undefined ? b.companyLogo : s.companyLogo,
+        companyName: b.companyName !== undefined ? b.companyName : s.companyName,
+        docCode: b.docCode !== undefined ? b.docCode : s.docCode,
+      }));
+    },
 
     setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
     toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
@@ -199,6 +236,9 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         nodes: prev.nodes,
         edges: prev.edges,
         orientation: prev.orientation,
+        companyLogo: prev.companyLogo ?? "",
+        companyName: prev.companyName ?? "",
+        docCode: prev.docCode ?? "",
         past: s.past.slice(0, -1),
         future: [snapshot(s), ...s.future],
         saveStatus: "dirty",
@@ -214,6 +254,9 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         nodes: next.nodes,
         edges: next.edges,
         orientation: next.orientation,
+        companyLogo: next.companyLogo ?? "",
+        companyName: next.companyName ?? "",
+        docCode: next.docCode ?? "",
         past: [...s.past, snapshot(s)],
         future: s.future.slice(1),
         saveStatus: "dirty",

@@ -9,6 +9,12 @@ const PADDING = 40;
 const MAX_SIDE = 16000;
 const MAX_PIXELS = 40_000_000;
 
+export interface BrandingInfo {
+  companyLogo?: string | null;
+  companyName?: string | null;
+  docCode?: string | null;
+}
+
 interface DiagramBounds {
   width: number;
   height: number;
@@ -55,8 +61,13 @@ interface Rendered {
   bgColor: string;
 }
 
-/** Render viewport React Flow ke canvas beresolusi tinggi + banner judul. */
-async function render(nodes: AppNode[], title: string, orientation: Orientation): Promise<Rendered> {
+/** Render viewport React Flow ke canvas beresolusi tinggi + banner judul & logo perusahaan. */
+async function render(
+  nodes: AppNode[],
+  title: string,
+  orientation: Orientation,
+  branding?: BrandingInfo,
+): Promise<Rendered> {
   const viewportEl = document.querySelector<HTMLElement>(".react-flow__viewport");
   if (!viewportEl) throw new Error("Kanvas belum siap diekspor.");
   if (nodes.length === 0) throw new Error("Diagram masih kosong.");
@@ -104,8 +115,8 @@ async function render(nodes: AppNode[], title: string, orientation: Orientation)
     img.src = dataUrl;
   });
 
-  // Banner judul agar hasil ekspor langsung informatif.
-  const bannerH = Math.max(96, Math.round(Math.min(width, 1800) * 0.06));
+  // Banner judul agar hasil ekspor langsung informatif dan beridentitas resmi.
+  const bannerH = Math.max(104, Math.round(Math.min(width, 1800) * 0.065));
   const totalH = height + bannerH;
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(width * pixelRatio);
@@ -118,17 +129,67 @@ async function render(nodes: AppNode[], title: string, orientation: Orientation)
   ctx.fillRect(0, 0, width, totalH);
 
   const family = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
-  const titleSize = Math.round(bannerH * 0.34);
+  const titleSize = Math.round(bannerH * 0.32);
   ctx.textBaseline = "middle";
   ctx.fillStyle = fg;
   ctx.font = `600 ${titleSize}px ${family}`;
-  ctx.fillText(title || "Diagram", PADDING, bannerH * 0.42, width - PADDING * 2 - 160);
+  ctx.fillText(title || "Diagram SOP", PADDING, bannerH * 0.38, width - PADDING * 2 - 240);
 
   ctx.fillStyle = muted;
-  ctx.font = `500 ${Math.round(titleSize * 0.5)}px ${family}`;
+  ctx.font = `500 ${Math.round(titleSize * 0.48)}px ${family}`;
   const date = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-  ctx.fillText(`Dibuat dengan Zefflow  ·  ${date}`, PADDING, bannerH * 0.74);
+  ctx.fillText(`Dibuat dengan Zefflow  ·  ${date}`, PADDING, bannerH * 0.72);
 
+  // Gambar Logo dan Identitas Perusahaan di sisi kanan banner
+  if (branding?.companyLogo) {
+    try {
+      const logoImg = new Image();
+      await new Promise<void>((resolve) => {
+        logoImg.onload = () => resolve();
+        logoImg.onerror = () => resolve();
+        logoImg.src = branding.companyLogo!;
+      });
+      if (logoImg.naturalWidth > 0) {
+        const maxLogoH = Math.min(52, bannerH * 0.52);
+        const maxLogoW = 160;
+        const ratio = Math.min(maxLogoH / logoImg.naturalHeight, maxLogoW / logoImg.naturalWidth);
+        const logoW = Math.round(logoImg.naturalWidth * ratio);
+        const logoH = Math.round(logoImg.naturalHeight * ratio);
+        const logoX = width - PADDING - logoW;
+        const logoY = Math.round((bannerH - logoH) / 2) - 4;
+        ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
+
+        if (branding.companyName || branding.docCode) {
+          ctx.textAlign = "right";
+          ctx.textBaseline = "middle";
+          ctx.font = `600 11px ${family}`;
+          ctx.fillStyle = muted;
+          if (branding.docCode) {
+            ctx.fillText(branding.docCode, width - PADDING, bannerH - 12);
+          }
+          ctx.textAlign = "left";
+        }
+      }
+    } catch {
+      // Abaikan jika gambar gagal
+    }
+  } else if (branding?.companyName || branding?.docCode) {
+    ctx.textAlign = "right";
+    ctx.textBaseline = "middle";
+    if (branding.companyName) {
+      ctx.font = `600 13px ${family}`;
+      ctx.fillStyle = fg;
+      ctx.fillText(branding.companyName, width - PADDING, bannerH * 0.38);
+    }
+    if (branding.docCode) {
+      ctx.font = `500 11px ${family}`;
+      ctx.fillStyle = muted;
+      ctx.fillText(branding.docCode, width - PADDING, bannerH * 0.72);
+    }
+    ctx.textAlign = "left";
+  }
+
+  // Garis pemisah banner
   ctx.fillStyle = line;
   ctx.fillRect(PADDING, bannerH - 2, width - PADDING * 2, 1);
 
@@ -148,8 +209,14 @@ function download(href: string, filename: string) {
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "flow";
 
-export async function exportDiagram(nodes: AppNode[], format: ExportFormat, title: string, orientation: Orientation = "horizontal") {
-  const { canvas, width, height } = await render(nodes, title, orientation);
+export async function exportDiagram(
+  nodes: AppNode[],
+  format: ExportFormat,
+  title: string,
+  orientation: Orientation = "horizontal",
+  branding?: BrandingInfo,
+) {
+  const { canvas, width, height } = await render(nodes, title, orientation, branding);
   const name = slug(title);
 
   if (format === "png") {

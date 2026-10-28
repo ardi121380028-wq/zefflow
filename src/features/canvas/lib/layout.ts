@@ -419,10 +419,18 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
 }
 
 /** Bersihkan properti runtime React Flow sebelum disimpan. */
-export function serializeDocument(nodes: AppNode[], edges: AppEdge[], orientation: Orientation) {
+export function serializeDocument(
+  nodes: AppNode[],
+  edges: AppEdge[],
+  orientation: Orientation,
+  branding?: { companyLogo?: string; companyName?: string; docCode?: string },
+) {
   return {
     version: 1 as const,
     orientation,
+    ...(branding?.companyLogo ? { companyLogo: branding.companyLogo } : {}),
+    ...(branding?.companyName ? { companyName: branding.companyName } : {}),
+    ...(branding?.docCode ? { docCode: branding.docCode } : {}),
     nodes: nodes.map((n) => ({
       id: n.id,
       type: n.type,

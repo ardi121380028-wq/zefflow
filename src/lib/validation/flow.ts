@@ -67,6 +67,10 @@ export const flowDocumentSchema = z
     version: z.literal(1),
     /** Dokumen lama tanpa field ini dianggap horizontal. */
     orientation: z.enum(ORIENTATIONS).default("horizontal"),
+    /** Logo resmi perusahaan (data URL / URL gambar) */
+    companyLogo: z.string().max(1000000).optional(),
+    companyName: z.string().max(120).optional(),
+    docCode: z.string().max(60).optional(),
     nodes: z.array(z.discriminatedUnion("type", [laneNode, stepNode.extend({ type: z.literal("step") }), stepNode.extend({ type: z.literal("decision") }), stepNode.extend({ type: z.literal("terminal") })])).max(500),
     edges: z.array(edgeSchema).max(1000),
   })
@@ -92,7 +96,15 @@ export type FlowDocument = z.infer<typeof flowDocumentSchema>;
 export type LaneColor = (typeof LANE_COLORS)[number];
 export type Orientation = (typeof ORIENTATIONS)[number];
 
-export const EMPTY_DOCUMENT: FlowDocument = { version: 1, orientation: "vertical", nodes: [], edges: [] };
+export const EMPTY_DOCUMENT: FlowDocument = {
+  version: 1,
+  orientation: "vertical",
+  companyLogo: "",
+  companyName: "",
+  docCode: "",
+  nodes: [],
+  edges: [],
+};
 
 /** Parse aman dokumen dari DB (JSON tidak tepercaya). Mengembalikan dokumen kosong bila rusak. */
 export function parseDocumentSafe(raw: unknown): { doc: FlowDocument; corrupted: boolean } {

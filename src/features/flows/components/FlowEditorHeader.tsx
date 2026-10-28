@@ -63,6 +63,9 @@ export function FlowEditorHeader({
   const canRedo = useCanvasStore((s) => s.future.length > 0);
   const nodes = useCanvasStore((s) => s.nodes);
   const orientation = useCanvasStore((s) => s.orientation);
+  const companyLogo = useCanvasStore((s) => s.companyLogo);
+  const companyName = useCanvasStore((s) => s.companyName);
+  const docCode = useCanvasStore((s) => s.docCode);
   const sidebarOpen = useCanvasStore((s) => s.sidebarOpen);
   const toggleSidebar = useCanvasStore((s) => s.toggleSidebar);
   const { undo, redo } = useCanvasStore.getState();
@@ -87,7 +90,11 @@ export function FlowEditorHeader({
   const handleExport = async (format: "png" | "pdf") => {
     setIsExporting(true);
     try {
-      await exportDiagram(nodes, format, title || "flow-zefflow", orientation);
+      await exportDiagram(nodes, format, title || "flow-zefflow", orientation, {
+        companyLogo,
+        companyName,
+        docCode,
+      });
       toast.success(`Berhasil mengekspor sebagai ${format.toUpperCase()}`);
     } catch (err) {
       toast.error((err as Error).message || "Gagal mengekspor diagram.");

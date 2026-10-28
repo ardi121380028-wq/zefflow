@@ -3,10 +3,11 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowRight, CheckCircle2, Lock, Mail, Sparkles, Workflow } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Lock, Mail, Sparkles, Workflow } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
 import { enableDemoModeAction } from "@/features/flows/actions";
 
@@ -82,32 +83,43 @@ function LoginForm() {
   };
 
   return (
-    <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-[#08090C] px-4 py-12 selection:bg-violet-600/30">
+    <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-x-hidden bg-background px-3 py-8 sm:px-4 sm:py-12 transition-colors duration-200">
       {/* Decorative ambient gradients */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[600px] rounded-full bg-violet-600/20 blur-[130px]" />
-      <div className="pointer-events-none absolute -bottom-40 right-1/4 h-[400px] w-[500px] rounded-full bg-indigo-600/15 blur-[120px]" />
+      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[400px] sm:h-[500px] w-[500px] sm:w-[600px] rounded-full bg-violet-600/10 dark:bg-violet-600/20 blur-[130px]" />
+      <div className="pointer-events-none absolute -bottom-40 right-1/4 h-[350px] w-[450px] rounded-full bg-indigo-600/10 dark:bg-indigo-600/15 blur-[120px]" />
+
+      {/* Top Bar Navigation */}
+      <div className="relative z-20 mb-4 sm:mb-6 flex w-full max-w-md items-center justify-between px-1">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <ArrowLeft className="h-3.5 w-3.5" />
+          <span>Beranda</span>
+        </Link>
+        <ThemeToggle />
+      </div>
 
       <div
-        className="relative z-10 w-full max-w-md rounded-3xl border border-white/[0.08] bg-[#0E0F15]/90 p-8 shadow-[0_16px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
-        style={{ boxShadow: "inset 0 1px 0 0 rgba(255, 255, 255, 0.1), 0 20px 60px rgba(0, 0, 0, 0.85)" }}
+        className="relative z-10 w-full max-w-md rounded-2xl sm:rounded-3xl border border-border bg-card/95 p-5 sm:p-8 shadow-xl dark:shadow-[0_16px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
       >
         {/* Brand logo & header */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_24px_rgba(139,92,246,0.5)]">
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_24px_rgba(139,92,246,0.4)]">
             <Workflow className="h-6 w-6 text-white" />
           </div>
-          <h1 className="mt-4 font-display text-2xl font-extrabold tracking-tight text-white">
+          <h1 className="mt-4 font-display text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
             {isSignUp ? "Daftar Akun Zefflow" : "Masuk ke Zefflow"}
           </h1>
-          <p className="mt-1.5 text-xs text-zinc-400">
+          <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
             Platform SaaS visualisasi SOP & Customer Journey lintas divisi
           </p>
         </div>
 
         {/* Demo Mode Instant Access Banner */}
-        <div className="mt-6 rounded-2xl border border-violet-500/30 bg-gradient-to-br from-violet-950/30 via-zinc-900/60 to-purple-950/20 p-4 text-center">
-          <p className="text-xs font-semibold text-white">Ingin langsung menguji coba kanvas?</p>
-          <p className="mt-0.5 text-[11px] text-zinc-400 leading-relaxed">
+        <div className="mt-5 rounded-2xl border border-violet-500/30 bg-violet-500/[0.05] dark:bg-violet-950/20 p-3.5 sm:p-4 text-center">
+          <p className="text-xs font-semibold text-foreground">Ingin langsung menguji coba kanvas?</p>
+          <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
             Masuk instan tanpa konfigurasi akun Supabase / PostgreSQL.
           </p>
           <Button
@@ -115,19 +127,19 @@ function LoginForm() {
             variant="default"
             size="sm"
             onClick={() => enableDemoModeAction()}
-            className="mt-3 w-full text-xs font-semibold"
+            className="mt-3 w-full text-xs font-semibold py-2 h-auto"
           >
-            <Sparkles className="mr-1.5 h-3.5 w-3.5 text-violet-600" />
-            Masuk Mode Demo (Uji Coba Langsung)
+            <Sparkles className="mr-1.5 h-3.5 w-3.5 text-violet-500 shrink-0" />
+            <span className="truncate">Mode Demo (Uji Langsung)</span>
           </Button>
         </div>
 
         {magicSent ? (
-          <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-950/30 p-5 text-center animate-scale-in">
-            <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-400" />
-            <h3 className="mt-2 text-sm font-semibold text-white">Cek Email Anda</h3>
-            <p className="mt-1 text-xs text-zinc-400">
-              Kami telah mengirimkan tautan masuk instan ke <strong className="text-white">{email}</strong>.
+          <div className="mt-6 rounded-2xl border border-emerald-500/30 bg-emerald-50 dark:bg-emerald-950/30 p-5 text-center animate-scale-in">
+            <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
+            <h3 className="mt-2 text-sm font-semibold text-foreground">Cek Email Anda</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Kami telah mengirimkan tautan masuk instan ke <strong className="text-foreground">{email}</strong>.
             </p>
             <Button
               variant="outline"
@@ -139,11 +151,11 @@ function LoginForm() {
             </Button>
           </div>
         ) : (
-          <form onSubmit={handlePasswordAuth} className="mt-6 space-y-4">
+          <form onSubmit={handlePasswordAuth} className="mt-5 space-y-3.5">
             <div>
               <Label>Email Kerja</Label>
-              <div className="relative">
-                <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+              <div className="relative mt-1">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   type="email"
                   placeholder="nama@perusahaan.com"
@@ -157,8 +169,8 @@ function LoginForm() {
 
             <div>
               <Label>Kata Sandi</Label>
-              <div className="relative">
-                <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-zinc-500" />
+              <div className="relative mt-1">
+                <Lock className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
                 <Input
                   type="password"
                   placeholder="Minimal 6 karakter"
@@ -172,40 +184,40 @@ function LoginForm() {
 
             <Button
               type="submit"
-              variant="secondary"
+              variant="brand"
               loading={loading}
-              className="w-full text-xs font-semibold mt-1"
+              className="w-full text-xs font-semibold mt-2"
             >
               <span>{isSignUp ? "Daftar Sekarang" : "Masuk"}</span>
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
 
-            <div className="relative my-4">
+            <div className="relative my-3">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-white/[0.08]" />
+                <span className="w-full border-t border-border" />
               </div>
               <div className="relative flex justify-center text-[10px] font-mono uppercase">
-                <span className="bg-[#0E0F15] px-2 text-zinc-500">atau</span>
+                <span className="bg-card px-2 text-muted-foreground">atau</span>
               </div>
             </div>
 
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               disabled={loading}
               onClick={handleMagicLink}
-              className="w-full text-xs"
+              className="w-full text-xs font-medium"
             >
-              <Sparkles className="mr-2 h-3.5 w-3.5 text-violet-400" />
-              Kirim Tautan Magic Link ke Email
+              <Sparkles className="mr-2 h-3.5 w-3.5 text-violet-500" />
+              <span>Kirim Tautan Magic Link</span>
             </Button>
 
-            <div className="pt-2 text-center text-xs text-zinc-500">
+            <div className="pt-2 text-center text-xs text-muted-foreground">
               {isSignUp ? "Sudah memiliki akun? " : "Belum punya akun? "}
               <button
                 type="button"
                 onClick={() => setIsSignUp(!isSignUp)}
-                className="font-semibold text-violet-400 hover:text-violet-300 hover:underline"
+                className="font-semibold text-primary hover:underline"
               >
                 {isSignUp ? "Masuk di sini" : "Daftar gratis"}
               </button>
@@ -219,7 +231,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <React.Suspense fallback={<div className="min-h-screen bg-[#08090C]" />}>
+    <React.Suspense fallback={<div className="min-h-screen bg-background" />}>
       <LoginForm />
     </React.Suspense>
   );
