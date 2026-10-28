@@ -42,11 +42,14 @@ export function CreateFlowDialog({ open, onOpenChange, defaultKind = "sop" }: Cr
     if (open) {
       setKind(defaultKind);
       setTitle("");
+      setIsLoading(false);
+      void import("./FlowEditorClient");
     }
   }, [open, defaultKind]);
 
   const handleCreateBlank = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isLoading) return;
     if (!title.trim()) {
       toast.error("Judul alur kerja wajib diisi");
       return;
@@ -55,34 +58,33 @@ export function CreateFlowDialog({ open, onOpenChange, defaultKind = "sop" }: Cr
     setIsLoading(true);
     try {
       const res = await createFlowAction({ title: title.trim(), kind });
-      if (res.ok) {
-        toast.success("Diagram berhasil dibuat");
-        onOpenChange(false);
-        router.push(`/flows/${res.data.id}`);
-      } else {
+      if (res && !res.ok) {
         toast.error(res.error.message);
+        setIsLoading(false);
       }
-    } catch {
+    } catch (err) {
+      if (typeof (err as { digest?: string } | null)?.digest === "string" && (err as { digest: string }).digest.startsWith("NEXT_")) {
+        return;
+      }
       toast.error("Terjadi kesalahan saat membuat diagram.");
-    } finally {
       setIsLoading(false);
     }
   };
 
   const handleSelectTemplate = async (template: FlowTemplate) => {
+    if (isLoading) return;
     setIsLoading(true);
     try {
       const res = await createFlowAction({ templateId: template.id });
-      if (res.ok) {
-        toast.success(`Template "${template.title}" berhasil dimuat`);
-        onOpenChange(false);
-        router.push(`/flows/${res.data.id}`);
-      } else {
+      if (res && !res.ok) {
         toast.error(res.error.message);
+        setIsLoading(false);
       }
-    } catch {
+    } catch (err) {
+      if (typeof (err as { digest?: string } | null)?.digest === "string" && (err as { digest: string }).digest.startsWith("NEXT_")) {
+        return;
+      }
       toast.error("Gagal memuat template alur kerja.");
-    } finally {
       setIsLoading(false);
     }
   };

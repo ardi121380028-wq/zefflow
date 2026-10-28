@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useRouter } from "next/navigation";
 import { Plus, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -20,6 +21,7 @@ export function CreateWorkspaceModal({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  const router = useRouter();
   const [name, setName] = React.useState("");
   const [loading, setLoading] = React.useState(false);
 
@@ -39,7 +41,8 @@ export function CreateWorkspaceModal({
         toast.success(`Workspace "${name.trim()}" berhasil dibuat!`);
         setName("");
         onOpenChange(false);
-        window.location.href = "/dashboard";
+        router.push("/dashboard");
+        router.refresh();
       }
     } catch {
       toast.error("Terjadi kesalahan saat membuat workspace.");

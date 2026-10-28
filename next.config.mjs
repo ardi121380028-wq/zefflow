@@ -8,6 +8,17 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: false,
   },
+  experimental: {
+    optimizePackageImports: [
+      "lucide-react",
+      "@radix-ui/react-dialog",
+      "@radix-ui/react-dropdown-menu",
+      "@radix-ui/react-tooltip",
+    ],
+    serverActions: {
+      bodySizeLimit: "6mb",
+    },
+  },
   // Header keamanan dasar untuk produksi
   async headers() {
     return [

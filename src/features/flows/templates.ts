@@ -336,12 +336,24 @@ export const TEMPLATES: FlowTemplate[] = [
   },
 ];
 
+const TEMPLATE_BY_ID = new Map(TEMPLATES.map((t) => [t.id, t]));
+const BUILT_DOC_CACHE = new Map<string, FlowDocument>();
+
 export function getTemplate(id: string) {
-  return TEMPLATES.find((t) => t.id === id);
+  return TEMPLATE_BY_ID.get(id);
 }
 
-/** Bangun dokumen diagram dari template dengan kalkulasi posisi & perataan node. */
+/** Bangun dokumen diagram dari template (di-memoize di memori & di-clone agar bebas kalkulasi ulang). */
 export function buildDocument(t: FlowTemplate, orientation: Orientation = "vertical"): FlowDocument {
+  const cacheKey = `${t.id}:${orientation}`;
+  const cached = BUILT_DOC_CACHE.get(cacheKey);
+  if (cached) return structuredClone(cached);
+  const built = buildDocumentUncached(t, orientation);
+  BUILT_DOC_CACHE.set(cacheKey, built);
+  return structuredClone(built);
+}
+
+function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vertical"): FlowDocument {
   // STUDIO 2 ARCHITECT: FREEFORM INFINITE CANVAS (TANPA JALUR SWIMLANE)
   if (t.kind === "architect" || t.lanes.length === 0) {
     const steps = t.steps.map((s, i) => {

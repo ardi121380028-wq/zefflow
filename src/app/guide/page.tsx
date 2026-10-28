@@ -36,10 +36,15 @@ export default function GuidePage() {
   return (
     <div className="relative min-h-screen w-full bg-background text-foreground transition-colors duration-200">
       {/* Background radial glows */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-violet-600/10 dark:bg-violet-600/20 blur-[130px]" />
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[540px] w-[860px]"
+        style={{
+          background: "radial-gradient(closest-side, rgba(124, 58, 237, 0.16) 0%, transparent 100%)",
+        }}
+      />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/80 px-4 sm:px-6 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/90 px-4 sm:px-6 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_18px_rgba(139,92,246,0.4)] transition-transform group-hover:scale-105">
             <Workflow className="h-4.5 w-4.5 text-white" />
@@ -88,7 +93,7 @@ export default function GuidePage() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           {/* Left Nav Sticky Index */}
           <aside className="lg:col-span-1 hidden lg:block">
-            <div className="sticky top-24 rounded-2xl border border-border/80 bg-card/70 p-4 backdrop-blur-xl space-y-1 text-xs font-medium text-muted-foreground">
+            <div className="sticky top-24 rounded-2xl border border-border/80 bg-card p-4 space-y-1 text-xs font-medium text-muted-foreground">
               <p className="font-mono text-[10px] font-bold uppercase tracking-wider text-foreground mb-3 px-2">
                 Daftar Bab Panduan
               </p>
@@ -298,7 +303,7 @@ function ChapterCard({
   return (
     <article
       id={id}
-      className="scroll-mt-24 rounded-3xl border border-border bg-card/90 p-6 sm:p-8 shadow-sm backdrop-blur-xl space-y-4"
+      className="scroll-mt-24 rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-sm space-y-4"
     >
       <div className="flex items-center gap-3">
         <span className="font-mono text-xs font-bold text-primary bg-primary/10 border border-primary/20 px-2.5 py-1 rounded-lg">

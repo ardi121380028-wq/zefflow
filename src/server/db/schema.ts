@@ -42,15 +42,19 @@ const timestamps = {
 };
 
 /** Profil publik pengguna (dibuat otomatis via trigger saat signup). */
-export const profiles = pgTable("profiles", {
-  id: uuid("id")
-    .primaryKey()
-    .references(() => authUsers.id, { onDelete: "cascade" }),
-  email: text("email").notNull(),
-  fullName: text("full_name"),
-  avatarUrl: text("avatar_url"),
-  ...timestamps,
-});
+export const profiles = pgTable(
+  "profiles",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .references(() => authUsers.id, { onDelete: "cascade" }),
+    email: text("email").notNull(),
+    fullName: text("full_name"),
+    avatarUrl: text("avatar_url"),
+    ...timestamps,
+  },
+  (t) => [index("profiles_email_idx").on(t.email)],
+);
 
 /** Tenant. Satu pengguna dapat tergabung di banyak workspace. */
 export const workspaces = pgTable(
@@ -79,7 +83,11 @@ export const memberships = pgTable(
     role: memberRole("role").notNull().default("editor"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [primaryKey({ columns: [t.workspaceId, t.userId] }), index("memberships_user_idx").on(t.userId)],
+  (t) => [
+    primaryKey({ columns: [t.workspaceId, t.userId] }),
+    index("memberships_user_idx").on(t.userId),
+    index("memberships_ws_created_idx").on(t.workspaceId, t.createdAt),
+  ],
 );
 
 /** Diagram swimlane. `document` = JSON {nodes, edges} tervalidasi Zod di aplikasi. */

@@ -1,6 +1,7 @@
 import { toPng } from "html-to-image";
 import type { Orientation } from "@/lib/validation/flow";
 import type { AppNode } from "../types";
+import { useCanvasStore } from "../store/canvas-store";
 import { LANE_DEFAULT_HEIGHT, LANE_DEFAULT_WIDTH, LANE_V_DEFAULT_LENGTH, LANE_V_WIDTH, absRect } from "./layout";
 
 export type ExportFormat = "png" | "pdf";
@@ -27,6 +28,7 @@ interface DiagramBounds {
  */
 function computeDiagramBounds(nodes: AppNode[], orientation: Orientation): DiagramBounds {
   const lanes = nodes.filter((n) => n.type === "lane");
+  const laneById = new Map<string, AppNode>(lanes.map((l) => [l.id, l]));
   const steps = nodes.filter((n) => n.type !== "lane");
 
   let lanesRight = 0;
@@ -41,7 +43,7 @@ function computeDiagramBounds(nodes: AppNode[], orientation: Orientation): Diagr
   let contentRight = 0;
   let contentBottom = 0;
   for (const s of steps) {
-    const r = absRect(s, nodes);
+    const r = absRect(s, laneById);
     contentRight = Math.max(contentRight, r.x + r.w);
     contentBottom = Math.max(contentBottom, r.y + r.h);
   }
@@ -209,6 +211,12 @@ function download(href: string, filename: string) {
 
 const slug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "flow";
 
+function waitNextFrames(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+  });
+}
+
 export async function exportDiagram(
   nodes: AppNode[],
   format: ExportFormat,
@@ -216,24 +224,38 @@ export async function exportDiagram(
   orientation: Orientation = "horizontal",
   branding?: BrandingInfo,
 ) {
-  const { canvas, width, height } = await render(nodes, title, orientation, branding);
-  const name = slug(title);
-
-  if (format === "png") {
-    return download(canvas.toDataURL("image/png"), `${name}.png`);
+  // Nonaktifkan sementara virtualisasi viewport agar 100% node & edge ikut ter-render utuh ke PNG/PDF.
+  const store = useCanvasStore.getState();
+  const needsFullMount = nodes.length > 40;
+  if (needsFullMount) {
+    store.setExporting(true);
+    await waitNextFrames();
   }
 
-  // PDF: canvas sudah solid (tanpa alpha) → encode JPEG 24-bit agar bebas bug warna pelangi jsPDF pada PNG RGBA.
-  const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.98);
+  try {
+    const { canvas, width, height } = await render(nodes, title, orientation, branding);
+    const name = slug(title);
 
-  const { jsPDF } = await import("jspdf");
-  const pdf = new jsPDF({
-    orientation: width >= height ? "l" : "p",
-    unit: "px",
-    format: [width, height],
-    compress: true,
-  });
+    if (format === "png") {
+      return download(canvas.toDataURL("image/png"), `${name}.png`);
+    }
 
-  pdf.addImage(jpegDataUrl, "JPEG", 0, 0, width, height, undefined, "FAST");
-  pdf.save(`${name}.pdf`);
+    // PDF: canvas sudah solid (tanpa alpha) → encode JPEG 24-bit agar bebas bug warna pelangi jsPDF pada PNG RGBA.
+    const jpegDataUrl = canvas.toDataURL("image/jpeg", 0.98);
+
+    const { jsPDF } = await import("jspdf");
+    const pdf = new jsPDF({
+      orientation: width >= height ? "l" : "p",
+      unit: "px",
+      format: [width, height],
+      compress: true,
+    });
+
+    pdf.addImage(jpegDataUrl, "JPEG", 0, 0, width, height, undefined, "FAST");
+    pdf.save(`${name}.pdf`);
+  } finally {
+    if (needsFullMount) {
+      useCanvasStore.getState().setExporting(false);
+    }
+  }
 }

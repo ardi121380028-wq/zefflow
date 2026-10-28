@@ -14,14 +14,17 @@ const DEBOUNCE_MS = 1500;
  * Mengembalikan `saveNow` untuk tombol simpan manual / Ctrl+S.
  */
 export function useAutosave() {
+  // Hanya subscribe ke primitif ringan agar drag/measure 60fps tidak me-render ulang atau me-reset timer tiap frame.
   const status = useCanvasStore((s) => s.saveStatus);
-  const nodes = useCanvasStore((s) => s.nodes);
-  const edges = useCanvasStore((s) => s.edges);
+  const mutationTick = useCanvasStore((s) => s.mutationTick);
+  const isDragging = useCanvasStore((s) => s.isDragging);
   const inFlight = useRef(false);
+  const lastSavedTick = useRef(0);
 
   const saveNow = useRef(async () => {
     const s = useCanvasStore.getState();
     if (s.readOnly || !s.flowId || inFlight.current || s.saveStatus === "conflict") return;
+    const tickAtStart = s.mutationTick;
     inFlight.current = true;
     s.setSaveStatus("saving");
     try {
@@ -35,10 +38,27 @@ export function useAutosave() {
         expectedVersion: s.version,
       });
       if (res.ok) {
-        useCanvasStore.getState().markSaved(res.data.version);
+        lastSavedTick.current = Math.max(lastSavedTick.current, tickAtStart);
+        const cur = useCanvasStore.getState();
+        // Jika ada mutasi baru selama request berlangsung, biarkan tetap dirty untuk siklus berikutnya
+        if (cur.mutationTick > tickAtStart) {
+          useCanvasStore.setState({ version: res.data.version, saveStatus: "dirty" });
+        } else {
+          cur.markSaved(res.data.version);
+        }
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(
+            new CustomEvent("zefflow:flow-saved", {
+              detail: { flowId: s.flowId, version: res.data.version },
+            }),
+          );
+        }
       } else if (res.error.code === "CONFLICT") {
         useCanvasStore.getState().setSaveStatus("conflict");
-        toast.error(res.error.message, { duration: Infinity, action: { label: "Muat ulang", onClick: () => window.location.reload() } });
+        toast.error(res.error.message, {
+          duration: Infinity,
+          action: { label: "Muat ulang", onClick: () => window.location.reload() },
+        });
       } else {
         useCanvasStore.getState().setSaveStatus("error");
         toast.error(res.error.message);
@@ -49,16 +69,20 @@ export function useAutosave() {
       toast.error("Gagal menyimpan — periksa koneksi Anda. Akan dicoba lagi saat ada perubahan.");
     } finally {
       inFlight.current = false;
-      // Ada perubahan selama menyimpan -> jadwalkan simpan lagi.
-      if (useCanvasStore.getState().saveStatus === "dirty") setTimeout(() => void saveNow.current(), DEBOUNCE_MS);
+      // Ada perubahan selama menyimpan -> jadwalkan simpan lagi bila tidak sedang drag.
+      const latest = useCanvasStore.getState();
+      if (latest.saveStatus === "dirty" && !latest.isDragging) {
+        setTimeout(() => void saveNow.current(), DEBOUNCE_MS);
+      }
     }
   });
 
   useEffect(() => {
-    if (status !== "dirty") return;
+    if (status !== "dirty" || isDragging) return;
+    if (mutationTick <= lastSavedTick.current && mutationTick > 0) return;
     const t = setTimeout(() => void saveNow.current(), DEBOUNCE_MS);
     return () => clearTimeout(t);
-  }, [status, nodes, edges]);
+  }, [status, mutationTick, isDragging]);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => {

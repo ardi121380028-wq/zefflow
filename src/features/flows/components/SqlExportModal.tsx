@@ -11,13 +11,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
+import { useCanvasStore } from "@/features/canvas/store/canvas-store";
 import type { AppNode, AppEdge } from "@/features/canvas/types";
 
 interface SqlExportModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  nodes: AppNode[];
-  edges: AppEdge[];
+  nodes?: AppNode[];
+  edges?: AppEdge[];
   flowTitle: string;
 }
 
@@ -26,22 +27,28 @@ type Dialect = "postgres" | "mysql" | "prisma";
 /**
  * Generator Skrip SQL & Schema Database (Developer Suite Zefflow)
  * Mengonversi diagram alur / tabel relasional kanvas menjadi DDL SQL siap pakai.
+ * Hanya mengevaluasi node/edge secara O(N + E) saat modal benar-benar dibuka (`open === true`).
  */
 export function SqlExportModal({
   open,
   onOpenChange,
-  nodes,
-  edges,
+  nodes: nodesProp,
+  edges: edgesProp,
   flowTitle,
 }: SqlExportModalProps) {
   const [dialect, setDialect] = React.useState<Dialect>("postgres");
   const [copied, setCopied] = React.useState(false);
 
-  // Ambil semua node yang bukan lane sebagai entitas tabel
-  const stepNodes = React.useMemo(() => nodes.filter((n) => n.type !== "lane"), [nodes]);
+  const { generatedCode, tableCount, edgeCount } = React.useMemo(() => {
+    if (!open) {
+      return { generatedCode: "", tableCount: 0, edgeCount: 0 };
+    }
 
-  // Hasilkan kode skema berdasarkan dialek
-  const generatedCode = React.useMemo(() => {
+    const storeState = useCanvasStore.getState();
+    const activeNodes = nodesProp ?? storeState.nodes;
+    const activeEdges = edgesProp ?? storeState.edges;
+    const stepNodes = activeNodes.filter((n) => n.type !== "lane");
+
     const sanitizeName = (str: string) =>
       (str || "entity")
         .toLowerCase()
@@ -49,15 +56,30 @@ export function SqlExportModal({
         .replace(/_+/g, "_")
         .replace(/^_|_$/g, "") || "item";
 
+    // Index O(N + E) menggantikan nested filter/find O(N * E)
+    const tableNameById = new Map<string, string>();
+    for (const sn of stepNodes) {
+      tableNameById.set(sn.id, sanitizeName(sn.data?.title || "table"));
+    }
+
+    const incomingByTarget = new Map<string, AppEdge[]>();
+    for (const e of activeEdges) {
+      let bucket = incomingByTarget.get(e.target);
+      if (!bucket) {
+        bucket = [];
+        incomingByTarget.set(e.target, bucket);
+      }
+      bucket.push(e);
+    }
+
     const tables = stepNodes.map((n) => {
       const rawTitle = n.data?.title || "table";
-      const tableName = sanitizeName(rawTitle);
+      const tableName = tableNameById.get(n.id) ?? sanitizeName(rawTitle);
 
-      // Cari relasi foreign key dari edges yang terhubung ke node ini
-      const incomingEdges = edges.filter((e) => e.target === n.id);
+      // Cari relasi foreign key dari map O(1)
+      const incomingEdges = incomingByTarget.get(n.id) ?? [];
       const foreignKeys = incomingEdges.map((e) => {
-        const sourceNode = stepNodes.find((sn) => sn.id === e.source);
-        const refTable = sourceNode ? sanitizeName(sourceNode.data.title) : "parent_table";
+        const refTable = tableNameById.get(e.source) ?? "parent_table";
         const fkCol = `${refTable}_id`;
         return { col: fkCol, refTable, label: e.label };
       });
@@ -125,10 +147,14 @@ export function SqlExportModal({
         sql += `);\n\n`;
       }
 
-      return sql;
-    }
+        return {
+          generatedCode: sql,
+          tableCount: stepNodes.length,
+          edgeCount: activeEdges.length,
+        };
+      }
 
-    if (dialect === "mysql") {
+      if (dialect === "mysql") {
       let sql = `-- ====================================================================\n`;
       sql += `-- Database Schema DDL: ${flowTitle || "Zefflow Architecture"}\n`;
       sql += `-- Dialek: MySQL 8.0+ / MariaDB\n`;
@@ -169,10 +195,14 @@ export function SqlExportModal({
         sql += `) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;\n\n`;
       }
 
-      return sql;
-    }
+        return {
+          generatedCode: sql,
+          tableCount: stepNodes.length,
+          edgeCount: activeEdges.length,
+        };
+      }
 
-    // Prisma Schema Dialect
+      // Prisma Schema Dialect
     let prisma = `// ====================================================================\n`;
     prisma += `// Prisma Schema: ${flowTitle || "Zefflow Architecture"}\n`;
     prisma += `// ====================================================================\n\n`;
@@ -211,8 +241,12 @@ export function SqlExportModal({
       prisma += `}\n\n`;
     }
 
-    return prisma;
-  }, [stepNodes, edges, flowTitle, dialect]);
+    return {
+      generatedCode: prisma,
+      tableCount: stepNodes.length,
+      edgeCount: activeEdges.length,
+    };
+  }, [open, nodesProp, edgesProp, flowTitle, dialect]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedCode);
@@ -299,7 +333,7 @@ export function SqlExportModal({
         <div className="p-4 sm:p-5 flex-1 overflow-hidden flex flex-col space-y-3">
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span className="font-mono text-[11px] font-semibold">
-              {stepNodes.length} tabel terdeteksi • {edges.length} relasi foreign key
+              {tableCount} tabel terdeteksi • {edgeCount} relasi foreign key
             </span>
             <div className="flex items-center gap-2">
               <Button

@@ -32,7 +32,7 @@ export const PALETTE_MIME = "application/zefflow-node";
 export function Toolbar() {
   const readOnly = useCanvasStore((s) => s.readOnly);
   const kind = useCanvasStore((s) => s.kind);
-  const hasLanes = useCanvasStore((s) => s.nodes.some((n) => n.type === "lane"));
+  const hasLanes = useCanvasStore((s) => s.hasLanes);
   const canUndo = useCanvasStore((s) => s.past.length > 0);
   const canRedo = useCanvasStore((s) => s.future.length > 0);
   const orientation = useCanvasStore((s) => s.orientation);
@@ -45,7 +45,7 @@ export function Toolbar() {
   if (kind === "architect") {
     return (
       <div
-        className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-sky-300/80 dark:border-sky-500/30 bg-white/95 dark:bg-[#0C0E16]/95 p-1.5 shadow-xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(14,165,233,0.2)] backdrop-blur-2xl no-scrollbar text-foreground dark:text-white"
+        className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-sky-300/80 dark:border-sky-500/30 bg-white dark:bg-[#0C0E16] p-1.5 shadow-xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(14,165,233,0.2)] no-scrollbar text-foreground dark:text-white"
         role="toolbar"
         aria-label="Alat Architect Studio"
       >
@@ -85,7 +85,7 @@ export function Toolbar() {
   // Studio 1: Standard SOP Swimlane Toolbar
   return (
     <div
-      className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-border dark:border-white/[0.12] bg-white/95 dark:bg-[#0D0E16]/90 p-1.5 shadow-2xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.7),0_0_24px_rgba(139,92,246,0.18),inset_0_1px_1px_rgba(255,255,255,0.12)] backdrop-blur-2xl no-scrollbar text-foreground dark:text-white"
+      className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-border dark:border-white/[0.12] bg-white dark:bg-[#0D0E16] p-1.5 shadow-2xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.7),0_0_24px_rgba(139,92,246,0.18),inset_0_1px_1px_rgba(255,255,255,0.12)] no-scrollbar text-foreground dark:text-white"
       role="toolbar"
       aria-label="Alat diagram SOP"
     >

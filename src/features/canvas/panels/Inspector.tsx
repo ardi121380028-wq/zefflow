@@ -5,24 +5,39 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Select, Textarea } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
-import { DURATION_UNITS, LANE_COLORS } from "@/lib/validation/flow";
+import { DURATION_UNITS, LANE_COLORS, type LaneData, type StepData } from "@/lib/validation/flow";
 import { LANE_STYLES } from "../lib/layout";
 import { useCanvasStore } from "../store/canvas-store";
-import { isLane, isStep } from "../types";
+import { isLane, isStep, type AppNode } from "../types";
 
 /**
  * Panel Kanan Studio (Inspector Properti):
  * - Hanya muncul saat sebuah elemen (node langkah, lane divisi, atau edge garis) dipilih.
- * - Tetap tertutup saat kanvas kosong agar ruang kerja luas dan bersih.
- * - Konfigurasi branding & logo perusahaan dipusatkan di StudioSidebarRail (Tab Kop Surat).
+ * - Menggunakan `useShallow` pada `{ id, type, data }` sehingga drag node 60fps TIDAK memicu re-render form.
+ * - Snapshot Undo (`commit`) hanya direkam sekali pada perubahan aktual pertama per seleksi (bukan tiap klik fokus).
  */
 export function Inspector() {
   const selectedId = useCanvasStore((s) => s.selectedId);
-  const node = useCanvasStore((s) => s.nodes.find((n) => n.id === selectedId));
-  const edge = useCanvasStore((s) => s.edges.find((e) => e.id === selectedId));
+  const node = useCanvasStore(
+    useShallow((s) => {
+      if (!s.selectedId) return undefined;
+      const found = s.nodes.find((n) => n.id === s.selectedId);
+      if (!found) return undefined;
+      return { id: found.id, type: found.type, data: found.data } as AppNode;
+    }),
+  );
+  const edge = useCanvasStore(
+    useShallow((s) => {
+      if (!s.selectedId) return undefined;
+      const found = s.edges.find((e) => e.id === s.selectedId);
+      if (!found) return undefined;
+      return { id: found.id, label: found.label };
+    }),
+  );
   const readOnly = useCanvasStore((s) => s.readOnly);
 
   const {
@@ -34,21 +49,38 @@ export function Inspector() {
   } = useCanvasStore.getState();
 
   const [panelDismissed, setPanelDismissed] = React.useState(false);
+  const committedForIdRef = React.useRef<string | null>(null);
 
-  // Jika user memilih node/elemen baru, buka kembali panel
+  // Jika user memilih node/elemen baru, buka kembali panel & reset flag snapshot undo
   React.useEffect(() => {
+    committedForIdRef.current = null;
     if (selectedId) setPanelDismissed(false);
   }, [selectedId]);
 
   if (panelDismissed) return null;
   if (!node && !edge) return null;
 
-  const onFocus = () => commit();
+  const commitOnce = () => {
+    if (selectedId && committedForIdRef.current !== selectedId) {
+      committedForIdRef.current = selectedId;
+      commit();
+    }
+  };
+
+  const handleNodeChange = (id: string, patch: Partial<LaneData & StepData>) => {
+    commitOnce();
+    updateNodeData(id, patch);
+  };
+
+  const handleEdgeChange = (id: string, label: string) => {
+    commitOnce();
+    updateEdgeLabel(id, label);
+  };
 
   return (
     <aside
       aria-label="Detail elemen terpilih"
-      className="absolute bottom-2 right-2 top-2 sm:bottom-4 sm:right-4 sm:top-4 z-20 flex w-[310px] sm:w-[340px] max-w-[calc(100vw-1rem)] animate-scale-in flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#0E0F16]/95 text-foreground dark:text-white shadow-2xl backdrop-blur-2xl"
+      className="absolute bottom-2 right-2 top-2 sm:bottom-4 sm:right-4 sm:top-4 z-20 flex w-[310px] sm:w-[340px] max-w-[calc(100vw-1rem)] animate-scale-in flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 dark:border-white/[0.08] bg-white dark:bg-[#0E0F16] text-foreground dark:text-white shadow-2xl"
     >
       {/* Header Inspector */}
       <header className="flex items-center justify-between border-b border-border/70 dark:border-white/[0.08] px-4 py-3 bg-slate-50/80 dark:bg-[#12131D]">
@@ -91,8 +123,7 @@ export function Inspector() {
                 value={node.data.title}
                 maxLength={80}
                 disabled={readOnly}
-                onFocus={onFocus}
-                onChange={(e) => updateNodeData(node.id, { title: e.target.value })}
+                onChange={(e) => handleNodeChange(node.id, { title: e.target.value })}
               />
             </Field>
             <Field label="Divisi / Departemen">
@@ -101,8 +132,7 @@ export function Inspector() {
                 maxLength={80}
                 placeholder="mis. Divisi Keuangan / Sales"
                 disabled={readOnly}
-                onFocus={onFocus}
-                onChange={(e) => updateNodeData(node.id, { division: e.target.value })}
+                onChange={(e) => handleNodeChange(node.id, { division: e.target.value })}
               />
             </Field>
             <Field label="Warna Aksen Jalur">
@@ -112,7 +142,7 @@ export function Inspector() {
                     key={c}
                     type="button"
                     disabled={readOnly}
-                    onClick={() => updateNodeData(node.id, { color: c })}
+                    onClick={() => handleNodeChange(node.id, { color: c })}
                     className={cn(
                       "h-6 w-6 rounded-full transition-transform",
                       LANE_STYLES[c].dot,
@@ -134,8 +164,7 @@ export function Inspector() {
                 value={node.data.title}
                 maxLength={120}
                 disabled={readOnly}
-                onFocus={onFocus}
-                onChange={(e) => updateNodeData(node.id, { title: e.target.value })}
+                onChange={(e) => handleNodeChange(node.id, { title: e.target.value })}
               />
             </Field>
             <Field label="Deskripsi Prosedur">
@@ -145,8 +174,7 @@ export function Inspector() {
                 maxLength={2000}
                 placeholder="Rincian prosedur operasional..."
                 disabled={readOnly}
-                onFocus={onFocus}
-                onChange={(e) => updateNodeData(node.id, { description: e.target.value })}
+                onChange={(e) => handleNodeChange(node.id, { description: e.target.value })}
               />
             </Field>
             {node.type !== "terminal" && (
@@ -160,9 +188,8 @@ export function Inspector() {
                       value={node.data.durationValue ?? ""}
                       placeholder="0"
                       disabled={readOnly}
-                      onFocus={onFocus}
                       onChange={(e) =>
-                        updateNodeData(node.id, {
+                        handleNodeChange(node.id, {
                           durationValue: e.target.value === "" ? null : Number(e.target.value),
                         })
                       }
@@ -170,9 +197,8 @@ export function Inspector() {
                     <Select
                       value={node.data.durationUnit ?? "menit"}
                       disabled={readOnly}
-                      onFocus={onFocus}
                       onChange={(e) =>
-                        updateNodeData(node.id, {
+                        handleNodeChange(node.id, {
                           durationUnit: e.target.value as "menit" | "jam" | "hari",
                         })
                       }
@@ -191,8 +217,7 @@ export function Inspector() {
                     maxLength={80}
                     placeholder="mis. Account Exec, Supervisor"
                     disabled={readOnly}
-                    onFocus={onFocus}
-                    onChange={(e) => updateNodeData(node.id, { owner: e.target.value })}
+                    onChange={(e) => handleNodeChange(node.id, { owner: e.target.value })}
                   />
                 </Field>
                 <Field label="Output / Deliverable Dokumen">
@@ -201,8 +226,7 @@ export function Inspector() {
                     maxLength={200}
                     placeholder="mis. Formulir Tervalidasi, Invoice"
                     disabled={readOnly}
-                    onFocus={onFocus}
-                    onChange={(e) => updateNodeData(node.id, { output: e.target.value })}
+                    onChange={(e) => handleNodeChange(node.id, { output: e.target.value })}
                   />
                 </Field>
               </>
@@ -218,8 +242,7 @@ export function Inspector() {
               maxLength={60}
               placeholder="mis. Ya / Disetujui / Revisi"
               disabled={readOnly}
-              onFocus={onFocus}
-              onChange={(e) => updateEdgeLabel(edge.id, e.target.value)}
+              onChange={(e) => handleEdgeChange(edge.id, e.target.value)}
             />
           </Field>
         )}

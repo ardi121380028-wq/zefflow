@@ -40,19 +40,15 @@ export function PublicFlowView({
   document,
 }: PublicFlowViewProps) {
   const [isExporting, setIsExporting] = React.useState(false);
-  const nodes = useCanvasStore((s) => s.nodes);
-  const orientation = useCanvasStore((s) => s.orientation);
-  const companyLogo = useCanvasStore((s) => s.companyLogo);
-  const companyName = useCanvasStore((s) => s.companyName);
-  const docCode = useCanvasStore((s) => s.docCode);
 
   const handleExport = async (format: "png" | "pdf") => {
     setIsExporting(true);
     try {
-      await exportDiagram(nodes, format, title || "flow-export", orientation, {
-        companyLogo,
-        companyName,
-        docCode,
+      const s = useCanvasStore.getState();
+      await exportDiagram(s.nodes, format, title || "flow-export", s.orientation, {
+        companyLogo: s.companyLogo,
+        companyName: s.companyName,
+        docCode: s.docCode,
       });
       toast.success(`Berhasil mengunduh ${format.toUpperCase()}`);
     } catch (err) {

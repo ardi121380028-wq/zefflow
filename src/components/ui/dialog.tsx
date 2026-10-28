@@ -14,11 +14,11 @@ export const DialogContent = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof DialogPrimitive.Content>
 >(({ className, children, ...props }, ref) => (
   <DialogPrimitive.Portal>
-    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/50 dark:bg-black/80 backdrop-blur-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+    <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-black/60 dark:bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
     <DialogPrimitive.Content
       ref={ref}
       className={cn(
-        "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-border dark:border-white/[0.1] bg-card dark:bg-[#0E1017]/95 p-6 text-foreground dark:text-zinc-100 shadow-2xl dark:shadow-[0_24px_70px_rgba(0,0,0,0.95)] backdrop-blur-2xl outline-none data-[state=open]:animate-scale-in",
+        "fixed left-1/2 top-1/2 z-50 w-[calc(100%-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-3xl border border-border dark:border-white/[0.1] bg-card dark:bg-[#0E1017] p-6 text-foreground dark:text-zinc-100 shadow-2xl dark:shadow-[0_24px_70px_rgba(0,0,0,0.95)] outline-none data-[state=open]:animate-scale-in",
         className,
       )}
       {...props}

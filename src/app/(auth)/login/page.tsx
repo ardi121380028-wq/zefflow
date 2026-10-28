@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { createClient } from "@/lib/supabase/client";
-import { enableDemoModeAction } from "@/features/flows/actions";
 
 function LoginForm() {
   const router = useRouter();
@@ -100,15 +99,25 @@ function LoginForm() {
 
   return (
     <div className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-x-hidden bg-background px-3 py-8 sm:px-4 sm:py-12 transition-colors duration-200">
-      {/* Decorative ambient gradients */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[400px] sm:h-[500px] w-[500px] sm:w-[600px] rounded-full bg-violet-600/10 dark:bg-violet-600/20 blur-[130px]" />
-      <div className="pointer-events-none absolute -bottom-40 right-1/4 h-[350px] w-[450px] rounded-full bg-indigo-600/10 dark:bg-indigo-600/15 blur-[120px]" />
+      {/* Decorative ambient gradients (zero-cost radial-gradient tanpa beban GPU filter blur) */}
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[540px] w-[720px]"
+        style={{
+          background: "radial-gradient(closest-side, rgba(124, 58, 237, 0.18) 0%, transparent 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute -bottom-40 right-1/4 h-[460px] w-[580px]"
+        style={{
+          background: "radial-gradient(closest-side, rgba(79, 70, 229, 0.14) 0%, transparent 100%)",
+        }}
+      />
 
       {/* Top Bar Navigation */}
       <div className="relative z-20 mb-4 sm:mb-6 flex w-full max-w-md items-center justify-between px-1">
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur-md transition-colors hover:bg-muted hover:text-foreground"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card/90 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm transition-colors hover:bg-muted hover:text-foreground"
         >
           <ArrowLeft className="h-3.5 w-3.5" />
           <span>Beranda</span>
@@ -117,7 +126,7 @@ function LoginForm() {
       </div>
 
       <div
-        className="relative z-10 w-full max-w-md rounded-2xl sm:rounded-3xl border border-border bg-card/95 p-5 sm:p-8 shadow-xl dark:shadow-[0_16px_50px_rgba(0,0,0,0.8)] backdrop-blur-2xl"
+        className="relative z-10 w-full max-w-md rounded-2xl sm:rounded-3xl border border-border bg-card p-5 sm:p-8 shadow-xl dark:shadow-[0_16px_50px_rgba(0,0,0,0.8)]"
       >
         {/* Brand logo & header */}
         <div className="flex flex-col items-center text-center">
@@ -132,32 +141,14 @@ function LoginForm() {
           </p>
         </div>
 
-        {/* Demo Mode Instant Access Banner */}
-        <div className="mt-5 rounded-2xl border border-violet-500/30 bg-violet-500/[0.05] dark:bg-violet-950/20 p-3.5 sm:p-4 text-center">
-          <p className="text-xs font-semibold text-foreground">Ingin langsung menguji coba kanvas?</p>
-          <p className="mt-0.5 text-[11px] text-muted-foreground leading-relaxed">
-            Masuk instan tanpa konfigurasi akun Supabase / PostgreSQL.
-          </p>
-          <Button
-            type="button"
-            variant="default"
-            size="sm"
-            onClick={() => enableDemoModeAction()}
-            className="mt-3 w-full text-xs font-semibold py-2 h-auto"
-          >
-            <Sparkles className="mr-1.5 h-3.5 w-3.5 text-violet-500 shrink-0" />
-            <span className="truncate">Mode Demo (Uji Langsung)</span>
-          </Button>
-        </div>
-
-        {/* Google OAuth Login Button */}
-        <div className="mt-4">
+        {/* Google OAuth Login Button (Primary) */}
+        <div className="mt-6">
           <Button
             type="button"
             variant="outline"
             disabled={loading}
             onClick={handleGoogleLogin}
-            className="w-full text-xs font-semibold py-2.5 h-auto flex items-center justify-center gap-2 border-border/80 bg-background hover:bg-muted/60 transition-colors shadow-2xs"
+            className="w-full text-xs font-semibold py-2.5 h-auto flex items-center justify-center gap-2.5 border-violet-500/40 bg-violet-500/[0.06] hover:bg-violet-500/15 hover:border-violet-500/70 transition-colors shadow-sm"
           >
             <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24">
               <path

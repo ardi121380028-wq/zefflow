@@ -1,7 +1,8 @@
 "use client";
 
 import { memo } from "react";
-import { BaseEdge, getSmoothStepPath, type EdgeProps } from "@xyflow/react";
+import { BaseEdge, getSmoothStepPath, useStore, type EdgeProps } from "@xyflow/react";
+import { useCanvasStore } from "../store/canvas-store";
 
 /**
  * Custom Edge dengan SVG badge pill untuk label alur (mis. "Ya", "Tidak").
@@ -32,7 +33,10 @@ function CustomEdgeImpl({
     offset: 28,
   });
 
+  const isExporting = useCanvasStore((s) => s.isExporting);
+  const hideBadgeAtFarZoom = useStore((s) => s.transform[2] < 0.35);
   const labelText = typeof label === "string" ? label.trim() : "";
+  const showLabel = Boolean(labelText) && (isExporting || selected || !hideBadgeAtFarZoom);
   const labelLength = labelText.length;
   // Dynamic badge pill geometry — lebih besar, modern, dan terbaca jelas
   const badgeWidth = Math.max(52, labelLength * 10.5 + 28);
@@ -51,7 +55,7 @@ function CustomEdgeImpl({
           ...style,
         }}
       />
-      {labelText && (
+      {showLabel && (
         <g
           transform={`translate(${labelX}, ${labelY})`}
           className="pointer-events-none select-none"

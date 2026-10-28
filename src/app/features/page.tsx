@@ -30,10 +30,15 @@ export default function FeaturesPage() {
   return (
     <div className="relative min-h-screen w-full bg-background text-foreground transition-colors duration-200">
       {/* Background radial glows */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[500px] w-[800px] rounded-full bg-violet-600/10 dark:bg-violet-600/20 blur-[130px]" />
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[540px] w-[860px]"
+        style={{
+          background: "radial-gradient(closest-side, rgba(124, 58, 237, 0.16) 0%, transparent 100%)",
+        }}
+      />
 
       {/* Header */}
-      <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/80 px-4 sm:px-6 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/90 px-4 sm:px-6 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2 group">
           <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_18px_rgba(139,92,246,0.4)] transition-transform group-hover:scale-105">
             <Workflow className="h-4.5 w-4.5 text-white" />
@@ -82,7 +87,7 @@ export default function FeaturesPage() {
         <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
           <Button variant="brand" size="lg" asChild className="text-xs sm:text-sm font-semibold">
             <Link href="/login">
-              <span>Coba Demo Interaktif Sekarang</span>
+              <span>Mulai Gratis dengan Google</span>
               <ArrowRight className="h-4 w-4 ml-1.5" />
             </Link>
           </Button>
@@ -151,15 +156,15 @@ export default function FeaturesPage() {
 
           <FeatureCard
             icon={<Zap className="h-5 w-5 text-cyan-500" />}
-            title="Mode Demo Instan Tanpa Setup DB"
-            desc="Langsung coba membuat dan mengedit swimlane di browser tanpa perlu akun Supabase/PostgreSQL atau kartu kredit."
+            title="Login Instan Google OAuth & Cloud Sync"
+            desc="Masuk satu klik menggunakan akun Google kerja Anda dengan sinkronisasi workspace multi-divisi otomatis."
           />
         </div>
       </section>
 
       {/* Comparison Section */}
       <section className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 py-16">
-        <div className="rounded-3xl border border-border bg-card/60 p-6 sm:p-10 backdrop-blur-xl">
+        <div className="rounded-3xl border border-border bg-card p-6 sm:p-10">
           <h2 className="font-display text-xl sm:text-2xl font-bold text-center text-foreground">
             Mengapa Zefflow Berbeda dari Tool Diagram Biasa?
           </h2>
@@ -217,7 +222,7 @@ function FeatureCard({
   desc: string;
 }) {
   return (
-    <div className="group rounded-3xl border border-border bg-card/80 p-6 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200 backdrop-blur-xl">
+    <div className="group rounded-3xl border border-border bg-card p-6 shadow-sm hover:shadow-md hover:border-primary/40 transition-all duration-200">
       <div className="flex items-center justify-between">
         <div className="grid h-10 w-10 place-items-center rounded-2xl bg-muted/80 dark:bg-white/[0.05] group-hover:scale-105 transition-transform">
           {icon}

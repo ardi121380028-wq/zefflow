@@ -33,28 +33,74 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
 import { LANE_STYLES } from "../lib/layout";
-import { useCanvasStore } from "../store/canvas-store";
+import { useCanvasStore, type SidebarTab } from "../store/canvas-store";
 import { isLane, isStep, type StepNodeType } from "../types";
 import { PALETTE_MIME } from "./Toolbar";
 
+const LAYER_BATCH_SIZE = 80;
+const OUTLINE_BATCH_SIZE = 80;
+
+/**
+ * Kompres & downscale logo perusahaan raster di sisi klien (maks 360x140 WebP)
+ * agar payload JSON dokumen pada setiap autosave ringan (~15-25 KB alih-alih >1 MB base64).
+ */
+async function compressLogoFile(file: File): Promise<string> {
+  const rawDataUrl = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ""));
+    reader.onerror = () => reject(new Error("Gagal membaca file logo."));
+    reader.readAsDataURL(file);
+  });
+
+  if (file.type === "image/svg+xml") return rawDataUrl;
+
+  return new Promise<string>((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const maxW = 360;
+      const maxH = 140;
+      const scale = Math.min(1, maxW / (img.naturalWidth || 1), maxH / (img.naturalHeight || 1));
+      const w = Math.max(1, Math.round(img.naturalWidth * scale));
+      const h = Math.max(1, Math.round(img.naturalHeight * scale));
+      const canvas = document.createElement("canvas");
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        resolve(rawDataUrl);
+        return;
+      }
+      ctx.clearRect(0, 0, w, h);
+      ctx.drawImage(img, 0, 0, w, h);
+      const compressed = canvas.toDataURL("image/webp", 0.88);
+      resolve(compressed.length < rawDataUrl.length ? compressed : rawDataUrl);
+    };
+    img.onerror = () => resolve(rawDataUrl);
+    img.src = rawDataUrl;
+  });
+}
+
 /**
  * Flyout Drawer Studio Sisi Kiri (Figma-Style Slideout Panel)
- * - Muncul di sebelah StudioSidebarRail saat ikon diklik.
- * - Tidak menutupi layar secara permanen: di mobile terdapat backdrop dismiss.
- * - Memiliki 4 tab:
- *   1. "layers": Pohon hierarki lane & langkah kerja
- *   2. "outline": Ringkasan estimasi waktu & audit kelengkapan SOP
- *   3. "branding": Identitas dokumen & logo perusahaan untuk kop ekspor
- *   4. "assets": Katalog drag & drop elemen BPMN
+ * - Outer gate ringan: saat drawer tertutup (`!sidebarOpen`), TIDAK subscribe ke `s.nodes`
+ *   sehingga drag 60fps di kanvas bebas dari komputasi filter/sort/estimasi waktu.
  */
 export function LayersPanel() {
   const sidebarOpen = useCanvasStore((s) => s.sidebarOpen);
   const activeSidebarTab = useCanvasStore((s) => s.activeSidebarTab);
+
+  if (!sidebarOpen || !activeSidebarTab) return null;
+  return <LayersPanelContent activeSidebarTab={activeSidebarTab} />;
+}
+
+function LayersPanelContent({ activeSidebarTab }: { activeSidebarTab: SidebarTab }) {
   const setActiveSidebarTab = useCanvasStore((s) => s.setActiveSidebarTab);
-  const toggleSidebar = useCanvasStore((s) => s.toggleSidebar);
 
   const [searchQuery, setSearchQuery] = React.useState("");
+  const deferredSearch = React.useDeferredValue(searchQuery);
   const [collapsedLanes, setCollapsedLanes] = React.useState<Record<string, boolean>>({});
+  const [laneItemLimits, setLaneItemLimits] = React.useState<Record<string, number>>({});
+  const [outlineLimit, setOutlineLimit] = React.useState(OUTLINE_BATCH_SIZE);
 
   const nodes = useCanvasStore((s) => s.nodes);
   const selectedId = useCanvasStore((s) => s.selectedId);
@@ -70,13 +116,16 @@ export function LayersPanel() {
   const { fitView } = useReactFlow();
 
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
+  const outlineSentinelRef = React.useRef<HTMLDivElement | null>(null);
 
   const lanes = React.useMemo(() => nodes.filter(isLane), [nodes]);
+  const laneById = React.useMemo(() => new Map(lanes.map((l) => [l.id, l])), [lanes]);
   const steps = React.useMemo(() => nodes.filter(isStep), [nodes]);
 
-  // Kelompokkan steps per lane parent
+  // Kelompokkan steps per lane parent (hanya saat tab layers aktif)
   const stepsByLane = React.useMemo(() => {
     const map = new Map<string, StepNodeType[]>();
+    if (activeSidebarTab !== "layers") return map;
     for (const lane of lanes) map.set(lane.id, []);
     for (const step of steps) {
       const pid = step.parentId ?? "";
@@ -88,11 +137,12 @@ export function LayersPanel() {
       }
     }
     return map;
-  }, [lanes, steps]);
+  }, [activeSidebarTab, lanes, steps]);
 
-  // Filter pencarian
+  // Filter pencarian ter-defer dengan lookup lane O(1)
   const filteredStepsByLane = React.useMemo(() => {
-    const q = searchQuery.trim().toLowerCase();
+    if (activeSidebarTab !== "layers") return stepsByLane;
+    const q = deferredSearch.trim().toLowerCase();
     if (!q) return stepsByLane;
     const map = new Map<string, StepNodeType[]>();
     for (const [laneId, list] of stepsByLane.entries()) {
@@ -102,15 +152,19 @@ export function LayersPanel() {
           (s.data.description || "").toLowerCase().includes(q) ||
           (s.data.owner || "").toLowerCase().includes(q),
       );
-      if (matched.length > 0 || (lanes.find((l) => l.id === laneId)?.data.title || "").toLowerCase().includes(q)) {
+      const laneTitle = (laneById.get(laneId)?.data.title || "").toLowerCase();
+      if (matched.length > 0 || (laneTitle && laneTitle.includes(q))) {
         map.set(laneId, matched);
       }
     }
     return map;
-  }, [searchQuery, stepsByLane, lanes]);
+  }, [activeSidebarTab, deferredSearch, stepsByLane, laneById]);
 
-  // Hitung total estimasi waktu dari semua langkah
+  // Hitung total estimasi waktu hanya saat tab outline aktif
   const timeSummary = React.useMemo(() => {
+    if (activeSidebarTab !== "outline") {
+      return { formatted: "0 menit", minutes: 0, missingInfoCount: 0 };
+    }
     let minutes = 0;
     let missingInfoCount = 0;
 
@@ -136,7 +190,24 @@ export function LayersPanel() {
     if (mins > 0 || parts.length === 0) parts.push(`${mins} menit`);
 
     return { formatted: parts.join(" "), minutes, missingInfoCount };
-  }, [steps]);
+  }, [activeSidebarTab, steps]);
+
+  // Progressive infinite scroll pada tab Outline untuk ribuan item
+  React.useEffect(() => {
+    if (activeSidebarTab !== "outline" || outlineLimit >= steps.length) return;
+    const el = outlineSentinelRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setOutlineLimit((prev) => Math.min(steps.length, prev + OUTLINE_BATCH_SIZE));
+        }
+      },
+      { rootMargin: "160px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [activeSidebarTab, outlineLimit, steps.length]);
 
   const toggleLaneCollapse = (laneId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -153,7 +224,7 @@ export function LayersPanel() {
     });
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -161,23 +232,21 @@ export function LayersPanel() {
       toast.error("Harap unggah file gambar (PNG, JPG, SVG, WebP)");
       return;
     }
-    if (file.size > 800 * 1024) {
-      toast.error("Ukuran logo maksimal 800 KB agar performa tetap cepat.");
+    if (file.size > 2 * 1024 * 1024) {
+      toast.error("Ukuran file logo maksimal 2 MB.");
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target?.result as string;
+    try {
+      const dataUrl = await compressLogoFile(file);
       if (dataUrl) {
         updateBranding({ companyLogo: dataUrl });
-        toast.success("Logo perusahaan berhasil disimpan!");
+        toast.success("Logo perusahaan berhasil dioptimalkan & disimpan!");
       }
-    };
-    reader.readAsDataURL(file);
+    } catch {
+      toast.error("Gagal memproses file logo.");
+    }
   };
-
-  if (!sidebarOpen || !activeSidebarTab) return null;
 
   return (
     <>
@@ -190,7 +259,7 @@ export function LayersPanel() {
 
       <aside
         aria-label="Panel Laci Samping"
-        className="absolute bottom-2.5 left-[54px] top-2.5 sm:bottom-4 sm:left-[66px] sm:top-4 z-20 flex w-[285px] sm:w-[315px] max-w-[calc(100vw-4.5rem)] animate-scale-in flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 dark:border-white/[0.08] bg-white/98 dark:bg-[#0E0F16]/98 text-foreground dark:text-white shadow-2xl backdrop-blur-2xl"
+        className="absolute bottom-2.5 left-[54px] top-2.5 sm:bottom-4 sm:left-[66px] sm:top-4 z-20 flex w-[285px] sm:w-[315px] max-w-[calc(100vw-4.5rem)] animate-scale-in flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-border/80 dark:border-white/[0.08] bg-white dark:bg-[#0E0F16] text-foreground dark:text-white shadow-2xl"
       >
         {/* Header Drawer yang Rapi & Tidak Terhimpit */}
         <header className="flex items-center justify-between border-b border-border/70 dark:border-white/[0.08] px-3.5 py-2.5 bg-slate-50/80 dark:bg-[#12131D]">
@@ -262,12 +331,12 @@ export function LayersPanel() {
               </div>
             </div>
 
-            {/* Tree View */}
+            {/* Tree View (Windowed per-lane agar ribuan item tetap ringan) */}
             <div className="flex-1 overflow-y-auto p-2 space-y-1.5 no-scrollbar">
-              {lanes.length === 0 ? (
+              {lanes.length === 0 && (filteredStepsByLane.get("__unassigned__")?.length ?? 0) === 0 ? (
                 <div className="py-12 text-center text-xs text-muted-foreground">
-                  <p>Belum ada jalur divisi (lane)</p>
-                  {!readOnly && (
+                  <p>{kind === "architect" ? "Belum ada komponen arsitektur" : "Belum ada jalur divisi (lane)"}</p>
+                  {!readOnly && kind !== "architect" && (
                     <button
                       onClick={() => addLane()}
                       className="mt-2.5 inline-flex items-center gap-1.5 rounded-xl bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/20"
@@ -276,12 +345,61 @@ export function LayersPanel() {
                     </button>
                   )}
                 </div>
+              ) : lanes.length === 0 ? (
+                (() => {
+                  const freeSteps = filteredStepsByLane.get("__unassigned__") || [];
+                  const limit = laneItemLimits["__unassigned__"] ?? LAYER_BATCH_SIZE;
+                  const visibleFree = freeSteps.slice(0, limit);
+                  return (
+                    <div className="space-y-1">
+                      {visibleFree.map((step) => {
+                        const isStepSelected = selectedId === step.id;
+                        return (
+                          <div
+                            key={step.id}
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => handleFocusNode(step.id)}
+                            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleFocusNode(step.id)}
+                            className={cn(
+                              "group flex items-center justify-between px-2.5 py-1.5 cursor-pointer rounded-lg text-xs transition-colors",
+                              isStepSelected
+                                ? "bg-primary text-primary-foreground font-semibold shadow-xs"
+                                : "text-muted-foreground hover:bg-muted/70 hover:text-foreground dark:hover:bg-white/[0.05]",
+                            )}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Database className="h-3 w-3 text-sky-500 shrink-0" />
+                              <span className="truncate">{step.data.title || "Komponen Baru"}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {freeSteps.length > limit && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setLaneItemLimits((prev) => ({
+                              ...prev,
+                              __unassigned__: limit + LAYER_BATCH_SIZE,
+                            }))
+                          }
+                          className="w-full py-1.5 text-[11px] font-semibold text-primary hover:underline"
+                        >
+                          Tampilkan {Math.min(LAYER_BATCH_SIZE, freeSteps.length - limit)} dari {freeSteps.length - limit} lainnya...
+                        </button>
+                      )}
+                    </div>
+                  );
+                })()
               ) : (
                 lanes.map((lane) => {
                   const laneSteps = filteredStepsByLane.get(lane.id) || [];
                   const isCollapsed = collapsedLanes[lane.id] ?? false;
                   const isLaneSelected = selectedId === lane.id;
                   const style = LANE_STYLES[lane.data.color];
+                  const stepLimit = laneItemLimits[lane.id] ?? LAYER_BATCH_SIZE;
+                  const visibleSteps = laneSteps.slice(0, stepLimit);
 
                   return (
                     <div
@@ -346,9 +464,9 @@ export function LayersPanel() {
                       </div>
 
                       {/* Step Items inside Lane */}
-                      {!isCollapsed && laneSteps.length > 0 && (
+                      {!isCollapsed && visibleSteps.length > 0 && (
                         <div className="pl-6 pr-2 py-1 space-y-1">
-                          {laneSteps.map((step) => {
+                          {visibleSteps.map((step) => {
                             const isStepSelected = selectedId === step.id;
                             const isDecision = step.type === "decision";
                             const isTerminal = step.type === "terminal";
@@ -413,6 +531,20 @@ export function LayersPanel() {
                               </div>
                             );
                           })}
+                          {laneSteps.length > stepLimit && (
+                            <button
+                              type="button"
+                              onClick={() =>
+                                setLaneItemLimits((prev) => ({
+                                  ...prev,
+                                  [lane.id]: stepLimit + LAYER_BATCH_SIZE,
+                                }))
+                              }
+                              className="w-full py-1 text-left pl-2 text-[11px] font-semibold text-primary hover:underline"
+                            >
+                              + Tampilkan {Math.min(LAYER_BATCH_SIZE, laneSteps.length - stepLimit)} lainnya ({laneSteps.length - stepLimit} tersisa)
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>
@@ -464,36 +596,49 @@ export function LayersPanel() {
                   <p>Belum ada langkah kerja dibuat.</p>
                 </div>
               ) : (
-                steps.map((step, idx) => {
-                  const parentLane = lanes.find((l) => l.id === step.parentId);
-                  return (
-                    <div
-                      key={step.id}
-                      onClick={() => handleFocusNode(step.id)}
-                      className="group flex items-start gap-2.5 p-2 rounded-xl border border-border/60 hover:border-primary/40 hover:bg-muted/40 cursor-pointer transition-colors"
-                    >
-                      <span className="flex h-5 w-5 items-center justify-center rounded-md bg-muted text-[10px] font-mono font-bold text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground shrink-0 mt-0.5">
-                        {idx + 1}
-                      </span>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-semibold text-foreground truncate">
-                          {step.data.title || "Langkah tanpa judul"}
-                        </p>
-                        <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground truncate">
-                          {parentLane && (
-                            <span className="font-medium text-foreground/80">{parentLane.data.title}</span>
-                          )}
-                          {step.data.owner && <span>• {step.data.owner}</span>}
-                          {step.data.durationValue && (
-                            <span>
-                              • {step.data.durationValue} {step.data.durationUnit || "menit"}
-                            </span>
-                          )}
+                <>
+                  {steps.slice(0, outlineLimit).map((step, idx) => {
+                    const parentLane = step.parentId ? laneById.get(step.parentId) : undefined;
+                    return (
+                      <div
+                        key={step.id}
+                        onClick={() => handleFocusNode(step.id)}
+                        className="group flex items-start gap-2.5 p-2 rounded-xl border border-border/60 hover:border-primary/40 hover:bg-muted/40 cursor-pointer transition-colors"
+                      >
+                        <span className="flex h-5 w-5 items-center justify-center rounded-md bg-muted text-[10px] font-mono font-bold text-muted-foreground group-hover:bg-primary group-hover:text-primary-foreground shrink-0 mt-0.5">
+                          {idx + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-foreground truncate">
+                            {step.data.title || "Langkah tanpa judul"}
+                          </p>
+                          <div className="flex items-center gap-2 mt-0.5 text-[10px] text-muted-foreground truncate">
+                            {parentLane && (
+                              <span className="font-medium text-foreground/80">{parentLane.data.title}</span>
+                            )}
+                            {step.data.owner && <span>• {step.data.owner}</span>}
+                            {step.data.durationValue && (
+                              <span>
+                                • {step.data.durationValue} {step.data.durationUnit || "menit"}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
+                    );
+                  })}
+                  {outlineLimit < steps.length && (
+                    <div ref={outlineSentinelRef} className="pt-1 pb-2 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setOutlineLimit((prev) => Math.min(steps.length, prev + OUTLINE_BATCH_SIZE))}
+                        className="text-[11px] font-semibold text-primary hover:underline"
+                      >
+                        Muat lebih banyak ({steps.length - outlineLimit} langkah tersisa)
+                      </button>
                     </div>
-                  );
-                })
+                  )}
+                </>
               )}
             </div>
           </div>

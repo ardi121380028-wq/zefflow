@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   ArrowRight,
   CheckCircle2,
@@ -26,25 +25,30 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
-import { getUser } from "@/server/auth/session";
 import { InteractiveFlowShowcase } from "@/features/landing/InteractiveFlowShowcase";
 import { PricingSection } from "@/features/landing/PricingSection";
 import { FaqSection } from "@/features/landing/FaqSection";
 
-export default async function HomePage() {
-  const user = await getUser();
-  if (user) {
-    redirect("/dashboard");
-  }
-
+export default function HomePage() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden bg-background text-foreground selection:bg-violet-600/30 selection:text-white transition-colors duration-200">
-      {/* Background ambient radial spotlight glows */}
-      <div className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[550px] w-[900px] rounded-full bg-gradient-to-b from-violet-600/12 via-indigo-600/8 to-transparent blur-[140px] dark:from-violet-600/20 dark:via-indigo-600/15" />
-      <div className="pointer-events-none absolute top-[700px] -right-40 h-[450px] w-[550px] rounded-full bg-violet-600/10 blur-[150px]" />
+      {/* Background ambient radial spotlight glows (zero-cost radial-gradient tanpa beban GPU filter blur) */}
+      <div
+        className="pointer-events-none absolute -top-40 left-1/2 -translate-x-1/2 h-[620px] w-[1100px] opacity-90 dark:opacity-100"
+        style={{
+          background:
+            "radial-gradient(closest-side, rgba(124, 58, 237, 0.16) 0%, rgba(79, 70, 229, 0.08) 48%, transparent 100%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute top-[680px] -right-40 h-[560px] w-[680px]"
+        style={{
+          background: "radial-gradient(closest-side, rgba(139, 92, 246, 0.12) 0%, transparent 100%)",
+        }}
+      />
 
       {/* Floating Studio Header */}
-      <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/80 px-3 sm:px-6 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/90 px-3 sm:px-6 backdrop-blur-md">
         <Link href="/" className="flex items-center gap-2 group shrink-0">
           <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_18px_rgba(139,92,246,0.4)] transition-transform group-hover:scale-105">
             <Workflow className="h-4.5 w-4.5 text-white" />
@@ -108,7 +112,7 @@ export default async function HomePage() {
           <Button variant="brand" size="lg" asChild className="gap-2 font-semibold text-xs sm:text-sm">
             <Link href="/login">
               <Sparkles className="h-4 w-4 mr-1 text-white" />
-              <span>Mulai Mode Demo Instan</span>
+              <span>Mulai Gratis dengan Google</span>
               <ArrowRight className="h-4 w-4 ml-1" />
             </Link>
           </Button>
@@ -202,7 +206,7 @@ export default async function HomePage() {
             Siap Menstandarisasi Alur Operasional Bisnis Anda?
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-xs sm:text-sm text-muted-foreground">
-            Gunakan mode demo Zefflow sekarang juga untuk langsung merancang diagram swimlane pertama Anda tanpa biaya.
+            Masuk cepat dengan akun Google Anda dan langsung rancang diagram swimlane pertama Anda tanpa biaya.
           </p>
           <div className="mt-6 flex justify-center">
             <Button variant="brand" size="lg" asChild className="gap-2 font-semibold">

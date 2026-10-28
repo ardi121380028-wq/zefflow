@@ -13,6 +13,7 @@ import {
   HelpCircle,
   LayoutDashboard,
   LayoutTemplate,
+  Loader2,
   LogOut,
   Menu,
   Plus,
@@ -24,6 +25,7 @@ import {
   X,
   Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -56,7 +58,20 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
   const [teamModalOpen, setTeamModalOpen] = React.useState(false);
   const [createFlowOpen, setCreateFlowOpen] = React.useState(false);
   const [createFlowKind, setCreateFlowKind] = React.useState<"sop" | "journey" | "architect">("sop");
+  const [topSearch, setTopSearch] = React.useState("");
+  const topSearchRef = React.useRef<HTMLInputElement | null>(null);
   const [isPending, startTransition] = React.useTransition();
+
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        topSearchRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   const handleOpenFlowModal = (k: "sop" | "journey" | "architect" = "sop") => {
     if (onOpenCreateFlow) {
@@ -68,6 +83,17 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
   };
 
   const { active, workspaces, profile } = workspaceCtx;
+  const [optimisticWsId, setOptimisticWsId] = React.useState(active.id);
+  const [isSwitchingWs, startWsTransition] = React.useTransition();
+
+  React.useEffect(() => {
+    setOptimisticWsId(active.id);
+  }, [active.id]);
+
+  const displayActive = React.useMemo(
+    () => workspaces.find((w) => w.id === optimisticWsId) ?? active,
+    [workspaces, optimisticWsId, active],
+  );
 
   const navItems = [
     { label: "Overview", href: "/dashboard", icon: LayoutDashboard, tab: "overview" },
@@ -79,8 +105,14 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
   ];
 
   const handleWorkspaceChange = (id: string) => {
-    startTransition(async () => {
-      await switchWorkspaceAction(id);
+    if (id === optimisticWsId) return;
+    setOptimisticWsId(id);
+    startWsTransition(async () => {
+      const res = await switchWorkspaceAction(id);
+      if (!res.ok) {
+        setOptimisticWsId(active.id);
+        toast.error(res.error.message || "Gagal berpindah workspace.");
+      }
     });
   };
 
@@ -135,14 +167,18 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
               >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="grid h-6 w-6 shrink-0 place-items-center rounded-lg bg-gradient-to-br from-violet-600 to-indigo-700 font-mono text-[11px] font-bold text-white shadow-sm">
-                    {active.name.charAt(0).toUpperCase()}
+                    {isSwitchingWs ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-white" />
+                    ) : (
+                      displayActive.name.charAt(0).toUpperCase()
+                    )}
                   </div>
                   <div className="min-w-0">
                     <p className="truncate text-xs font-semibold text-foreground">
-                      {active.name}
+                      {displayActive.name}
                     </p>
                     <p className="text-[10px] text-muted-foreground capitalize">
-                      {active.plan} tier • {active.role}
+                      {displayActive.plan} tier • {displayActive.role}
                     </p>
                   </div>
                 </div>
@@ -160,7 +196,7 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
                     onClick={() => handleWorkspaceChange(ws.id)}
                     className={cn(
                       "flex items-center justify-between py-2 px-2.5 rounded-xl text-xs cursor-pointer focus:bg-muted/80",
-                      ws.id === active.id && "bg-primary/10 text-primary font-semibold",
+                      ws.id === displayActive.id && "bg-primary/10 text-primary font-semibold",
                     )}
                   >
                     <span className="truncate font-medium">{ws.name}</span>
@@ -293,7 +329,7 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
                       {profile?.fullName || profile?.email || "Pengguna"}
                     </p>
                     <p className="truncate text-[10px] text-muted-foreground">
-                      {profile?.email || "demo@zefflow.app"}
+                      {profile?.email || ""}
                     </p>
                   </div>
                 </div>
@@ -335,7 +371,12 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
       {/* Main Studio Viewport */}
       <div className="flex flex-1 flex-col overflow-hidden bg-background">
         {/* Top Navbar */}
-        <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card/80 px-4 sm:px-6 backdrop-blur-xl">
+        <header className="relative sticky top-0 z-30 flex h-14 items-center justify-between border-b border-border bg-card/90 px-4 sm:px-6 backdrop-blur-md">
+          {isSwitchingWs && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-0.5 overflow-hidden bg-violet-500/20">
+              <div className="h-full w-1/2 animate-pulse bg-gradient-to-r from-violet-500 via-indigo-500 to-fuchsia-500" />
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <button
               onClick={() => setMobileMenuOpen(true)}
@@ -345,11 +386,18 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
               <Menu className="h-4 w-4" />
             </button>
 
-            {/* Modern Raycast/Linear-style Search Pill */}
+            {/* Modern Raycast/Linear-style Search Pill (terhubung ke DashboardView + Ctrl/Cmd+K) */}
             <div className="relative hidden items-center md:flex">
               <Search className="pointer-events-none absolute left-3 h-3.5 w-3.5 text-muted-foreground/75" />
               <input
+                ref={topSearchRef}
                 type="text"
+                value={topSearch}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setTopSearch(val);
+                  window.dispatchEvent(new CustomEvent("zefflow:dashboard-search", { detail: val }));
+                }}
                 placeholder="Cari alur kerja, SOP, atau divisi..."
                 className="h-9 w-80 rounded-xl border border-border/80 dark:border-white/[0.08] bg-slate-100/80 dark:bg-[#12131F] pl-9 pr-12 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500/60 focus:bg-white dark:focus:bg-[#0E0F16] focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-150 shadow-sm"
               />
@@ -383,7 +431,12 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
         </header>
 
         {/* Dynamic Studio Workspace Body */}
-        <main className="flex-1 overflow-y-auto bg-background dark:bg-[#090A0E] p-4 sm:p-6 lg:p-7">
+        <main
+          className={cn(
+            "flex-1 overflow-y-auto bg-background dark:bg-[#090A0E] p-4 sm:p-6 lg:p-7 transition-opacity duration-150",
+            isSwitchingWs && "opacity-60 pointer-events-none",
+          )}
+        >
           <div className="w-full max-w-[1720px] mx-auto">{children}</div>
         </main>
       </div>
@@ -397,9 +450,9 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
       <TeamManagementModal
         open={teamModalOpen}
         onOpenChange={setTeamModalOpen}
-        workspaceId={active.id}
-        workspaceName={active.name}
-        currentUserRole={active.role}
+        workspaceId={displayActive.id}
+        workspaceName={displayActive.name}
+        currentUserRole={displayActive.role}
       />
 
       <CreateFlowDialog

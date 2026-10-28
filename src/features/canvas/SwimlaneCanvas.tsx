@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { Map as MapIcon } from "lucide-react";
 import {
   Background,
   BackgroundVariant,
@@ -69,14 +70,13 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
   const edges = useCanvasStore((s) => s.edges);
   const hydrated = useCanvasStore((s) => s.flowId === flowId);
   const orientation = useCanvasStore((s) => s.orientation);
-  const companyLogo = useCanvasStore((s) => s.companyLogo);
-  const companyName = useCanvasStore((s) => s.companyName);
-  const docCode = useCanvasStore((s) => s.docCode);
-  const sidebarOpen = useCanvasStore((s) => s.sidebarOpen);
-  const toggleSidebar = useCanvasStore((s) => s.toggleSidebar);
+  const isExporting = useCanvasStore((s) => s.isExporting);
+  const [forceMiniMap, setForceMiniMap] = useState(false);
   const { screenToFlowPosition, fitView } = useReactFlow();
   const { saveNow } = useAutosave();
   const { theme } = useTheme();
+  const largeGraph = nodes.length > 350;
+  const showMiniMap = !largeGraph || forceMiniMap;
 
   // Hydrate store sekali per flow.
   useEffect(() => {
@@ -205,11 +205,17 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
       connectionRadius={48}
       onSelectionChange={onSelectionChange}
       onPaneClick={() => useCanvasStore.getState().select(null)}
-      onNodeDragStart={() => useCanvasStore.getState().commit()}
-      onNodeDragStop={(_, node, dragged) => {
-        // Pindahkan ke lane di bawahnya (mendukung multi-select drag).
+      onNodeDragStart={() => {
         const s = useCanvasStore.getState();
-        (dragged.length ? dragged : [node]).forEach((n) => s.reparentOnDragStop(n.id));
+        s.setDragging(true);
+        s.commit();
+      }}
+      onNodeDragStop={(_, node, dragged) => {
+        // Pindahkan ke lane di bawahnya dalam satu batch set() tunggal (mendukung multi-select drag).
+        const s = useCanvasStore.getState();
+        const draggedIds = (dragged.length ? dragged : [node]).map((n) => n.id);
+        s.reparentOnDragStop(draggedIds);
+        s.setDragging(false);
       }}
       onBeforeDelete={async () => {
         useCanvasStore.getState().commit(); // satu snapshot undo sebelum hapus
@@ -217,6 +223,8 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
       }}
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
       onDrop={onDrop}
+      onlyRenderVisibleElements={!isExporting && nodes.length > 40}
+      elevateEdgesOnSelect={nodes.length <= 500}
       defaultEdgeOptions={defaultEdgeOptions}
       defaultMarkerColor={theme === "dark" ? "#a1a1aa" : "#475569"}
       connectionMode={ConnectionMode.Loose}
@@ -245,14 +253,29 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
         position="bottom-left"
         className="!left-3 sm:!left-4 !bottom-3 sm:!bottom-4"
       />
-      <MiniMap
-        pannable
-        zoomable
-        position="bottom-right"
-        nodeColor={miniMapColor}
-        maskColor={theme === "dark" ? "rgba(8, 9, 12, 0.8)" : "rgba(248, 250, 252, 0.8)"}
-        className="!hidden md:!block"
-      />
+      {showMiniMap && (
+        <MiniMap
+          pannable
+          zoomable
+          position="bottom-right"
+          nodeColor={miniMapColor}
+          maskColor={theme === "dark" ? "rgba(8, 9, 12, 0.8)" : "rgba(248, 250, 252, 0.8)"}
+          className="!hidden md:!block"
+        />
+      )}
+      {largeGraph && (
+        <Panel position="bottom-right" className="!hidden md:!block !mr-3 !mb-3">
+          <button
+            type="button"
+            onClick={() => setForceMiniMap((v) => !v)}
+            className="flex items-center gap-1.5 rounded-lg border border-border bg-card/95 px-2.5 py-1.5 text-[11px] font-semibold text-muted-foreground shadow-md transition-colors hover:text-foreground"
+            title={forceMiniMap ? "Sembunyikan Peta Mini untuk menghemat GPU" : "Tampilkan Peta Mini"}
+          >
+            <MapIcon className="h-3.5 w-3.5" />
+            <span>{forceMiniMap ? "Tutup Peta Mini" : `Peta Mini (${nodes.length})`}</span>
+          </button>
+        </Panel>
+      )}
 
       {/* Rail Ikon Vertikal Figma-Style di Kiri Kanvas */}
       {!readOnly && <StudioSidebarRail />}

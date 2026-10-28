@@ -14,7 +14,7 @@ export const ORIENTATIONS = ["horizontal", "vertical"] as const;
 
 const id = z.string().min(1).max(64);
 const position = z.object({ x: z.number().finite(), y: z.number().finite() });
-const dim = z.number().finite().positive().max(20000).optional();
+const dim = z.number().finite().positive().max(500000).optional();
 
 export const laneDataSchema = z.object({
   title: z.string().trim().max(80),
@@ -67,25 +67,42 @@ export const flowDocumentSchema = z
     version: z.literal(1),
     /** Dokumen lama tanpa field ini dianggap horizontal. */
     orientation: z.enum(ORIENTATIONS).default("horizontal"),
-    /** Logo resmi perusahaan (data URL / URL gambar) */
+    /** Logo resmi perusahaan (data URL terkompresi / URL gambar) */
     companyLogo: z.string().max(1000000).optional(),
     companyName: z.string().max(120).optional(),
     docCode: z.string().max(60).optional(),
-    nodes: z.array(z.discriminatedUnion("type", [laneNode, stepNode.extend({ type: z.literal("step") }), stepNode.extend({ type: z.literal("decision") }), stepNode.extend({ type: z.literal("terminal") })])).max(500),
-    edges: z.array(edgeSchema).max(1000),
+    nodes: z
+      .array(
+        z.discriminatedUnion("type", [
+          laneNode,
+          stepNode.extend({ type: z.literal("step") }),
+          stepNode.extend({ type: z.literal("decision") }),
+          stepNode.extend({ type: z.literal("terminal") }),
+        ]),
+      )
+      .max(5000),
+    edges: z.array(edgeSchema).max(10000),
   })
   .superRefine((doc, ctx) => {
-    // Integritas referensial: parent harus lane, edge harus menunjuk node yang ada.
-    const byId = new Map(doc.nodes.map((n) => [n.id, n]));
-    if (byId.size !== doc.nodes.length) ctx.addIssue({ code: "custom", message: "ID node duplikat" });
+    // Integritas referensial O(N + E): parent harus lane, edge harus menunjuk node yang ada.
+    const typeById = new Map<string, string>();
     for (const n of doc.nodes) {
-      if (n.type !== "lane" && n.parentId && byId.get(n.parentId)?.type !== "lane") {
+      if (typeById.has(n.id)) {
+        ctx.addIssue({ code: "custom", message: `ID node duplikat: ${n.id}` });
+        return;
+      }
+      typeById.set(n.id, n.type);
+    }
+    for (const n of doc.nodes) {
+      if (n.type !== "lane" && n.parentId && typeById.get(n.parentId) !== "lane") {
         ctx.addIssue({ code: "custom", message: `Parent node ${n.id} bukan lane` });
+        return;
       }
     }
     for (const e of doc.edges) {
-      if (!byId.has(e.source) || !byId.has(e.target)) {
+      if (!typeById.has(e.source) || !typeById.has(e.target)) {
         ctx.addIssue({ code: "custom", message: `Edge ${e.id} menunjuk node yang tidak ada` });
+        return;
       }
     }
   });

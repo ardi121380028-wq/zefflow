@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { exportDiagram } from "@/features/canvas/lib/export";
 import { useCanvasStore } from "@/features/canvas/store/canvas-store";
+import { useRealtimeFlow } from "@/features/canvas/store/use-realtime-flow";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { updateFlowMetaAction } from "../actions";
 import { ShareDialog } from "./ShareDialog";
@@ -63,18 +64,14 @@ export function FlowEditorHeader({
   const [isExporting, setIsExporting] = React.useState(false);
   const [sqlExportOpen, setSqlExportOpen] = React.useState(false);
 
+  // Hanya subscribe ke state primitif agar drag node 60fps di kanvas tidak me-render ulang Header & Modal SQL.
   const saveStatus = useCanvasStore((s) => s.saveStatus);
   const canUndo = useCanvasStore((s) => s.past.length > 0);
   const canRedo = useCanvasStore((s) => s.future.length > 0);
-  const nodes = useCanvasStore((s) => s.nodes);
-  const edges = useCanvasStore((s) => s.edges);
-  const orientation = useCanvasStore((s) => s.orientation);
-  const companyLogo = useCanvasStore((s) => s.companyLogo);
-  const companyName = useCanvasStore((s) => s.companyName);
-  const docCode = useCanvasStore((s) => s.docCode);
   const sidebarOpen = useCanvasStore((s) => s.sidebarOpen);
   const toggleSidebar = useCanvasStore((s) => s.toggleSidebar);
   const { undo, redo } = useCanvasStore.getState();
+  const { collaborators, totalOnline } = useRealtimeFlow(flowId, false);
 
   const handleTitleSubmit = async () => {
     setIsEditingTitle(false);
@@ -96,10 +93,11 @@ export function FlowEditorHeader({
   const handleExport = async (format: "png" | "pdf") => {
     setIsExporting(true);
     try {
-      await exportDiagram(nodes, format, title || "flow-zefflow", orientation, {
-        companyLogo,
-        companyName,
-        docCode,
+      const s = useCanvasStore.getState();
+      await exportDiagram(s.nodes, format, title || "flow-zefflow", s.orientation, {
+        companyLogo: s.companyLogo,
+        companyName: s.companyName,
+        docCode: s.docCode,
       });
       toast.success(`Berhasil mengekspor sebagai ${format.toUpperCase()}`);
     } catch (err) {
@@ -111,7 +109,7 @@ export function FlowEditorHeader({
 
   return (
     <>
-      <header className="relative z-30 flex h-14 w-full items-center justify-between border-b border-border bg-card/95 px-3 sm:px-4 backdrop-blur-2xl">
+      <header className="relative z-30 flex h-14 w-full items-center justify-between border-b border-border bg-card px-3 sm:px-4">
         {/* Left: Back & Title */}
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
@@ -275,25 +273,36 @@ export function FlowEditorHeader({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Active Collaborators Presence Bubble (Figma-Style Multiplayer) */}
+          {/* Active Collaborators Presence Bubble (Realtime Throttled & Capped O(1) DOM) */}
           <div
             role="button"
             tabIndex={0}
             onClick={() => setShareOpen(true)}
-            title="3 anggota tim terdaftar. Klik untuk mengundang rekan kerja"
+            onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && setShareOpen(true)}
+            title={`${totalOnline} pengguna aktif saat ini. Klik untuk berbagi atau mengundang rekan kerja`}
             className="hidden lg:flex items-center -space-x-1.5 cursor-pointer hover:opacity-90 transition-opacity px-1"
           >
             <div className="relative grid h-7 w-7 place-items-center rounded-full bg-violet-600 text-white font-bold text-[10px] ring-2 ring-card shadow-xs">
-              AD
+              ME
               <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-card" />
             </div>
-            <div className="relative grid h-7 w-7 place-items-center rounded-full bg-emerald-600 text-white font-bold text-[10px] ring-2 ring-card shadow-xs">
-              SL
-              <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-card" />
-            </div>
-            <div className="grid h-7 w-7 place-items-center rounded-full bg-muted border border-border text-[9px] font-mono font-bold text-muted-foreground ring-2 ring-card">
-              +1
-            </div>
+            {collaborators.map((c) => (
+              <div
+                key={c.sessionId}
+                className={cn(
+                  "relative grid h-7 w-7 place-items-center rounded-full text-white font-bold text-[10px] ring-2 ring-card shadow-xs",
+                  c.color,
+                )}
+              >
+                {c.label}
+                <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-card" />
+              </div>
+            ))}
+            {totalOnline - 1 - collaborators.length > 0 && (
+              <div className="grid h-7 min-w-[28px] px-1 place-items-center rounded-full bg-muted border border-border text-[9px] font-mono font-bold text-muted-foreground ring-2 ring-card">
+                +{totalOnline - 1 - collaborators.length}
+              </div>
+            )}
           </div>
 
           {/* Invite Collaborator / Share Button */}
@@ -336,12 +345,10 @@ export function FlowEditorHeader({
         }}
       />
 
-      {/* Developer SQL DDL Exporter Modal */}
+      {/* Developer SQL DDL Exporter Modal (lazy reads store only when open) */}
       <SqlExportModal
         open={sqlExportOpen}
         onOpenChange={setSqlExportOpen}
-        nodes={nodes}
-        edges={edges}
         flowTitle={title}
       />
     </>

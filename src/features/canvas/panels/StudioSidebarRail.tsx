@@ -17,7 +17,7 @@ export function StudioSidebarRail() {
   const sidebarOpen = useCanvasStore((s) => s.sidebarOpen);
   const activeSidebarTab = useCanvasStore((s) => s.activeSidebarTab);
   const toggleSidebarTab = useCanvasStore((s) => s.toggleSidebarTab);
-  const stepCount = useCanvasStore((s) => s.nodes.filter((n) => n.type !== "lane").length);
+  const stepCount = useCanvasStore((s) => s.stepCount);
   const hasBranding = useCanvasStore((s) => Boolean(s.companyLogo || s.companyName));
 
   const items: {
@@ -54,7 +54,7 @@ export function StudioSidebarRail() {
   return (
     <aside
       aria-label="Sidebar Rail Studio"
-      className="absolute left-2.5 sm:left-4 top-3 sm:top-4 z-30 flex flex-col items-center gap-1.5 rounded-2xl border border-border/80 dark:border-white/[0.08] bg-white/95 dark:bg-[#0E0F16]/95 p-1.5 shadow-xl backdrop-blur-2xl"
+      className="absolute left-2.5 sm:left-4 top-3 sm:top-4 z-30 flex flex-col items-center gap-1.5 rounded-2xl border border-border/80 dark:border-white/[0.08] bg-white dark:bg-[#0E0F16] p-1.5 shadow-xl"
     >
       <TooltipProvider delayDuration={150}>
         {items.map((item) => {

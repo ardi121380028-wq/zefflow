@@ -36,7 +36,7 @@ import {
   sortParentsFirst,
 } from "../lib/layout";
 
-const HISTORY_LIMIT = 60;
+const HISTORY_LIMIT = 40;
 type Snapshot = {
   nodes: AppNode[];
   edges: AppEdge[];
@@ -45,6 +45,16 @@ type Snapshot = {
   companyName?: string;
   docCode?: string;
 };
+
+function computeNodeStats(nodes: AppNode[]): { stepCount: number; hasLanes: boolean } {
+  let stepCount = 0;
+  let hasLanes = false;
+  for (const n of nodes) {
+    if (n.type === "lane") hasLanes = true;
+    else stepCount++;
+  }
+  return { stepCount, hasLanes };
+}
 
 /** Panah koneksi sedikit lebih besar agar terlihat jelas di layar maupun hasil ekspor. */
 export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 20, height: 20 } as const;
@@ -61,6 +71,11 @@ interface CanvasState {
   docCode: string;
   nodes: AppNode[];
   edges: AppEdge[];
+  stepCount: number;
+  hasLanes: boolean;
+  mutationTick: number;
+  isDragging: boolean;
+  isExporting: boolean;
   selectedId: string | null;
   kind: "sop" | "journey" | "architect";
   saveStatus: SaveStatus;
@@ -68,6 +83,8 @@ interface CanvasState {
   future: Snapshot[];
 
   updateBranding: (b: { companyLogo?: string; companyName?: string; docCode?: string }) => void;
+  setDragging: (dragging: boolean) => void;
+  setExporting: (exporting: boolean) => void;
 
   // lifecycle
   init: (p: { flowId: string; doc: FlowDocument; version: number; readOnly: boolean; kind?: "sop" | "journey" | "architect" }) => void;
@@ -93,7 +110,7 @@ interface CanvasState {
   // steps
   addStep: (type: StepNodeType["type"], opts?: { laneId?: string; position?: { x: number; y: number } }) => void;
   quickAddStepFromNode: (sourceNodeId: string, handle: "l" | "r" | "t" | "b", type: StepNodeType["type"]) => void;
-  reparentOnDragStop: (nodeId: string) => void;
+  reparentOnDragStop: (nodeIds: string | string[]) => void;
   // data
   updateNodeData: (id: string, patch: Partial<LaneData & StepData>) => void;
   updateEdgeLabel: (id: string, label: string) => void;
@@ -136,7 +153,13 @@ export function documentToFlow(doc: FlowDocument): Snapshot {
       );
       return { ...base, position: n.position, data: n.data };
     }
-    return { ...createStepNode(n.id, n.type, n.position, n.parentId ?? "", n.data.title), data: n.data };
+    const est = estimateNodeSize(n.type, n.data);
+    return {
+      ...createStepNode(n.id, n.type, n.position, n.parentId ?? "", n.data.title),
+      initialWidth: est.w,
+      initialHeight: est.h,
+      data: n.data,
+    };
   });
   const edges: AppEdge[] = doc.edges.map((e) => ({
     ...e,
@@ -163,14 +186,18 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     docCode: s.docCode,
   });
 
-  /** Terapkan perubahan konten: simpan history + tandai dirty. */
+  /** Terapkan perubahan konten: simpan history + tandai dirty + sinkronkan statistik O(N) hanya saat mutasi. */
   const mutate = (fn: (s: CanvasState) => Partial<CanvasState>) => {
     const s = get();
     if (s.readOnly) return;
+    const patch = fn(s);
+    const stats = patch.nodes ? computeNodeStats(patch.nodes) : {};
     set({
       past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
       future: [],
-      ...fn(s),
+      ...patch,
+      ...stats,
+      mutationTick: s.mutationTick + 1,
       saveStatus: "dirty",
     });
   };
@@ -185,6 +212,11 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     docCode: "",
     nodes: [],
     edges: [],
+    stepCount: 0,
+    hasLanes: false,
+    mutationTick: 0,
+    isDragging: false,
+    isExporting: false,
     selectedId: null,
     kind: "sop",
     sidebarOpen: false,
@@ -192,6 +224,13 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     saveStatus: "idle",
     past: [],
     future: [],
+
+    setDragging: (isDragging) => {
+      if (get().isDragging !== isDragging) set({ isDragging });
+    },
+    setExporting: (isExporting) => {
+      if (get().isExporting !== isExporting) set({ isExporting });
+    },
 
     updateBranding: (b) => {
       mutate((s) => ({
@@ -222,18 +261,45 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         };
       }),
 
-    init: ({ flowId, doc, version, readOnly, kind = "sop" }) =>
-      set({ flowId, version, readOnly, kind, ...documentToFlow(doc), selectedId: null, saveStatus: "idle", past: [], future: [] }),
+    init: ({ flowId, doc, version, readOnly, kind = "sop" }) => {
+      const flow = documentToFlow(doc);
+      const stats = computeNodeStats(flow.nodes);
+      set({
+        flowId,
+        version,
+        readOnly,
+        kind,
+        ...flow,
+        ...stats,
+        mutationTick: 0,
+        isDragging: false,
+        isExporting: false,
+        selectedId: null,
+        saveStatus: "idle",
+        past: [],
+        future: [],
+      });
+    },
 
     onNodesChange: (changes) => {
       const s = get();
-      // Hanya perubahan konten yang menandai dirty; seleksi/pengukuran tidak.
-      const contentChange = changes.some(
-        (c) => c.type === "remove" || c.type === "add" || (c.type === "position" && c.dragging === false),
-      );
+      let structuralChange = false;
+      let contentChange = false;
+      for (const c of changes) {
+        if (c.type === "remove" || c.type === "add" || c.type === "replace") {
+          structuralChange = true;
+          contentChange = true;
+        } else if (c.type === "position" && c.dragging === false) {
+          contentChange = true;
+        }
+      }
+      const nextNodes = applyNodeChanges(changes, s.nodes);
       set({
-        nodes: applyNodeChanges(changes, s.nodes),
-        ...(contentChange && !s.readOnly ? { saveStatus: "dirty" as const } : {}),
+        nodes: nextNodes,
+        ...(structuralChange ? computeNodeStats(nextNodes) : {}),
+        ...(contentChange && !s.readOnly
+          ? { saveStatus: "dirty" as const, mutationTick: s.mutationTick + 1 }
+          : {}),
       });
     },
 
@@ -242,7 +308,9 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
       const contentChange = changes.some((c) => c.type === "remove" || c.type === "add");
       set({
         edges: applyEdgeChanges(changes, s.edges),
-        ...(contentChange && !s.readOnly ? { saveStatus: "dirty" as const } : {}),
+        ...(contentChange && !s.readOnly
+          ? { saveStatus: "dirty" as const, mutationTick: s.mutationTick + 1 }
+          : {}),
       });
     },
 
@@ -263,12 +331,14 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
       set({
         nodes: prev.nodes,
         edges: prev.edges,
+        ...computeNodeStats(prev.nodes),
         orientation: prev.orientation,
         companyLogo: prev.companyLogo ?? "",
         companyName: prev.companyName ?? "",
         docCode: prev.docCode ?? "",
         past: s.past.slice(0, -1),
-        future: [snapshot(s), ...s.future],
+        future: [snapshot(s), ...s.future].slice(0, HISTORY_LIMIT),
+        mutationTick: s.mutationTick + 1,
         saveStatus: "dirty",
         selectedId: null,
       });
@@ -281,12 +351,14 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
       set({
         nodes: next.nodes,
         edges: next.edges,
+        ...computeNodeStats(next.nodes),
         orientation: next.orientation,
         companyLogo: next.companyLogo ?? "",
         companyName: next.companyName ?? "",
         docCode: next.docCode ?? "",
-        past: [...s.past, snapshot(s)],
+        past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
         future: s.future.slice(1),
+        mutationTick: s.mutationTick + 1,
         saveStatus: "dirty",
         selectedId: null,
       });
@@ -395,11 +467,12 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         }
 
         const vertical = s.orientation === "vertical";
-        const selected = s.nodes.find((n) => n.id === s.selectedId);
+        const laneById = new Map(lanes.map((l) => [l.id, l]));
+        const selected = s.selectedId ? s.nodes.find((n) => n.id === s.selectedId) : undefined;
         const lane =
-          lanes.find((l) => l.id === opts?.laneId) ??
+          (opts?.laneId ? laneById.get(opts.laneId) : undefined) ??
           (opts?.position ? laneAtPoint(lanes, opts.position, s.orientation) : undefined) ??
-          (isLane(selected) ? selected : lanes.find((l) => l.id === selected?.parentId)) ??
+          (isLane(selected) ? selected : selected?.parentId ? laneById.get(selected.parentId) : undefined) ??
           lanes[0]!;
 
         const titles = { step: "Langkah baru", decision: "Keputusan?", terminal: "Mulai / Selesai" } as const;
@@ -410,12 +483,21 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         if (opts?.position) {
           pos = { x: opts.position.x - lane.position.x - size.w / 2, y: opts.position.y - lane.position.y - size.h / 2 };
         } else if (vertical) {
-          // Letakkan di bawah step paling bawah (di semua lane) agar alur terus mengalir ke bawah.
-          const bottom = s.nodes.filter(isStep).reduce((m, n) => Math.max(m, n.position.y + (lanes.find((l) => l.id === n.parentId)?.position.y ?? 0) + sizeOfNode(n).h), FIRST_ROW_Y - ROW_GAP);
+          // Letakkan di bawah step paling bawah (di semua lane) agar alur terus mengalir ke bawah — O(N) via laneById Map.
+          let bottom = FIRST_ROW_Y - ROW_GAP;
+          for (const n of s.nodes) {
+            if (!isStep(n)) continue;
+            const parentY = n.parentId ? (laneById.get(n.parentId)?.position.y ?? 0) : 0;
+            const b = n.position.y + parentY + sizeOfNode(n).h;
+            if (b > bottom) bottom = b;
+          }
           pos = { x: Math.round((laneW - size.w) / 2), y: bottom + ROW_GAP };
         } else {
           // Letakkan setelah step paling kanan di lane tsb.
-          const rightmost = s.nodes.filter((n) => n.parentId === lane.id).reduce((m, n) => Math.max(m, n.position.x), FIRST_COL_X - COL_GAP);
+          let rightmost = FIRST_COL_X - COL_GAP;
+          for (const n of s.nodes) {
+            if (n.parentId === lane.id && n.position.x > rightmost) rightmost = n.position.x;
+          }
           pos = { x: rightmost + COL_GAP, y: (nodeHeight(lane, LANE_DEFAULT_HEIGHT) - size.h) / 2 };
         }
 
@@ -636,32 +718,58 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         };
       }),
 
-    /** Dipanggil saat drag berakhir: pindahkan step ke lane yang berada di bawahnya. */
-    reparentOnDragStop: (nodeId) => {
+    /** Dipanggil saat drag berakhir: pindahkan step (mendukung multi-select batch) ke lane di bawahnya dalam 1x set(). */
+    reparentOnDragStop: (nodeIds) => {
       const s = get();
-      if (s.kind === "architect" || s.nodes.filter(isLane).length === 0) return;
-      const node = s.nodes.find((n) => n.id === nodeId);
-      if (!isStep(node) || s.readOnly) return;
+      if (s.readOnly || s.kind === "architect" || !s.hasLanes) return;
+      const ids = new Set(Array.isArray(nodeIds) ? nodeIds : [nodeIds]);
+      if (ids.size === 0) return;
+
       const lanes = s.nodes.filter(isLane);
-      const oldLane = lanes.find((l) => l.id === node.parentId);
-      const absX = node.position.x + (oldLane?.position.x ?? 0);
-      const absY = node.position.y + (oldLane?.position.y ?? 0);
-      const size = sizeOfNode(node);
-      const target = laneAtPoint(lanes, { x: absX + size.w / 2, y: absY + size.h / 2 }, s.orientation);
-      if (!target) return;
-      const rel = clampInLane(target, { x: absX - target.position.x, y: absY - target.position.y }, size, s.orientation);
-      set({
-        nodes: s.nodes.map((n) => (n.id === nodeId ? { ...n, parentId: target.id, position: rel } : n)),
-        saveStatus: "dirty",
+      if (lanes.length === 0) return;
+      const laneById = new Map(lanes.map((l) => [l.id, l]));
+
+      let changed = false;
+      const nextNodes = s.nodes.map((node) => {
+        if (!ids.has(node.id) || !isStep(node)) return node;
+        const oldLane = node.parentId ? laneById.get(node.parentId) : undefined;
+        const absX = node.position.x + (oldLane?.position.x ?? 0);
+        const absY = node.position.y + (oldLane?.position.y ?? 0);
+        const size = sizeOfNode(node);
+        const target = laneAtPoint(lanes, { x: absX + size.w / 2, y: absY + size.h / 2 }, s.orientation);
+        if (!target) return node;
+        const rel = clampInLane(target, { x: absX - target.position.x, y: absY - target.position.y }, size, s.orientation);
+        if (node.parentId === target.id && node.position.x === rel.x && node.position.y === rel.y) {
+          return node;
+        }
+        changed = true;
+        return { ...node, parentId: target.id, position: rel };
       });
+
+      if (changed) {
+        set({
+          nodes: nextNodes,
+          mutationTick: s.mutationTick + 1,
+          saveStatus: "dirty",
+        });
+      }
     },
 
     updateNodeData: (id, patch) => {
-      // Tanpa history per-ketukan; Inspector memanggil commit() sekali saat field difokuskan.
+      // Tanpa history per-ketukan; Inspector memanggil commit() sekali pada perubahan pertama per seleksi.
       const s = get();
       if (s.readOnly) return;
       set({
-        nodes: s.nodes.map((n) => (n.id === id ? ({ ...n, data: { ...n.data, ...patch } } as AppNode) : n)),
+        nodes: s.nodes.map((n) => {
+          if (n.id !== id) return n;
+          const nextData = { ...n.data, ...patch };
+          if (n.type !== "lane") {
+            const est = estimateNodeSize(n.type, nextData);
+            return { ...n, initialWidth: est.w, initialHeight: est.h, data: nextData } as AppNode;
+          }
+          return { ...n, data: nextData } as AppNode;
+        }),
+        mutationTick: s.mutationTick + 1,
         saveStatus: "dirty",
       });
     },
@@ -669,7 +777,11 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     updateEdgeLabel: (id, label) => {
       const s = get();
       if (s.readOnly) return;
-      set({ edges: s.edges.map((e) => (e.id === id ? { ...e, label: label || undefined } : e)), saveStatus: "dirty" });
+      set({
+        edges: s.edges.map((e) => (e.id === id ? { ...e, label: label || undefined } : e)),
+        mutationTick: s.mutationTick + 1,
+        saveStatus: "dirty",
+      });
     },
 
     select: (id) => set({ selectedId: id }),

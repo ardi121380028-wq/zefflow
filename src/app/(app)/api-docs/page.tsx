@@ -37,7 +37,7 @@ export default function ApiDocsPage() {
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background">
       {/* Top Header */}
-      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/85 px-4 sm:px-6 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center justify-between border-b border-border bg-card/95 px-4 sm:px-6">
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard"

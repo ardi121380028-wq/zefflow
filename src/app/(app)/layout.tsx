@@ -8,7 +8,7 @@ export default async function AppLayout({
 }) {
   const user = await getUser();
   if (!user) {
-    redirect("/login");
+    redirect("/login?reauth=1");
   }
 
   return <>{children}</>;

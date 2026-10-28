@@ -27,8 +27,6 @@ import { useCanvasStore } from "../store/canvas-store";
 function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: boolean }) {
   const [activeHandle, setActiveHandle] = React.useState<"l" | "r" | "t" | "b" | null>(null);
   const pointerStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
-  const { quickAddStepFromNode } = useCanvasStore.getState();
-  const readOnly = useCanvasStore((s) => s.readOnly);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
@@ -41,7 +39,7 @@ function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: bool
     pointerStartRef.current = null;
 
     // Jika jarak geser < 6px dan durasi klik cepat (< 350ms): User mengklik dot untuk rekomendasi
-    if (dist < 6 && duration < 350 && !readOnly) {
+    if (dist < 6 && duration < 350 && !useCanvasStore.getState().readOnly) {
       e.stopPropagation();
       setActiveHandle((prev) => (prev === handleId ? null : handleId));
     } else {
@@ -51,12 +49,12 @@ function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: bool
 
   const handleQuickAdd = (type: StepNodeType["type"]) => {
     if (!activeHandle) return;
-    quickAddStepFromNode(nodeId, activeHandle, type);
+    useCanvasStore.getState().quickAddStepFromNode(nodeId, activeHandle, type);
     setActiveHandle(null);
   };
 
   const common =
-    "opacity-0 group-hover/node:opacity-100 group-[.selected]/node:opacity-100 transition-all duration-200 z-30 cursor-crosshair";
+    "opacity-0 group-hover/node:opacity-100 group-[.selected]/node:opacity-100 transition-opacity duration-150 z-30 cursor-crosshair";
 
   return (
     <>
@@ -174,14 +172,18 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
     storeKind === "architect" ||
     data.output === "Database Table" ||
     data.output?.toLowerCase().includes("table") ||
-    (data.description && (data.description.includes("PK") || data.description.includes("FK")));
+    Boolean(data.description && (data.description.includes("PK") || data.description.includes("FK")));
+
+  const columns = React.useMemo(
+    () => (isErd ? parseErdColumns(data.description) : []),
+    [isErd, data.description],
+  );
 
   if (isErd) {
-    const columns = parseErdColumns(data.description);
     return (
       <div
         className={cn(
-          "group/node relative rounded-2xl border bg-card dark:bg-[#0C0E17] shadow-md transition-all duration-200 overflow-hidden",
+          "group/node relative rounded-2xl border bg-card dark:bg-[#0C0E17] shadow-md transition-[border-color,box-shadow] duration-150 overflow-hidden",
           selected
             ? "border-sky-500 ring-2 ring-sky-500/80 shadow-[0_0_24px_rgba(14,165,233,0.35)]"
             : "border-sky-500/30 hover:border-sky-500/60 hover:shadow-lg",
@@ -260,7 +262,7 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
-        "group/node relative rounded-2xl border border-border dark:border-white/[0.09] bg-white dark:bg-[#0E1018]/95 p-4 shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/40 dark:hover:border-violet-500/50",
+        "group/node relative rounded-2xl border border-border dark:border-white/[0.09] bg-white dark:bg-[#0E1018] p-4 shadow-sm hover:shadow-md transition-[border-color,box-shadow] duration-150 hover:border-primary/40 dark:hover:border-violet-500/50",
         selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_20px_rgba(139,92,246,0.25)]",
       )}
       style={{ width: STEP_WIDTH }}
@@ -285,23 +287,21 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   );
 }
 
-/** Titik keputusan (ya/tidak) - True Belah Ketupat (Diamond) dengan teks lebih besar & tegas */
+/** Titik keputusan (ya/tidak) - True Belah Ketupat (Diamond) dengan bayangan vektor ringan bebas filter GPU */
 function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
-        "group/node relative flex items-center justify-center select-none transition-transform duration-200",
+        "group/node relative flex items-center justify-center select-none transition-transform duration-150",
         selected && "selected scale-[1.03]",
       )}
       style={{ width: DECISION_W, height: DECISION_H }}
     >
-      {/* SVG Belah Ketupat (Diamond) adaptif Light / Dark mode */}
+      {/* SVG Belah Ketupat (Diamond) adaptif Light / Dark mode — tanpa permanent CSS drop-shadow filter per-node */}
       <svg
         className={cn(
-          "absolute inset-0 h-full w-full overflow-visible transition-all duration-200",
-          selected
-            ? "drop-shadow-[0_0_24px_rgba(251,191,36,0.6)]"
-            : "drop-shadow-[0_4px_16px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)] group-hover/node:drop-shadow-[0_0_18px_rgba(251,191,36,0.35)]",
+          "absolute inset-0 h-full w-full overflow-visible",
+          selected && "drop-shadow-[0_0_20px_rgba(251,191,36,0.55)]",
         )}
         viewBox={`0 0 ${DECISION_W} ${DECISION_H}`}
         fill="none"
@@ -313,12 +313,16 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
             <stop offset="100%" stopColor="var(--diamond-stop-3)" stopOpacity="1" />
           </linearGradient>
         </defs>
+        {/* Vector drop shadow ringan (0 offscreen GPU blur surface) */}
+        <polygon
+          points={`${DECISION_W / 2},8 ${DECISION_W - 4},${DECISION_H / 2 + 4} ${DECISION_W / 2},${DECISION_H} 4,${DECISION_H / 2 + 4}`}
+          fill="rgba(0,0,0,0.16)"
+        />
         <polygon
           points={`${DECISION_W / 2},4 ${DECISION_W - 4},${DECISION_H / 2} ${DECISION_W / 2},${DECISION_H - 4} 4,${DECISION_H / 2}`}
           fill={`url(#diamondGrad-${id})`}
           stroke="var(--diamond-stroke)"
           strokeWidth={selected ? "2.75" : "2.25"}
-          className="transition-all duration-200"
         />
         {/* Hairline inner ambient highlight */}
         <polyline
@@ -345,12 +349,12 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   );
 }
 
-/** Start / End. */
+/** Start / End — tanpa backdrop-blur agar GPU compositing 60fps tetap ringan pada ratusan node. */
 function TerminalNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
-        "group/node flex items-center justify-center gap-2.5 rounded-full border border-border dark:border-white/[0.12] bg-white dark:bg-[#121420] px-6 py-2.5 text-foreground dark:text-white shadow-sm dark:shadow-[0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all hover:border-violet-500 hover:scale-105",
+        "group/node flex items-center justify-center gap-2.5 rounded-full border border-border dark:border-white/[0.12] bg-white dark:bg-[#121420] px-6 py-2.5 text-foreground dark:text-white shadow-sm dark:shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow,transform] duration-150 hover:border-violet-500 hover:scale-105",
         selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_24px_rgba(139,92,246,0.35)]",
       )}
       style={{ minWidth: TERMINAL_MIN_W }}

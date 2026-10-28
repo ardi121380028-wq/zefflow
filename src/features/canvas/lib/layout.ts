@@ -164,8 +164,12 @@ export function sizeOfNode(n: LayoutNodeLike): { w: number; h: number } {
 }
 
 /** Rect absolut (koordinat kanvas) sebuah step, dihitung dari posisi lane parent-nya. */
-export function absRect(node: AppNode, nodes: AppNode[]): Rect {
-  const parent = node.parentId ? nodes.find((n) => n.id === node.parentId) : undefined;
+export function absRect(node: AppNode, nodesOrMap: AppNode[] | ReadonlyMap<string, AppNode>): Rect {
+  const parent = node.parentId
+    ? Array.isArray(nodesOrMap)
+      ? nodesOrMap.find((n) => n.id === node.parentId)
+      : (nodesOrMap as ReadonlyMap<string, AppNode>).get(node.parentId)
+    : undefined;
   const { w, h } = sizeOfNode(node);
   return { x: (parent?.position.x ?? 0) + node.position.x, y: (parent?.position.y ?? 0) + node.position.y, w, h };
 }
@@ -214,11 +218,14 @@ export function createStepNode(
   parentId: string,
   title: string,
 ): StepNodeType {
+  const est = estimateNodeSize(type, { title });
   return {
     id,
     type,
     position,
-    parentId,
+    ...(parentId ? { parentId } : {}),
+    initialWidth: est.w,
+    initialHeight: est.h,
     zIndex: 10,
     data: { title, description: "", durationValue: null, durationUnit: "menit", output: "", owner: "" },
   };
@@ -333,51 +340,72 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
 
   const infoById = new Map(infos.map((it) => [it.node.id, it]));
 
-  // Bangun graph directed untuk topological layering
+  // Bangun graph directed untuk topological layering dengan deteksi loop-back (back-edge)
   const inDegree = new Map<string, number>();
-  const successors = new Map<string, string[]>();
+  const forwardAdj = new Map<string, string[]>();
   for (const it of infos) {
     inDegree.set(it.node.id, 0);
-    successors.set(it.node.id, []);
+    forwardAdj.set(it.node.id, []);
   }
 
   for (const edge of edges) {
-    if (infoById.has(edge.source) && infoById.has(edge.target)) {
-      successors.get(edge.source)!.push(edge.target);
+    const src = infoById.get(edge.source);
+    const tgt = infoById.get(edge.target);
+    if (!src || !tgt) continue;
+
+    // Abaikan back-edge (loop revisi kembali ke atas/kiri) agar graph menjadi DAG murni
+    const isBackEdge = from === "vertical" ? tgt.cy < src.cy - 20 : tgt.cx < src.cx - 30;
+    if (!isBackEdge) {
+      forwardAdj.get(edge.source)!.push(edge.target);
       inDegree.set(edge.target, (inDegree.get(edge.target) ?? 0) + 1);
     }
   }
 
-  // Hitung topological rank
+  // Seeding queue dengan root nodes (in-degree === 0)
   const ranks = new Map<string, number>();
   const queue: string[] = [];
+  const inQueue = new Set<string>();
 
   for (const [id, deg] of inDegree.entries()) {
     if (deg === 0) {
       ranks.set(id, 0);
       queue.push(id);
+      inQueue.add(id);
     }
   }
 
-  // Jika semua node memiliki loop / siklus, mulai dari node paling kiri/atas
+  // Jika semua node memiliki loop / siklus, mulai dari node paling awal
   if (queue.length === 0 && infos.length > 0) {
     const first = [...infos].sort((a, b) => (from === "vertical" ? a.cy - b.cy : a.cx - b.cx))[0]!;
     ranks.set(first.node.id, 0);
     queue.push(first.node.id);
+    inQueue.add(first.node.id);
   }
 
-  while (queue.length > 0) {
-    const currId = queue.shift()!;
+  // Traversal topological O(N + E) murni dengan pointer head & Set (tanpa shift/includes O(N^2))
+  const maxIterations = Math.max(10, infos.length * 4);
+  let iterations = 0;
+  let head = 0;
+
+  while (head < queue.length && iterations++ < maxIterations) {
+    const currId = queue[head++]!;
+    inQueue.delete(currId);
     const currRank = ranks.get(currId) ?? 0;
-    const nexts = successors.get(currId) ?? [];
+    const nexts = forwardAdj.get(currId) ?? [];
     for (const nextId of nexts) {
-      const nextRank = Math.max(ranks.get(nextId) ?? 0, currRank + 1);
-      ranks.set(nextId, nextRank);
-      queue.push(nextId);
+      const existingRank = ranks.get(nextId);
+      const newRank = Math.max(existingRank ?? 0, currRank + 1);
+      if (existingRank === undefined || newRank > existingRank) {
+        ranks.set(nextId, newRank);
+        if (!inQueue.has(nextId)) {
+          queue.push(nextId);
+          inQueue.add(nextId);
+        }
+      }
     }
   }
 
-  // Untuk node yang belum terhubung ke graph (terisolasi), tentukan rank dari posisi koordinatnya
+  // Untuk node yang belum terhubung ke graph (terisolasi / sisa loop), tentukan rank dari posisi koordinatnya
   const axis: "cx" | "cy" = from === "vertical" ? "cy" : "cx";
   const sortedInfos = [...infos].sort((a, b) => a[axis] - b[axis]);
   let coordRank = 0;
@@ -431,7 +459,10 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
     // =========================================================================
     // KASUS 2: SWIMLANE MODE (SOP MULTI-DIVISI)
     // =========================================================================
-    const maxRank = Math.max(0, ...Array.from(ranks.values()));
+    let maxRank = 0;
+    for (const r of ranks.values()) {
+      if (r > maxRank) maxRank = r;
+    }
 
     if (to === "vertical") {
       // Orientasi Ke Bawah: Lane = Kolom, Alur menurun
@@ -462,11 +493,13 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
         const laneItems = stepsInLane.get(l.id) ?? [];
         // Cek apakah ada rank yang memiliki lebih dari 1 node di lane ini
         const countByRank = new Map<number, number>();
+        let maxParallel = 1;
         laneItems.forEach((it) => {
           const r = ranks.get(it.node.id) ?? 0;
-          countByRank.set(r, (countByRank.get(r) ?? 0) + 1);
+          const nextCount = (countByRank.get(r) ?? 0) + 1;
+          countByRank.set(r, nextCount);
+          if (nextCount > maxParallel) maxParallel = nextCount;
         });
-        const maxParallel = Math.max(1, ...Array.from(countByRank.values()));
         const calculatedLaneWidth = Math.max(
           l.width ?? LANE_V_WIDTH,
           maxParallel * (STEP_WIDTH + 24) + 48,
@@ -492,8 +525,12 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
           const rTop = rowTop[r] ?? FIRST_ROW_Y;
           const rH = rowH[r] ?? it.h;
 
+          const xPos = maxParallel > 1
+            ? 24 + slot * (it.w + 20)
+            : Math.max(16, Math.round((calculatedLaneWidth - it.w) / 2));
+
           newPos.set(it.node.id, {
-            x: 24 + slot * (it.w + 20),
+            x: xPos,
             y: rTop + Math.round((rH - it.h) / 2),
           });
         }
@@ -515,11 +552,13 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
         const laneItems = stepsInLane.get(l.id) ?? [];
         // Cek berapa banyak node yang menempati kolom/rank yang sama di lane ini
         const countByRank = new Map<number, number>();
+        let maxParallel = 1;
         laneItems.forEach((it) => {
           const r = ranks.get(it.node.id) ?? 0;
-          countByRank.set(r, (countByRank.get(r) ?? 0) + 1);
+          const nextCount = (countByRank.get(r) ?? 0) + 1;
+          countByRank.set(r, nextCount);
+          if (nextCount > maxParallel) maxParallel = nextCount;
         });
-        const maxParallel = Math.max(1, ...Array.from(countByRank.values()));
         // Lebarkan lane bila ada multi-node bertingkat
         const calculatedLaneHeight = Math.max(
           LANE_DEFAULT_HEIGHT,
@@ -542,9 +581,13 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
           const slot = rankSlotCounters.get(r) ?? 0;
           rankSlotCounters.set(r, slot + 1);
 
+          const yPos = maxParallel > 1
+            ? 24 + slot * (it.h + 20)
+            : Math.max(16, Math.round((calculatedLaneHeight - it.h) / 2));
+
           newPos.set(it.node.id, {
             x: FIRST_COL_X + r * COL_GAP + Math.round((STEP_WIDTH - it.w) / 2),
-            y: 24 + slot * (it.h + 20),
+            y: yPos,
           });
         }
       }

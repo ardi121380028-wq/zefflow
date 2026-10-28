@@ -726,7 +726,7 @@ export function InteractiveFlowShowcase() {
       </div>
 
       {/* Main Studio Canvas Frame */}
-      <div className="relative overflow-hidden rounded-3xl border border-border dark:border-white/[0.12] bg-card dark:bg-[#0B0C13] shadow-[0_24px_80px_rgba(0,0,0,0.08)] dark:shadow-[0_24px_80px_rgba(0,0,0,0.8)] backdrop-blur-2xl">
+      <div className="relative overflow-hidden rounded-3xl border border-border dark:border-white/[0.12] bg-card dark:bg-[#0B0C13] shadow-[0_24px_80px_rgba(0,0,0,0.08)] dark:shadow-[0_24px_80px_rgba(0,0,0,0.8)]">
         {/* Top Window Bar */}
         <div className="flex h-12 items-center justify-between border-b border-border dark:border-white/[0.08] bg-slate-50/90 dark:bg-[#0E0F17] px-4">
           <div className="flex items-center gap-2">

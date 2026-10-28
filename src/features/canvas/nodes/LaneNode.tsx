@@ -56,7 +56,7 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
           onClick={() => select(id)}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && select(id)}
           className={cn(
-            "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-center overflow-hidden px-5 pb-3 pt-5 outline-none backdrop-blur-md transition-all duration-150",
+            "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-center overflow-hidden px-5 pb-3 pt-5 outline-none transition-colors duration-150",
             selected && "bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary))]",
             style.headerV,
           )}
@@ -116,7 +116,7 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
         onClick={() => select(id)}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && select(id)}
         className={cn(
-          "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-between overflow-hidden py-4 pl-5 pr-4 outline-none backdrop-blur-md transition-all duration-150",
+          "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-between overflow-hidden py-4 pl-5 pr-4 outline-none transition-colors duration-150",
           selected && "bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary))]",
           style.header,
         )}

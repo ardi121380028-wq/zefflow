@@ -33,7 +33,7 @@ interface FlowCardProps {
   onShareClick?: (flow: FlowCardData) => void;
 }
 
-export function FlowCard({ flow, onShareClick }: FlowCardProps) {
+function FlowCardImpl({ flow, onShareClick }: FlowCardProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -130,8 +130,8 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
           </DropdownMenu>
         </div>
 
-        {/* Title & Description */}
-        <Link href={`/flows/${flow.id}`} prefetch={true} className="mt-2.5 block group-hover:text-primary">
+        {/* Title & Description — prefetch={false} mencegah ratusan request RSC serentak saat render ribuan kartu */}
+        <Link href={`/flows/${flow.id}`} prefetch={false} className="mt-2.5 block group-hover:text-primary">
           <h3 className="line-clamp-1 font-display text-sm font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
             {flow.title}
           </h3>
@@ -164,3 +164,5 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
     </div>
   );
 }
+
+export const FlowCard = React.memo(FlowCardImpl);

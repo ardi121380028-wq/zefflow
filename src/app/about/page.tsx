@@ -119,7 +119,7 @@ export default function AboutPage() {
             Mulai Transformasi Operasional Anda Sekarang
           </h2>
           <p className="mt-2 text-xs sm:text-sm text-muted-foreground max-w-lg mx-auto">
-            Gunakan mode demo Zefflow hari ini tanpa biaya dan rasakan kemudahan merancang diagram swimlane pertama Anda.
+            Masuk dengan akun Google Anda hari ini tanpa biaya dan rasakan kemudahan merancang diagram swimlane pertama Anda.
           </p>
           <div className="mt-6 flex justify-center">
             <Button variant="brand" size="lg" asChild className="gap-2 font-semibold">

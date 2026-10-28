@@ -29,6 +29,8 @@ import { CreateFlowDialog } from "./CreateFlowDialog";
 import { FlowCard } from "./FlowCard";
 import { ShareDialog } from "./ShareDialog";
 
+const DASHBOARD_BATCH_SIZE = 36;
+
 interface DashboardViewProps {
   flows: FlowCardData[];
   workspaceName: string;
@@ -42,10 +44,27 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
 
   const [activeTab, setActiveTab] = React.useState<string>(initialTab);
   const [searchQuery, setSearchQuery] = React.useState("");
+  const deferredSearch = React.useDeferredValue(searchQuery);
+  const [visibleCount, setVisibleCount] = React.useState(DASHBOARD_BATCH_SIZE);
   const [createOpen, setCreateOpen] = React.useState(false);
   const [createKind, setCreateKind] = React.useState<"sop" | "journey" | "architect">("sop");
   const [selectedShareFlow, setSelectedShareFlow] = React.useState<FlowCardData | null>(null);
   const [isCloning, setIsCloning] = React.useState<string | null>(null);
+  const loadMoreRef = React.useRef<HTMLDivElement | null>(null);
+
+  const handleShareClick = React.useCallback((f: FlowCardData) => {
+    setSelectedShareFlow(f);
+  }, []);
+
+  // Sinkronisasi pencarian dari Top Navbar (Ctrl+K / Cmd+K)
+  React.useEffect(() => {
+    const onNavbarSearch = (e: Event) => {
+      const val = (e as CustomEvent<string>).detail ?? "";
+      setSearchQuery(val);
+    };
+    window.addEventListener("zefflow:dashboard-search", onNavbarSearch);
+    return () => window.removeEventListener("zefflow:dashboard-search", onNavbarSearch);
+  }, []);
 
   const handleOpenCreate = (k: "sop" | "journey" | "architect" = "sop") => {
     setCreateKind(k);
@@ -68,26 +87,44 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
     window.history.replaceState(null, "", url);
   };
 
+  // Preload bundle Studio Canvas di background saat browser idle agar klik "Gunakan Template" langsung membuka editor 0ms
+  React.useEffect(() => {
+    const preloadEditor = () => {
+      void import("./FlowEditorClient");
+    };
+    const w = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+    if (typeof w.requestIdleCallback === "function") {
+      const idleId = w.requestIdleCallback(preloadEditor, { timeout: 1500 });
+      return () => w.cancelIdleCallback?.(idleId);
+    }
+    const timer = window.setTimeout(preloadEditor, 500);
+    return () => window.clearTimeout(timer);
+  }, []);
+
   const handleUseTemplate = async (tmpl: FlowTemplate) => {
+    if (isCloning) return;
     setIsCloning(tmpl.id);
     try {
       const res = await createFlowAction({ templateId: tmpl.id });
-      if (res.ok) {
-        toast.success(`Template "${tmpl.title}" siap digunakan!`);
-        router.push(`/flows/${res.data.id}`);
-      } else {
+      if (res && !res.ok) {
         toast.error(res.error.message);
+        setIsCloning(null);
       }
-    } catch {
+    } catch (err) {
+      if (typeof (err as { digest?: string } | null)?.digest === "string" && (err as { digest: string }).digest.startsWith("NEXT_")) {
+        return;
+      }
       toast.error("Gagal menduplikasi template.");
-    } finally {
       setIsCloning(null);
     }
   };
 
   const filteredFlows = React.useMemo(() => {
-    let list = flows.filter((f) => {
-      const q = searchQuery.trim().toLowerCase();
+    const q = deferredSearch.trim().toLowerCase();
+    const list = flows.filter((f) => {
       if (q) {
         const matchTitle = f.title.toLowerCase().includes(q);
         const matchDesc = f.description ? f.description.toLowerCase().includes(q) : false;
@@ -101,19 +138,60 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
       return true;
     });
 
+    // Server query sudah mengurutkan desc(updatedAt); jaga urutan tetap konsisten tanpa alokasi Date berulang
     if (activeTab === "overview" || activeTab === "recent") {
-      // Urutkan berdasarkan waktu edit terbaru (most recent first)
-      list = [...list].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      list.sort((a, b) => (b.updatedAt > a.updatedAt ? 1 : b.updatedAt < a.updatedAt ? -1 : 0));
     }
 
     return list;
-  }, [flows, searchQuery, activeTab]);
+  }, [flows, deferredSearch, activeTab]);
 
-  const allCount = flows.length;
-  const draftCount = flows.filter((f) => f.status === "draft").length;
-  const sopCount = flows.filter((f) => f.kind === "sop").length;
-  const journeyCount = flows.filter((f) => f.kind === "journey").length;
-  const architectCount = flows.filter((f) => f.kind === "architect").length;
+  // Reset jumlah kartu terlihat saat tab atau kata kunci berubah
+  React.useEffect(() => {
+    setVisibleCount(DASHBOARD_BATCH_SIZE);
+  }, [activeTab, deferredSearch]);
+
+  // Progressive infinite scroll agar ribuan diagram tetap ter-render instan (<8ms batch 36 kartu)
+  React.useEffect(() => {
+    if (visibleCount >= filteredFlows.length) return;
+    const el = loadMoreRef.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setVisibleCount((prev) => Math.min(filteredFlows.length, prev + DASHBOARD_BATCH_SIZE));
+        }
+      },
+      { rootMargin: "240px" },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [visibleCount, filteredFlows.length]);
+
+  const { allCount, draftCount, sopCount, journeyCount, architectCount } = React.useMemo(() => {
+    let draft = 0;
+    let sop = 0;
+    let journey = 0;
+    let architect = 0;
+    for (const f of flows) {
+      if (f.status === "draft") draft++;
+      if (f.kind === "sop") sop++;
+      else if (f.kind === "journey") journey++;
+      else if (f.kind === "architect") architect++;
+    }
+    return {
+      allCount: flows.length,
+      draftCount: draft,
+      sopCount: sop,
+      journeyCount: journey,
+      architectCount: architect,
+    };
+  }, [flows]);
+
+  const visibleFlows = React.useMemo(
+    () => filteredFlows.slice(0, visibleCount),
+    [filteredFlows, visibleCount],
+  );
 
   const isTemplatesTab = activeTab === "templates";
 
@@ -343,17 +421,34 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
               />
             </div>
 
-            {/* Grid Kartu Projek: Mampu Menampilkan 4 Kolom Ke Samping */}
+            {/* Grid Kartu Projek: Mampu Menampilkan 4 Kolom Ke Samping (Windowed untuk ribuan file) */}
             {filteredFlows.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-3.5">
-                {filteredFlows.map((flow) => (
-                  <FlowCard
-                    key={flow.id}
-                    flow={flow}
-                    onShareClick={(f) => setSelectedShareFlow(f)}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-3.5">
+                  {visibleFlows.map((flow) => (
+                    <FlowCard
+                      key={flow.id}
+                      flow={flow}
+                      onShareClick={handleShareClick}
+                    />
+                  ))}
+                </div>
+                {visibleCount < filteredFlows.length && (
+                  <div ref={loadMoreRef} className="pt-2 text-center">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setVisibleCount((prev) => Math.min(filteredFlows.length, prev + DASHBOARD_BATCH_SIZE))
+                      }
+                      className="text-xs font-semibold"
+                    >
+                      Muat lebih banyak ({filteredFlows.length - visibleCount} file tersisa)
+                    </Button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center shadow-sm">
                 <div className="grid h-10 w-10 place-items-center rounded-xl border border-border bg-muted/60 text-muted-foreground">
