@@ -8,7 +8,7 @@ import { FlowEditorHeader } from "./FlowEditorHeader";
 interface FlowEditorClientProps {
   flowId: string;
   initialTitle: string;
-  kind: "sop" | "journey";
+  kind: "sop" | "journey" | "architect";
   initialShareEnabled: boolean;
   initialShareToken?: string | null;
   initialDocument: FlowDocument;

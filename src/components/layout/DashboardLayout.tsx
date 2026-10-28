@@ -7,6 +7,7 @@ import {
   Bell,
   ChevronDown,
   Compass,
+  Database,
   FileSpreadsheet,
   FolderGit2,
   HelpCircle,
@@ -61,6 +62,7 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
     { label: "Semua Diagram", href: "/dashboard?tab=all", icon: Workflow, tab: "all" },
     { label: "Customer Journey", href: "/dashboard?tab=journey", icon: Compass, tab: "journey" },
     { label: "SOP Bisnis", href: "/dashboard?tab=sop", icon: FolderGit2, tab: "sop" },
+    { label: "Studio 2: Architect", href: "/dashboard?tab=architect", icon: Database, tab: "architect", badge: "Studio 2" },
     { label: "Templates Library", href: "/dashboard?tab=templates", icon: LayoutTemplate, tab: "templates" },
   ];
 
@@ -192,14 +194,21 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
                 key={item.label}
                 href={item.href}
                 className={cn(
-                  "flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150",
+                  "flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150",
                   isActive
                     ? "bg-primary/10 text-primary font-semibold shadow-sm border border-primary/20"
                     : "text-muted-foreground hover:bg-muted hover:text-foreground",
                 )}
               >
-                <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
-                <span>{item.label}</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground")} />
+                  <span className="truncate">{item.label}</span>
+                </div>
+                {item.badge && (
+                  <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-1.5 py-0.5 text-[9px] font-mono font-bold tracking-wider text-sky-600 dark:text-sky-400">
+                    {item.badge}
+                  </span>
+                )}
               </Link>
             );
           })}

@@ -32,7 +32,7 @@ const authSchema = pgSchema("auth");
 export const authUsers = authSchema.table("users", { id: uuid("id").primaryKey() });
 
 export const memberRole = pgEnum("member_role", ["owner", "admin", "editor", "viewer"]);
-export const flowKind = pgEnum("flow_kind", ["sop", "journey"]);
+export const flowKind = pgEnum("flow_kind", ["sop", "journey", "architect"]);
 export const flowStatus = pgEnum("flow_status", ["draft", "published", "archived"]);
 export const planTier = pgEnum("plan_tier", ["free", "pro", "business"]);
 

@@ -38,14 +38,14 @@ export async function enableDemoModeAction() {
 /** Buat flow baru (kosong atau dari template) di workspace aktif. */
 export async function createFlowAction(input: {
   title?: string;
-  kind?: "sop" | "journey";
+  kind?: "sop" | "journey" | "architect";
   templateId?: string;
 }) {
   return safeAction(async () => {
     const parsed = z
       .object({
         title: z.string().trim().min(1).max(120).optional(),
-        kind: z.enum(["sop", "journey"]).optional(),
+        kind: z.enum(["sop", "journey", "architect"]).optional(),
         templateId: z.string().max(64).optional(),
       })
       .parse(input);

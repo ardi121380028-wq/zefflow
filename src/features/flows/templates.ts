@@ -9,7 +9,7 @@ export interface FlowTemplate {
   id: string;
   title: string;
   description: string;
-  kind: "sop" | "journey";
+  kind: "sop" | "journey" | "architect";
   lanes: { title: string; division: string; color: LaneColor }[];
   steps: StepSpec[];
   links: LinkSpec[];
@@ -174,7 +174,7 @@ export const TEMPLATES: FlowTemplate[] = [
     id: "saas-database-erd",
     title: "Skema Database & ERD SaaS (PostgreSQL / Prisma)",
     description: "Arsitektur database relasional multi-tenant: Users, Workspaces, Memberships, Subscriptions, dan Audit Logs dengan Foreign Keys siap diekspor ke SQL DDL.",
-    kind: "sop",
+    kind: "architect",
     lanes: [
       { title: "Auth & Identity", division: "Modul Autentikasi", color: "violet" },
       { title: "Organizations", division: "Multi-tenancy & Workspace", color: "sky" },
@@ -238,6 +238,37 @@ export const TEMPLATES: FlowTemplate[] = [
       ["users", "memberships", "1:N (user_id)"],
       ["workspaces", "subscriptions", "1:1 (workspace_id)"],
       ["workspaces", "audit_logs", "1:N (workspace_id)"],
+    ],
+  },
+  {
+    id: "microservice-architecture",
+    title: "Arsitektur Microservices & Event Stream",
+    description: "Desain sistem terdistribusi modern: API Gateway, Auth Service, Order Service, Kafka Broker, Redis Cache, dan PostgreSQL Database.",
+    kind: "architect",
+    lanes: [
+      { title: "Client & Gateway", division: "Frontend & Reverse Proxy", color: "violet" },
+      { title: "Core Services", division: "Domain Microservices", color: "sky" },
+      { title: "Event Broker", division: "Asynchronous Messaging", color: "emerald" },
+      { title: "Data Storage", division: "Persistence & Cache", color: "amber" },
+    ],
+    steps: [
+      { id: "client", lane: 0, col: 0, type: "terminal", title: "Web / Mobile Client", description: "Next.js Client & Flutter App" },
+      { id: "gateway", lane: 0, col: 1, title: "API Gateway (Kong / Envoy)", description: "Rate limiting, JWT verify, & request routing" },
+      { id: "auth_svc", lane: 1, col: 1, title: "Auth Service", description: "OAuth2, session tokens, & user RBAC" },
+      { id: "order_svc", lane: 1, col: 2, title: "Order & Billing Service", description: "Checkout orchestration, Stripe webhooks" },
+      { id: "kafka", lane: 2, col: 2, type: "decision", title: "Kafka Event Stream", description: "Topics: order.created, payment.succeeded" },
+      { id: "notif_svc", lane: 1, col: 3, title: "Notification Service", description: "Transactional email (Resend), WhatsApp, & Push" },
+      { id: "redis", lane: 3, col: 1, title: "Redis Cluster", description: "Session cache, rate limit store, & idempotency" },
+      { id: "db_postgres", lane: 3, col: 2, type: "terminal", title: "PostgreSQL Database", description: "ACID transactions & relational persistence" },
+    ],
+    links: [
+      ["client", "gateway", "HTTPS / WSS"],
+      ["gateway", "auth_svc", "gRPC Verify"],
+      ["gateway", "order_svc", "REST / gRPC"],
+      ["order_svc", "kafka", "Publish Event"],
+      ["kafka", "notif_svc", "Consume Event"],
+      ["auth_svc", "redis", "Cache Session"],
+      ["order_svc", "db_postgres", "ACID Write"],
     ],
   },
 ];

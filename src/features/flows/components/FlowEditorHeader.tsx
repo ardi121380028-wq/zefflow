@@ -41,7 +41,7 @@ import { SqlExportModal } from "./SqlExportModal";
 interface FlowEditorHeaderProps {
   flowId: string;
   initialTitle: string;
-  kind: "sop" | "journey";
+  kind: "sop" | "journey" | "architect";
   initialShareEnabled: boolean;
   initialShareToken?: string | null;
   onManualSave?: () => Promise<void>;
@@ -166,8 +166,17 @@ export function FlowEditorHeader({
               </button>
             )}
 
-            <span className="hidden rounded-md border border-border bg-muted/80 px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-muted-foreground sm:inline-block">
-              {kind === "journey" ? "CUSTOMER JOURNEY" : "SOP"}
+            <span
+              className={cn(
+                "hidden rounded-md border px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider sm:inline-block",
+                kind === "architect"
+                  ? "border-sky-500/30 bg-sky-500/10 text-sky-400"
+                  : kind === "journey"
+                    ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                    : "border-violet-500/30 bg-violet-500/10 text-violet-400",
+              )}
+            >
+              {kind === "architect" ? "ZEFFLOW ARCHITECT" : kind === "journey" ? "CUSTOMER JOURNEY" : "SOP SWIMLANE"}
             </span>
           </div>
         </div>

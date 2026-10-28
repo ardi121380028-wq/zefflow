@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Compass,
+  Database,
   FileCheck2,
   GitBranch,
   Globe2,
@@ -56,6 +57,7 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
     }
   };
 
+  const isArchitect = flow.kind === "architect";
   const isJourney = flow.kind === "journey";
 
   return (
@@ -67,22 +69,32 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
             <span
               className={cn(
                 "grid h-8 w-8 place-items-center rounded-xl border",
-                isJourney
+                isArchitect
+                  ? "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400"
+                  : isJourney
                   ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
                   : "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400",
               )}
             >
-              {isJourney ? <Compass className="h-4 w-4" /> : <Workflow className="h-4 w-4" />}
+              {isArchitect ? (
+                <Database className="h-4 w-4" />
+              ) : isJourney ? (
+                <Compass className="h-4 w-4" />
+              ) : (
+                <Workflow className="h-4 w-4" />
+              )}
             </span>
             <span
               className={cn(
                 "rounded-md border px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider",
-                isJourney
+                isArchitect
+                  ? "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                  : isJourney
                   ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
                   : "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
               )}
             >
-              {isJourney ? "CUSTOMER JOURNEY" : "SOP FLOW"}
+              {isArchitect ? "ARCHITECT STUDIO" : isJourney ? "CUSTOMER JOURNEY" : "SOP FLOW"}
             </span>
           </div>
 

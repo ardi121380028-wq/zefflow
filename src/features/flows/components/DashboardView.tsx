@@ -86,6 +86,7 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
       if (activeTab === "drafts") return f.status === "draft";
       if (activeTab === "sop") return f.kind === "sop";
       if (activeTab === "journey") return f.kind === "journey";
+      if (activeTab === "architect") return f.kind === "architect";
       return true;
     });
   }, [flows, searchQuery, activeTab]);
@@ -93,6 +94,7 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
   const draftCount = flows.filter((f) => f.status === "draft").length;
   const sopCount = flows.filter((f) => f.kind === "sop").length;
   const journeyCount = flows.filter((f) => f.kind === "journey").length;
+  const architectCount = flows.filter((f) => f.kind === "architect").length;
 
   const isOverview = activeTab === "overview" || activeTab === "recent";
   const isTemplatesTab = activeTab === "templates";
@@ -258,6 +260,12 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
                 onClick={() => handleTabChange("journey")}
                 label="Customer Journey"
                 count={journeyCount}
+              />
+              <TabPill
+                active={activeTab === "architect"}
+                onClick={() => handleTabChange("architect")}
+                label="Studio 2: Architect"
+                count={architectCount}
               />
               <TabPill
                 active={activeTab === "drafts"}

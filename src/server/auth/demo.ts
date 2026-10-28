@@ -8,7 +8,7 @@ export interface DemoFlowItem {
   id: string;
   title: string;
   description: string | null;
-  kind: "sop" | "journey";
+  kind: "sop" | "journey" | "architect";
   status: "draft" | "published" | "archived";
   document: FlowDocument;
   version: number;

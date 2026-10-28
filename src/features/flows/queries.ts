@@ -24,7 +24,7 @@ export type FlowCardData = {
   id: string;
   title: string;
   description: string | null;
-  kind: "sop" | "journey";
+  kind: "sop" | "journey" | "architect";
   status: "draft" | "published" | "archived";
   updatedAt: Date;
   shareEnabled: boolean;

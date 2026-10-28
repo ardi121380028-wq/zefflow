@@ -4,6 +4,7 @@ import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
   Compass,
+  Database,
   FileSpreadsheet,
   FolderPlus,
   LayoutTemplate,
@@ -33,7 +34,7 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
   const router = useRouter();
   const [tab, setTab] = React.useState<"blank" | "templates">("blank");
   const [title, setTitle] = React.useState("");
-  const [kind, setKind] = React.useState<"sop" | "journey">("sop");
+  const [kind, setKind] = React.useState<"sop" | "journey" | "architect">("sop");
   const [isLoading, setIsLoading] = React.useState(false);
 
   const handleCreateBlank = async (e: React.FormEvent) => {
@@ -128,22 +129,24 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
             </div>
 
             <div>
-              <Label>Tipe Diagram</Label>
-              <div className="grid grid-cols-2 gap-3">
+              <Label>Pilih Tipe Studio &amp; Diagram</Label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-1.5">
                 <button
                   type="button"
                   onClick={() => setKind("sop")}
                   className={cn(
-                    "flex flex-col items-start rounded-2xl border p-3.5 text-left transition-all duration-200",
+                    "flex flex-col items-start rounded-2xl border p-3 text-left transition-all duration-200",
                     kind === "sop"
                       ? "border-violet-500 bg-violet-500/10 dark:bg-violet-500/15 shadow-[0_0_20px_rgba(139,92,246,0.15)] ring-1 ring-violet-500"
                       : "border-border dark:border-white/[0.08] bg-card dark:bg-[#12141F] hover:border-violet-500/40",
                   )}
                 >
-                  <Workflow className="h-4 w-4 text-violet-500 dark:text-violet-400" />
-                  <span className="mt-2 text-xs font-semibold text-foreground">SOP Bisnis</span>
-                  <span className="mt-0.5 text-[11px] text-muted-foreground">
-                    Standar operasional internal dengan PIC &amp; output jelas
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/10 text-violet-500 mb-1">
+                    <Workflow className="h-4 w-4" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground">SOP Bisnis</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    Swimlane bertingkat departemen &amp; PIC
                   </span>
                 </button>
 
@@ -151,16 +154,37 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                   type="button"
                   onClick={() => setKind("journey")}
                   className={cn(
-                    "flex flex-col items-start rounded-2xl border p-3.5 text-left transition-all duration-200",
+                    "flex flex-col items-start rounded-2xl border p-3 text-left transition-all duration-200",
                     kind === "journey"
                       ? "border-amber-500 bg-amber-500/10 dark:bg-amber-500/15 shadow-[0_0_20px_rgba(245,158,11,0.15)] ring-1 ring-amber-500"
                       : "border-border dark:border-white/[0.08] bg-card dark:bg-[#12141F] hover:border-amber-500/40",
                   )}
                 >
-                  <Compass className="h-4 w-4 text-amber-500 dark:text-amber-400" />
-                  <span className="mt-2 text-xs font-semibold text-foreground">Customer Journey</span>
-                  <span className="mt-0.5 text-[11px] text-muted-foreground">
-                    Tahapan pengalaman pengguna dari awal hingga akhir
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-amber-500/10 text-amber-500 mb-1">
+                    <Compass className="h-4 w-4" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground">Customer Journey</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    Titik sentuh &amp; pengalaman pengguna
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setKind("architect")}
+                  className={cn(
+                    "flex flex-col items-start rounded-2xl border p-3 text-left transition-all duration-200",
+                    kind === "architect"
+                      ? "border-sky-500 bg-sky-500/10 dark:bg-sky-500/15 shadow-[0_0_20px_rgba(14,165,233,0.15)] ring-1 ring-sky-500"
+                      : "border-border dark:border-white/[0.08] bg-card dark:bg-[#12141F] hover:border-sky-500/40",
+                  )}
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-sky-500/10 text-sky-500 mb-1">
+                    <Database className="h-4 w-4" />
+                  </div>
+                  <span className="text-xs font-bold text-foreground">Studio 2: Architect</span>
+                  <span className="text-[10px] text-muted-foreground leading-tight mt-0.5">
+                    ERD Database, Microservice, &amp; Cloud Draw.io
                   </span>
                 </button>
               </div>
