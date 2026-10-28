@@ -25,6 +25,7 @@ import {
   LANE_MIN_HEIGHT,
   LANE_PALETTE,
   LANE_V_DEFAULT_LENGTH,
+  LANE_V_HEADER_HEIGHT,
   LANE_V_MIN_WIDTH,
   LANE_V_WIDTH,
   laneAtPoint,
@@ -88,6 +89,7 @@ interface CanvasState {
   widenLanes: (by: number) => void;
   // steps
   addStep: (type: StepNodeType["type"], opts?: { laneId?: string; position?: { x: number; y: number } }) => void;
+  quickAddStepFromNode: (sourceNodeId: string, handle: "l" | "r" | "t" | "b", type: StepNodeType["type"]) => void;
   reparentOnDragStop: (nodeId: string) => void;
   // data
   updateNodeData: (id: string, patch: Partial<LaneData & StepData>) => void;
@@ -385,6 +387,179 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         const laneNow = nodes.find((n) => n.id === lane.id) as typeof lane;
         const node = createStepNode(`n_${nanoid(8)}`, type, clampInLane(laneNow, pos, size, s.orientation), lane.id, titles[type]);
         return { nodes: [...nodes, node], selectedId: node.id };
+      }),
+
+    quickAddStepFromNode: (sourceNodeId, handle, type) =>
+      mutate((s) => {
+        const lanes = s.nodes.filter(isLane);
+        if (lanes.length === 0) return {};
+        const sourceNode = s.nodes.find((n) => n.id === sourceNodeId);
+        if (!sourceNode || sourceNode.type === "lane") return {};
+
+        const vertical = s.orientation === "vertical";
+        const currentLaneIdx = lanes.findIndex((l) => l.id === sourceNode.parentId);
+        const currentLane = lanes[currentLaneIdx] ?? lanes[0]!;
+
+        const titles = { step: "Langkah baru", decision: "Keputusan?", terminal: "Selesai" } as const;
+        const defaultTitle = titles[type];
+        const newSize = estimateNodeSize(type, { title: defaultTitle });
+        const sourceSize = sizeOfNode(sourceNode);
+
+        let targetLane = currentLane;
+        let pos = { x: sourceNode.position.x, y: sourceNode.position.y };
+        let sourceHandle = handle;
+        let targetHandle: "l" | "r" | "t" | "b" = "t";
+        let edgeLabel: string | undefined = undefined;
+
+        if (vertical) {
+          if (handle === "b") {
+            targetLane = currentLane;
+            const laneW = targetLane.width ?? LANE_V_WIDTH;
+            pos = {
+              x: Math.round((laneW - newSize.w) / 2),
+              y: sourceNode.position.y + sourceSize.h + ROW_GAP,
+            };
+            sourceHandle = "b";
+            targetHandle = "t";
+            if (sourceNode.type === "decision") edgeLabel = "Tidak";
+          } else if (handle === "r") {
+            const nextLane = lanes[currentLaneIdx + 1];
+            if (nextLane) {
+              targetLane = nextLane;
+              const laneW = targetLane.width ?? LANE_V_WIDTH;
+              pos = {
+                x: Math.round((laneW - newSize.w) / 2),
+                y: sourceNode.position.y + 12,
+              };
+              sourceHandle = "r";
+              targetHandle = "l";
+            } else {
+              targetLane = currentLane;
+              pos = {
+                x: sourceNode.position.x,
+                y: sourceNode.position.y + sourceSize.h + ROW_GAP,
+              };
+              sourceHandle = "b";
+              targetHandle = "t";
+            }
+            if (sourceNode.type === "decision") edgeLabel = "Ya";
+          } else if (handle === "l") {
+            const prevLane = lanes[currentLaneIdx - 1];
+            if (prevLane) {
+              targetLane = prevLane;
+              const laneW = targetLane.width ?? LANE_V_WIDTH;
+              pos = {
+                x: Math.round((laneW - newSize.w) / 2),
+                y: sourceNode.position.y + 12,
+              };
+              sourceHandle = "l";
+              targetHandle = "r";
+            } else {
+              targetLane = currentLane;
+              pos = {
+                x: sourceNode.position.x,
+                y: sourceNode.position.y + sourceSize.h + ROW_GAP,
+              };
+              sourceHandle = "b";
+              targetHandle = "t";
+            }
+            if (sourceNode.type === "decision") edgeLabel = "Revisi";
+          } else if (handle === "t") {
+            targetLane = currentLane;
+            pos = {
+              x: sourceNode.position.x,
+              y: Math.max(LANE_V_HEADER_HEIGHT + 24, sourceNode.position.y - newSize.h - ROW_GAP),
+            };
+            sourceHandle = "t";
+            targetHandle = "b";
+          }
+        } else {
+          // Horizontal
+          if (handle === "r") {
+            targetLane = currentLane;
+            pos = {
+              x: sourceNode.position.x + COL_GAP,
+              y: sourceNode.position.y,
+            };
+            sourceHandle = "r";
+            targetHandle = "l";
+            if (sourceNode.type === "decision") edgeLabel = "Ya";
+          } else if (handle === "b") {
+            const nextLane = lanes[currentLaneIdx + 1];
+            if (nextLane) {
+              targetLane = nextLane;
+              pos = {
+                x: sourceNode.position.x,
+                y: 20,
+              };
+              sourceHandle = "b";
+              targetHandle = "t";
+            } else {
+              targetLane = currentLane;
+              pos = {
+                x: sourceNode.position.x + COL_GAP,
+                y: sourceNode.position.y,
+              };
+              sourceHandle = "r";
+              targetHandle = "l";
+            }
+            if (sourceNode.type === "decision") edgeLabel = "Tidak";
+          } else if (handle === "t") {
+            const prevLane = lanes[currentLaneIdx - 1];
+            if (prevLane) {
+              targetLane = prevLane;
+              pos = {
+                x: sourceNode.position.x,
+                y: 20,
+              };
+              sourceHandle = "t";
+              targetHandle = "b";
+            }
+          } else if (handle === "l") {
+            targetLane = currentLane;
+            pos = {
+              x: Math.max(FIRST_COL_X, sourceNode.position.x - COL_GAP),
+              y: sourceNode.position.y,
+            };
+            sourceHandle = "l";
+            targetHandle = "r";
+          }
+        }
+
+        // Auto extend lane height if needed
+        let nodes = s.nodes;
+        if (vertical) {
+          const need = Math.ceil(pos.y + newSize.h + 80);
+          if (need > nodeHeight(targetLane, LANE_V_DEFAULT_LENGTH)) {
+            nodes = nodes.map((n) => (isLane(n) ? { ...n, height: Math.max(n.height ?? 0, need) } : n));
+          }
+        } else {
+          const need = Math.ceil(pos.x + newSize.w + 100);
+          if (need > (targetLane.width ?? LANE_DEFAULT_WIDTH)) {
+            nodes = nodes.map((n) => (isLane(n) ? { ...n, width: Math.max(n.width ?? 0, need) } : n));
+          }
+        }
+
+        const clampedPos = clampInLane(targetLane, pos, newSize, s.orientation);
+        const newNodeId = `step_${nanoid(8)}`;
+        const newNode = createStepNode(newNodeId, type, clampedPos, targetLane.id, defaultTitle);
+
+        const newEdge: AppEdge = {
+          id: `e_${nanoid(8)}`,
+          source: sourceNode.id,
+          target: newNodeId,
+          sourceHandle,
+          targetHandle,
+          type: "smoothstep",
+          markerEnd: EDGE_MARKER,
+          ...(edgeLabel ? { label: edgeLabel } : {}),
+        };
+
+        return {
+          nodes: sortParentsFirst([...nodes, newNode]),
+          edges: [...s.edges, newEdge],
+          selectedId: newNodeId,
+        };
       }),
 
     /** Dipanggil saat drag berakhir: pindahkan step ke lane yang berada di bawahnya. */

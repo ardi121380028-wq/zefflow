@@ -1,22 +1,147 @@
 "use client";
 
+import * as React from "react";
 import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
-import { Clock, FileOutput, GitBranch, User2 } from "lucide-react";
+import {
+  ArrowRightFromLine,
+  Clock,
+  FileOutput,
+  GitBranch,
+  Square,
+  User2,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StepNodeType } from "../types";
 import { DECISION_H, DECISION_W, STEP_WIDTH, TERMINAL_MIN_W } from "../lib/layout";
+import { useCanvasStore } from "../store/canvas-store";
 
-/** Empat handle (L/R/T/B) diposisikan DILUAR shape dengan hit-area luas */
-function Handles() {
+/**
+ * Handle koneksi dengan deteksi klik vs drag:
+ * - Jika DITARIK (drag > 6px): React Flow menarik garis panah normal tanpa popup.
+ * - Jika DIKLIK (tap / click < 6px): Menampilkan popup rekomendasi bentuk (Langkah, Keputusan, Selesai).
+ */
+function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: boolean }) {
+  const [activeHandle, setActiveHandle] = React.useState<"l" | "r" | "t" | "b" | null>(null);
+  const pointerStartRef = React.useRef<{ x: number; y: number; time: number } | null>(null);
+  const { quickAddStepFromNode } = useCanvasStore.getState();
+  const readOnly = useCanvasStore((s) => s.readOnly);
+
+  const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStartRef.current = { x: e.clientX, y: e.clientY, time: Date.now() };
+  };
+
+  const handlePointerUp = (handleId: "l" | "r" | "t" | "b", e: React.PointerEvent) => {
+    if (!pointerStartRef.current) return;
+    const dist = Math.hypot(e.clientX - pointerStartRef.current.x, e.clientY - pointerStartRef.current.y);
+    const duration = Date.now() - pointerStartRef.current.time;
+    pointerStartRef.current = null;
+
+    // Jika jarak geser < 6px dan durasi klik cepat (< 350ms): User mengklik dot untuk rekomendasi
+    if (dist < 6 && duration < 350 && !readOnly) {
+      e.stopPropagation();
+      setActiveHandle((prev) => (prev === handleId ? null : handleId));
+    } else {
+      setActiveHandle(null);
+    }
+  };
+
+  const handleQuickAdd = (type: StepNodeType["type"]) => {
+    if (!activeHandle) return;
+    quickAddStepFromNode(nodeId, activeHandle, type);
+    setActiveHandle(null);
+  };
+
   const common =
-    "opacity-0 group-hover/node:opacity-100 group-[.selected]/node:opacity-100 transition-all duration-200 z-30";
+    "opacity-0 group-hover/node:opacity-100 group-[.selected]/node:opacity-100 transition-all duration-200 z-30 cursor-crosshair";
+
   return (
     <>
-      <Handle id="l" type="source" position={Position.Left} className={cn(common, "!-left-2.5 sm:!-left-3")} />
-      <Handle id="r" type="source" position={Position.Right} className={cn(common, "!-right-2.5 sm:!-right-3")} />
-      <Handle id="t" type="source" position={Position.Top} className={cn(common, "!-top-2.5 sm:!-top-3")} />
-      <Handle id="b" type="source" position={Position.Bottom} className={cn(common, "!-bottom-2.5 sm:!-bottom-3")} />
+      <Handle
+        id="l"
+        type="source"
+        position={Position.Left}
+        onPointerDown={handlePointerDown}
+        onPointerUp={(e) => handlePointerUp("l", e)}
+        className={cn(common, isDecision ? "!-left-2.5 !top-1/2 -translate-y-1/2 react-flow__handle-decision" : "!-left-2.5 sm:!-left-3")}
+      />
+      <Handle
+        id="r"
+        type="source"
+        position={Position.Right}
+        onPointerDown={handlePointerDown}
+        onPointerUp={(e) => handlePointerUp("r", e)}
+        className={cn(common, isDecision ? "!-right-2.5 !top-1/2 -translate-y-1/2 react-flow__handle-decision" : "!-right-2.5 sm:!-right-3")}
+      />
+      <Handle
+        id="t"
+        type="source"
+        position={Position.Top}
+        onPointerDown={handlePointerDown}
+        onPointerUp={(e) => handlePointerUp("t", e)}
+        className={cn(common, isDecision ? "!-top-3 !left-1/2 -translate-x-1/2 react-flow__handle-decision" : "!-top-2.5 sm:!-top-3")}
+      />
+      <Handle
+        id="b"
+        type="source"
+        position={Position.Bottom}
+        onPointerDown={handlePointerDown}
+        onPointerUp={(e) => handlePointerUp("b", e)}
+        className={cn(common, isDecision ? "!-bottom-3 !left-1/2 -translate-x-1/2 react-flow__handle-decision" : "!-bottom-2.5 sm:!-bottom-3")}
+      />
+
+      {/* Floating Quick-Add Popup Menu */}
+      {activeHandle && (
+        <div
+          className={cn(
+            "nodrag nopan absolute z-50 flex items-center gap-1 rounded-2xl border border-border dark:border-white/[0.15] bg-white/95 dark:bg-[#0E0F16]/95 p-1 shadow-2xl backdrop-blur-2xl animate-scale-in text-foreground dark:text-white pointer-events-auto",
+            activeHandle === "b" && "top-full mt-3.5 left-1/2 -translate-x-1/2",
+            activeHandle === "t" && "bottom-full mb-3.5 left-1/2 -translate-x-1/2",
+            activeHandle === "r" && "left-full ml-3.5 top-1/2 -translate-y-1/2",
+            activeHandle === "l" && "right-full mr-3.5 top-1/2 -translate-y-1/2",
+          )}
+        >
+          <button
+            type="button"
+            onClick={() => handleQuickAdd("step")}
+            className="flex items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-sky-500/10 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
+            title="Tambah Langkah Kerja"
+          >
+            <Square className="h-3 w-3 text-sky-500 shrink-0" />
+            <span>Langkah</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleQuickAdd("decision")}
+            className="flex items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-amber-500/10 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            title="Tambah Titik Keputusan"
+          >
+            <GitBranch className="h-3 w-3 text-amber-500 shrink-0" />
+            <span>Keputusan</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleQuickAdd("terminal")}
+            className="flex items-center gap-1 rounded-xl px-2 py-1 text-[11px] font-semibold text-foreground hover:bg-emerald-500/10 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+            title="Tambah Titik Akhir / Selesai"
+          >
+            <ArrowRightFromLine className="h-3 w-3 text-emerald-500 shrink-0" />
+            <span>Selesai</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveHandle(null)}
+            className="grid h-6 w-6 place-items-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors ml-0.5"
+            title="Tutup menu"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      )}
     </>
   );
 }
@@ -26,7 +151,7 @@ function formatDuration(v: number | null, unit: string) {
 }
 
 /** Langkah kerja standar (SOP step) - ElevenLabs Studio Card adaptif, tulisan besar & tegas */
-function StepNodeImpl({ data, selected }: NodeProps<StepNodeType>) {
+function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   const duration = formatDuration(data.durationValue, data.durationUnit);
   return (
     <div
@@ -36,7 +161,7 @@ function StepNodeImpl({ data, selected }: NodeProps<StepNodeType>) {
       )}
       style={{ width: STEP_WIDTH }}
     >
-      <Handles />
+      <NodeHandles nodeId={id} />
       <p className="font-display text-[17px] font-bold tracking-tight text-foreground dark:text-white leading-[24px]">
         {data.title || "Tanpa judul"}
       </p>
@@ -101,31 +226,7 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
         />
       </svg>
 
-      {/* 4 Handles diposisikan presisi DILUAR 4 sudut tajam belah ketupat */}
-      <Handle
-        id="t"
-        type="source"
-        position={Position.Top}
-        className="!-top-3 !left-1/2 -translate-x-1/2 opacity-0 group-hover/node:opacity-100 group-[.selected]/node:opacity-100 transition-all react-flow__handle-decision z-30"
-      />
-      <Handle
-        id="b"
-        type="source"
-        position={Position.Bottom}
-        className="!-bottom-3 !left-1/2 -translate-x-1/2 opacity-0 group-hover/node:opacity-100 group-[.selected]/node:opacity-100 transition-all react-flow__handle-decision z-30"
-      />
-      <Handle
-        id="l"
-        type="source"
-        position={Position.Left}
-        className="!-left-2.5 !top-1/2 -translate-y-1/2 opacity-0 group-hover/node:opacity-100 group-[.selected]/node:opacity-100 transition-opacity react-flow__handle-decision z-30"
-      />
-      <Handle
-        id="r"
-        type="source"
-        position={Position.Right}
-        className="!-right-2.5 !top-1/2 -translate-y-1/2 opacity-0 group-hover/node:opacity-100 group-[.selected]/node:opacity-100 transition-opacity react-flow__handle-decision z-30"
-      />
+      <NodeHandles nodeId={id} isDecision />
 
       {/* Konten teks di tengah belah ketupat */}
       <div className="relative z-10 flex max-w-[150px] flex-col items-center justify-center px-1 text-center pointer-events-none">
@@ -141,7 +242,7 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
 }
 
 /** Start / End. */
-function TerminalNodeImpl({ data, selected }: NodeProps<StepNodeType>) {
+function TerminalNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
@@ -150,7 +251,7 @@ function TerminalNodeImpl({ data, selected }: NodeProps<StepNodeType>) {
       )}
       style={{ minWidth: TERMINAL_MIN_W }}
     >
-      <Handles />
+      <NodeHandles nodeId={id} />
       <span className="h-3 w-3 rounded-full bg-violet-500 shadow-[0_0_10px_#a78bfa] shrink-0" />
       <p className="text-[15.5px] font-bold tracking-tight">{data.title || "Mulai / Selesai"}</p>
     </div>

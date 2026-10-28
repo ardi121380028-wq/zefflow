@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PREFIXES = ["/login", "/auth", "/share", "/terms", "/privacy", "/about", "/api-docs"];
+const PUBLIC_PREFIXES = ["/login", "/auth", "/share", "/terms", "/privacy", "/about", "/api-docs", "/features", "/guide"];
 
 /**
  * Refresh session Supabase di setiap request & lindungi route privat.
