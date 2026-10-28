@@ -5,7 +5,7 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Clock, FileOutput, GitBranch, User2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StepNodeType } from "../types";
-import { STEP_WIDTH } from "../lib/layout";
+import { DECISION_H, DECISION_W, STEP_WIDTH, TERMINAL_MIN_W } from "../lib/layout";
 
 /** Empat handle (L/R/T/B) diposisikan DILUAR shape dengan hit-area luas */
 function Handles() {
@@ -37,19 +37,19 @@ function StepNodeImpl({ data, selected }: NodeProps<StepNodeType>) {
       style={{ width: STEP_WIDTH }}
     >
       <Handles />
-      <p className="font-display text-[15px] sm:text-[15.5px] font-bold tracking-tight text-foreground dark:text-white leading-snug">
+      <p className="font-display text-[17px] font-bold tracking-tight text-foreground dark:text-white leading-[24px]">
         {data.title || "Tanpa judul"}
       </p>
       {data.description && (
-        <p className="mt-1.5 line-clamp-3 text-[12.5px] sm:text-[13px] leading-relaxed text-muted-foreground dark:text-zinc-300 font-normal">
+        <p className="mt-2 line-clamp-3 text-[14px] leading-[21px] text-muted-foreground dark:text-zinc-300 font-normal">
           {data.description}
         </p>
       )}
       {(duration || data.owner || data.output) && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {duration && <Chip icon={<Clock className="h-3.5 w-3.5 text-violet-500 shrink-0" />}>{duration}</Chip>}
-          {data.owner && <Chip icon={<User2 className="h-3.5 w-3.5 text-sky-500 shrink-0" />}>{data.owner}</Chip>}
-          {data.output && <Chip icon={<FileOutput className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}>{data.output}</Chip>}
+          {duration && <Chip icon={<Clock className="h-4 w-4 text-violet-500 shrink-0" />}>{duration}</Chip>}
+          {data.owner && <Chip icon={<User2 className="h-4 w-4 text-sky-500 shrink-0" />}>{data.owner}</Chip>}
+          {data.output && <Chip icon={<FileOutput className="h-4 w-4 text-emerald-500 shrink-0" />}>{data.output}</Chip>}
         </div>
       )}
     </div>
@@ -64,7 +64,7 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
         "group/node relative flex items-center justify-center select-none transition-transform duration-200",
         selected && "selected scale-[1.03]",
       )}
-      style={{ width: 216, height: 148 }}
+      style={{ width: DECISION_W, height: DECISION_H }}
     >
       {/* SVG Belah Ketupat (Diamond) adaptif Light / Dark mode */}
       <svg
@@ -74,7 +74,7 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
             ? "drop-shadow-[0_0_24px_rgba(251,191,36,0.6)]"
             : "drop-shadow-[0_4px_16px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_8px_24px_rgba(0,0,0,0.5)] group-hover/node:drop-shadow-[0_0_18px_rgba(251,191,36,0.35)]",
         )}
-        viewBox="0 0 216 148"
+        viewBox={`0 0 ${DECISION_W} ${DECISION_H}`}
         fill="none"
       >
         <defs>
@@ -85,15 +85,15 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
           </linearGradient>
         </defs>
         <polygon
-          points="108,4 210,74 108,144 6,74"
+          points={`${DECISION_W / 2},4 ${DECISION_W - 4},${DECISION_H / 2} ${DECISION_W / 2},${DECISION_H - 4} 4,${DECISION_H / 2}`}
           fill={`url(#diamondGrad-${id})`}
           stroke="var(--diamond-stroke)"
-          strokeWidth={selected ? "2.75" : "2"}
+          strokeWidth={selected ? "2.75" : "2.25"}
           className="transition-all duration-200"
         />
         {/* Hairline inner ambient highlight */}
         <polyline
-          points="26,74 108,16 190,74"
+          points={`30,${DECISION_H / 2} ${DECISION_W / 2},18 ${DECISION_W - 30},${DECISION_H / 2}`}
           stroke="var(--diamond-stroke)"
           strokeOpacity="0.25"
           strokeWidth="1.2"
@@ -128,11 +128,11 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
       />
 
       {/* Konten teks di tengah belah ketupat */}
-      <div className="relative z-10 flex max-w-[138px] flex-col items-center justify-center px-1 text-center pointer-events-none">
+      <div className="relative z-10 flex max-w-[150px] flex-col items-center justify-center px-1 text-center pointer-events-none">
         <span className="mb-1.5 grid h-6 w-6 place-items-center rounded-md border border-amber-500/40 bg-gradient-to-b from-amber-400/25 to-amber-600/15 text-amber-600 dark:text-amber-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_0_12px_rgba(245,158,11,0.25)]">
           <GitBranch className="h-3.5 w-3.5" />
         </span>
-        <p className="font-display text-[13px] sm:text-[13.5px] font-bold tracking-tight text-[var(--diamond-text)] leading-snug">
+        <p className="font-display text-[14.5px] font-bold tracking-tight text-[var(--diamond-text)] leading-[19px]">
           {data.title || "Keputusan?"}
         </p>
       </div>
@@ -148,18 +148,18 @@ function TerminalNodeImpl({ data, selected }: NodeProps<StepNodeType>) {
         "group/node flex items-center justify-center gap-2.5 rounded-full border border-border dark:border-white/[0.12] bg-white dark:bg-[#121420] px-6 py-2.5 text-foreground dark:text-white shadow-sm dark:shadow-[0_4px_16px_rgba(0,0,0,0.5)] backdrop-blur-xl transition-all hover:border-violet-500 hover:scale-105",
         selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_24px_rgba(139,92,246,0.35)]",
       )}
-      style={{ minWidth: 156 }}
+      style={{ minWidth: TERMINAL_MIN_W }}
     >
       <Handles />
-      <span className="h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_10px_#a78bfa] shrink-0" />
-      <p className="text-[13.5px] sm:text-[14px] font-bold tracking-tight">{data.title || "Mulai / Selesai"}</p>
+      <span className="h-3 w-3 rounded-full bg-violet-500 shadow-[0_0_10px_#a78bfa] shrink-0" />
+      <p className="text-[15.5px] font-bold tracking-tight">{data.title || "Mulai / Selesai"}</p>
     </div>
   );
 }
 
 function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-200 px-2.5 py-1 text-[11.5px] font-medium shadow-sm transition-all hover:border-primary/40 dark:hover:border-violet-500/40">
+    <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-200 px-2.5 py-1 text-[12.5px] font-medium leading-[18px] shadow-sm transition-all hover:border-primary/40 dark:hover:border-violet-500/40">
       {icon}
       <span className="truncate">{children}</span>
     </span>

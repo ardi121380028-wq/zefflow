@@ -41,11 +41,12 @@ export function PublicFlowView({
 }: PublicFlowViewProps) {
   const [isExporting, setIsExporting] = React.useState(false);
   const nodes = useCanvasStore((s) => s.nodes);
+  const orientation = useCanvasStore((s) => s.orientation);
 
   const handleExport = async (format: "png" | "pdf") => {
     setIsExporting(true);
     try {
-      await exportDiagram(nodes, format, title || "flow-export");
+      await exportDiagram(nodes, format, title || "flow-export", orientation);
       toast.success(`Berhasil mengunduh ${format.toUpperCase()}`);
     } catch (err) {
       toast.error((err as Error).message || "Gagal mengekspor diagram.");

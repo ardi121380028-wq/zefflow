@@ -28,14 +28,15 @@ function CustomEdgeImpl({
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 16,
+    borderRadius: 18,
+    offset: 28,
   });
 
   const labelText = typeof label === "string" ? label.trim() : "";
   const labelLength = labelText.length;
   // Dynamic badge pill geometry — lebih besar, modern, dan terbaca jelas
-  const badgeWidth = Math.max(44, labelLength * 9.5 + 24);
-  const badgeHeight = 26;
+  const badgeWidth = Math.max(52, labelLength * 10.5 + 28);
+  const badgeHeight = 30;
   const rx = badgeHeight / 2;
 
   return (
@@ -45,8 +46,8 @@ function CustomEdgeImpl({
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          strokeWidth: selected ? 2.5 : 1.75,
-          stroke: selected ? "hsl(var(--primary))" : "rgba(148, 163, 184, 0.45)",
+          strokeWidth: selected ? 3 : 2.25,
+          stroke: selected ? "hsl(var(--primary))" : "hsl(var(--edge-stroke))",
           ...style,
         }}
       />
@@ -76,7 +77,7 @@ function CustomEdgeImpl({
             textAnchor="middle"
             dominantBaseline="middle"
             fill="hsl(var(--foreground))"
-            className="font-sans text-[11.5px] font-bold tracking-wider uppercase select-none fill-foreground"
+            className="font-sans text-[13px] font-bold tracking-wide uppercase select-none fill-foreground"
           >
             {labelText}
           </text>

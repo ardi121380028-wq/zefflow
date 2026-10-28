@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRightFromLine, GitBranch, Maximize2, Plus, Redo2, Rows3, Square, Undo2 } from "lucide-react";
+import { ArrowDown, ArrowRight, ArrowRightFromLine, Columns3, GitBranch, Maximize2, Plus, Redo2, Rows3, Sparkles, Square, Undo2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCanvasStore } from "../store/canvas-store";
 import type { StepNodeType } from "../types";
@@ -16,7 +16,9 @@ export function Toolbar() {
   const hasLanes = useCanvasStore((s) => s.nodes.some((n) => n.type === "lane"));
   const canUndo = useCanvasStore((s) => s.past.length > 0);
   const canRedo = useCanvasStore((s) => s.future.length > 0);
-  const { addLane, addStep, undo, redo, widenLanes } = useCanvasStore.getState();
+  const orientation = useCanvasStore((s) => s.orientation);
+  const { addLane, addStep, undo, redo, widenLanes, setOrientation, tidyLayout } = useCanvasStore.getState();
+  const vertical = orientation === "vertical";
 
   if (readOnly) return null;
 
@@ -26,7 +28,18 @@ export function Toolbar() {
       role="toolbar"
       aria-label="Alat diagram"
     >
-      <Tool icon={<Rows3 className="h-3.5 w-3.5 text-violet-500" />} label="Lane" hint="Tambah jalur divisi" onClick={addLane} />
+      <Tool
+        icon={vertical ? <Columns3 className="h-3.5 w-3.5 text-violet-500" /> : <Rows3 className="h-3.5 w-3.5 text-violet-500" />}
+        label="Lane"
+        hint="Tambah jalur divisi"
+        onClick={addLane}
+      />
+      <Divider />
+      <div className="flex shrink-0 items-center rounded-full bg-muted/70 p-0.5 dark:bg-white/[0.06]" role="group" aria-label="Arah alur">
+        <OrientBtn active={vertical} onClick={() => setOrientation("vertical")} icon={<ArrowDown className="h-3.5 w-3.5" />} label="Ke bawah" />
+        <OrientBtn active={!vertical} onClick={() => setOrientation("horizontal")} icon={<ArrowRight className="h-3.5 w-3.5" />} label="Ke samping" />
+      </div>
+      <Tool icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />} label="Rapikan" hint="Rapikan otomatis: susun ulang jarak & garis" onClick={tidyLayout} disabled={!hasLanes} />
       <Divider />
       <PaletteTool type="step" icon={<Square className="h-3.5 w-3.5 text-sky-500" />} label="Langkah" disabled={!hasLanes} onAdd={() => addStep("step")} />
       <PaletteTool type="decision" icon={<GitBranch className="h-3.5 w-3.5 text-amber-500" />} label="Keputusan" disabled={!hasLanes} onAdd={() => addStep("decision")} />
@@ -34,13 +47,31 @@ export function Toolbar() {
       <Divider />
       <Tool icon={<Undo2 className="h-3.5 w-3.5" />} label="" hint="Undo (Ctrl+Z)" onClick={undo} disabled={!canUndo} />
       <Tool icon={<Redo2 className="h-3.5 w-3.5" />} label="" hint="Redo (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo} />
-      <Tool icon={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />} label="" hint="Perlebar kanvas (+600px)" onClick={() => widenLanes(600)} disabled={!hasLanes} />
+      <Tool icon={<Maximize2 className="h-3.5 w-3.5 text-muted-foreground" />} label="" hint={vertical ? "Perpanjang kanvas (+600px)" : "Perlebar kanvas (+600px)"} onClick={() => widenLanes(600)} disabled={!hasLanes} />
     </div>
   );
 }
 
 function Divider() {
   return <span className="mx-0.5 h-4 w-px bg-border dark:bg-white/[0.1] shrink-0" />;
+}
+
+function OrientBtn({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: React.ReactNode; label: string }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      title={label}
+      className={cn(
+        "flex h-7 items-center gap-1 rounded-full px-2.5 text-xs font-semibold transition-all duration-150",
+        active ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:text-foreground",
+      )}
+    >
+      {icon}
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
 }
 
 function Tool({ icon, label, hint, onClick, disabled }: { icon: React.ReactNode; label: string; hint: string; onClick: () => void; disabled?: boolean }) {

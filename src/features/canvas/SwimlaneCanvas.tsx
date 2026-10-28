@@ -6,7 +6,6 @@ import {
   BackgroundVariant,
   ConnectionMode,
   Controls,
-  MarkerType,
   MiniMap,
   Panel,
   ReactFlow,
@@ -22,7 +21,8 @@ import { LaneNode } from "./nodes/LaneNode";
 import { CustomEdge } from "./edges/CustomEdge";
 import { Inspector } from "./panels/Inspector";
 import { PALETTE_MIME, Toolbar } from "./panels/Toolbar";
-import { useCanvasStore } from "./store/canvas-store";
+import { EDGE_MARKER, useCanvasStore } from "./store/canvas-store";
+import { absRect, pickHandles } from "./lib/layout";
 import { useAutosave } from "./store/use-autosave";
 import type { StepNodeType } from "./types";
 import { cn } from "@/lib/utils";
@@ -41,7 +41,7 @@ const edgeTypes = {
   default: CustomEdge,
 };
 
-const defaultEdgeOptions = { type: "smoothstep", markerEnd: { type: MarkerType.ArrowClosed } } as const;
+const defaultEdgeOptions = { type: "smoothstep", markerEnd: EDGE_MARKER } as const;
 
 interface Props {
   flowId: string;
@@ -65,7 +65,7 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
   const hydrated = useCanvasStore((s) => s.flowId === flowId);
-  const store = useCanvasStore.getState();
+  const orientation = useCanvasStore((s) => s.orientation);
   const { screenToFlowPosition, fitView } = useReactFlow();
   const { saveNow } = useAutosave();
   const { theme } = useTheme();
@@ -78,6 +78,13 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [flowId]);
+
+  // Fit ulang saat arah alur berubah (konversi layout).
+  useEffect(() => {
+    const t = setTimeout(() => fitView({ padding: 0.15, maxZoom: 1, duration: 300 }), 80);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [orientation]);
 
   useEffect(() => onReady?.({ saveNow }), [onReady, saveNow]);
 
@@ -142,25 +149,23 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
 
       if (!targetId || targetId === connectionState.fromNode.id) return;
 
-      const targetNode = useCanvasStore.getState().nodes.find((n) => n.id === targetId);
-      if (!targetNode || targetNode.type === "lane") return;
+      const state = useCanvasStore.getState();
+      const targetNode = state.nodes.find((n) => n.id === targetId);
+      const sourceNode = state.nodes.find((n) => n.id === connectionState.fromNode.id);
+      if (!targetNode || !sourceNode || targetNode.type === "lane") return;
 
-      const fromNode = connectionState.fromNode;
       const fromHandle = connectionState.fromHandle?.id ?? "r";
 
-      // Pilih target handle yang paling natural berdasar posisi relatif
-      let targetHandle = "l";
-      const dx = (targetNode.position?.x ?? 0) - (fromNode.position?.x ?? 0);
-      const dy = (targetNode.position?.y ?? 0) - (fromNode.position?.y ?? 0);
+      // Pilih handle tujuan paling natural dari posisi absolut kedua node.
+      const [, targetHandle] = pickHandles(
+        absRect(sourceNode, state.nodes),
+        absRect(targetNode, state.nodes),
+        sourceNode.type === "decision",
+        state.orientation,
+      );
 
-      if (Math.abs(dx) > Math.abs(dy)) {
-        targetHandle = dx >= 0 ? "l" : "r";
-      } else {
-        targetHandle = dy >= 0 ? "t" : "b";
-      }
-
-      useCanvasStore.getState().onConnect({
-        source: fromNode.id,
+      state.onConnect({
+        source: sourceNode.id,
         sourceHandle: fromHandle,
         target: targetId,
         targetHandle,
@@ -182,9 +187,9 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
       edges={edges}
       nodeTypes={nodeTypes}
       edgeTypes={edgeTypes}
-      onNodesChange={store.onNodesChange}
-      onEdgesChange={store.onEdgesChange}
-      onConnect={store.onConnect}
+      onNodesChange={useCanvasStore.getState().onNodesChange}
+      onEdgesChange={useCanvasStore.getState().onEdgesChange}
+      onConnect={useCanvasStore.getState().onConnect}
       onConnectEnd={onConnectEnd}
       connectionRadius={48}
       onSelectionChange={onSelectionChange}
@@ -202,6 +207,7 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; }}
       onDrop={onDrop}
       defaultEdgeOptions={defaultEdgeOptions}
+      defaultMarkerColor={theme === "dark" ? "#a1a1aa" : "#475569"}
       connectionMode={ConnectionMode.Loose}
       nodesDraggable={!readOnly}
       nodesConnectable={!readOnly}

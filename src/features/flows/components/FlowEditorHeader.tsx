@@ -60,6 +60,7 @@ export function FlowEditorHeader({
   const canUndo = useCanvasStore((s) => s.past.length > 0);
   const canRedo = useCanvasStore((s) => s.future.length > 0);
   const nodes = useCanvasStore((s) => s.nodes);
+  const orientation = useCanvasStore((s) => s.orientation);
   const { undo, redo } = useCanvasStore.getState();
 
   const handleTitleSubmit = async () => {
@@ -82,7 +83,7 @@ export function FlowEditorHeader({
   const handleExport = async (format: "png" | "pdf") => {
     setIsExporting(true);
     try {
-      await exportDiagram(nodes, format, title || "flow-zefflow");
+      await exportDiagram(nodes, format, title || "flow-zefflow", orientation);
       toast.success(`Berhasil mengekspor sebagai ${format.toUpperCase()}`);
     } catch (err) {
       toast.error((err as Error).message || "Gagal mengekspor diagram.");

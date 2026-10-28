@@ -1,5 +1,5 @@
-import type { FlowDocument, LaneColor } from "@/lib/validation/flow";
-import { COL_GAP, FIRST_COL_X, LANE_DEFAULT_HEIGHT, LANE_DEFAULT_WIDTH, STEP_EST_HEIGHT } from "@/features/canvas/lib/layout";
+import type { FlowDocument, LaneColor, Orientation } from "@/lib/validation/flow";
+import { COL_GAP, FIRST_COL_X, LANE_DEFAULT_HEIGHT, LANE_DEFAULT_WIDTH, STEP_WIDTH, convertLayout, estimateNodeSize } from "@/features/canvas/lib/layout";
 
 type StepSpec = { id: string; lane: number; col: number; type?: "step" | "decision" | "terminal"; title: string; description?: string; duration?: [number, "menit" | "jam" | "hari"]; output?: string; owner?: string };
 
@@ -176,8 +176,8 @@ export function getTemplate(id: string) {
   return TEMPLATES.find((t) => t.id === id);
 }
 
-/** Bangun dokumen diagram dari template dengan kalkulasi posisi & perataan node. */
-export function buildDocument(t: FlowTemplate): FlowDocument {
+/** Bangun dokumen diagram dari template dengan kalkulasi posisi & perataan node. Default: alur ke bawah. */
+export function buildDocument(t: FlowTemplate, orientation: Orientation = "vertical"): FlowDocument {
   // Hitung max col untuk menentukan lebar dinamis lane agar tidak terpotong
   const maxCol = Math.max(...t.steps.map((s) => s.col), 7);
   const calculatedWidth = Math.max(LANE_DEFAULT_WIDTH, FIRST_COL_X + (maxCol + 1) * COL_GAP + 300);
@@ -192,27 +192,25 @@ export function buildDocument(t: FlowTemplate): FlowDocument {
   }));
 
   const steps = t.steps.map((s) => {
-    const isDecision = s.type === "decision";
-    const isTerminal = s.type === "terminal";
-    const nodeWidth = isDecision ? 180 : isTerminal ? 140 : 224;
-    const nodeHeight = isDecision ? 130 : isTerminal ? 40 : 112;
+    const data = {
+      title: s.title,
+      description: s.description ?? "",
+      durationValue: s.duration?.[0] ?? null,
+      durationUnit: s.duration?.[1] ?? ("menit" as const),
+      output: s.output ?? "",
+      owner: s.owner ?? "",
+    };
+    const { w, h } = estimateNodeSize(s.type, data);
 
     return {
       id: `n_${s.id}`,
       type: s.type ?? ("step" as const),
       parentId: `lane_${s.lane}`,
       position: {
-        x: FIRST_COL_X + s.col * COL_GAP + Math.round((224 - nodeWidth) / 2),
-        y: Math.round((LANE_DEFAULT_HEIGHT - nodeHeight) / 2),
+        x: FIRST_COL_X + s.col * COL_GAP + Math.round((STEP_WIDTH - w) / 2),
+        y: Math.round((LANE_DEFAULT_HEIGHT - h) / 2),
       },
-      data: {
-        title: s.title,
-        description: s.description ?? "",
-        durationValue: s.duration?.[0] ?? null,
-        durationUnit: s.duration?.[1] ?? ("menit" as const),
-        output: s.output ?? "",
-        owner: s.owner ?? "",
-      },
+      data,
     };
   });
 
@@ -225,5 +223,9 @@ export function buildDocument(t: FlowTemplate): FlowDocument {
     ...(label ? { label } : {}),
   }));
 
-  return { version: 1, nodes: [...lanes, ...steps], edges };
+  const horizontal = { nodes: [...lanes, ...steps], edges };
+  if (orientation === "horizontal") return { version: 1, orientation, ...horizontal } as FlowDocument;
+
+  const converted = convertLayout(horizontal.nodes, horizontal.edges, "horizontal", "vertical");
+  return { version: 1, orientation, ...converted } as FlowDocument;
 }

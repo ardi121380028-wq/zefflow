@@ -27,7 +27,7 @@ export function useAutosave() {
     try {
       const res = await saveFlowDocumentAction({
         flowId: s.flowId,
-        document: serializeDocument(s.nodes, s.edges),
+        document: serializeDocument(s.nodes, s.edges, s.orientation),
         expectedVersion: s.version,
       });
       if (res.ok) {

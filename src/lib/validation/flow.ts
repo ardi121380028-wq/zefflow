@@ -9,6 +9,8 @@ import { z } from "zod";
 export const LANE_COLORS = ["violet", "sky", "emerald", "amber", "rose", "slate"] as const;
 export const DURATION_UNITS = ["menit", "jam", "hari"] as const;
 export const STEP_TYPES = ["step", "decision", "terminal"] as const;
+/** horizontal: lane = baris, alur ke samping. vertical: lane = kolom, alur ke bawah. */
+export const ORIENTATIONS = ["horizontal", "vertical"] as const;
 
 const id = z.string().min(1).max(64);
 const position = z.object({ x: z.number().finite(), y: z.number().finite() });
@@ -63,6 +65,8 @@ export const edgeSchema = z.object({
 export const flowDocumentSchema = z
   .object({
     version: z.literal(1),
+    /** Dokumen lama tanpa field ini dianggap horizontal. */
+    orientation: z.enum(ORIENTATIONS).default("horizontal"),
     nodes: z.array(z.discriminatedUnion("type", [laneNode, stepNode.extend({ type: z.literal("step") }), stepNode.extend({ type: z.literal("decision") }), stepNode.extend({ type: z.literal("terminal") })])).max(500),
     edges: z.array(edgeSchema).max(1000),
   })
@@ -86,8 +90,9 @@ export type LaneData = z.infer<typeof laneDataSchema>;
 export type StepData = z.infer<typeof stepDataSchema>;
 export type FlowDocument = z.infer<typeof flowDocumentSchema>;
 export type LaneColor = (typeof LANE_COLORS)[number];
+export type Orientation = (typeof ORIENTATIONS)[number];
 
-export const EMPTY_DOCUMENT: FlowDocument = { version: 1, nodes: [], edges: [] };
+export const EMPTY_DOCUMENT: FlowDocument = { version: 1, orientation: "vertical", nodes: [], edges: [] };
 
 /** Parse aman dokumen dari DB (JSON tidak tepercaya). Mengembalikan dokumen kosong bila rusak. */
 export function parseDocumentSafe(raw: unknown): { doc: FlowDocument; corrupted: boolean } {
