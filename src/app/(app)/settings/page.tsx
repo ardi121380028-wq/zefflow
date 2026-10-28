@@ -22,6 +22,8 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/field";
+import { createClient } from "@/lib/supabase/client";
+import { updateProfileAction } from "@/features/flows/actions";
 
 type SettingsTab = "profile" | "editor" | "standards" | "api";
 
@@ -31,9 +33,9 @@ export default function SettingsPage() {
   const [copiedKey, setCopiedKey] = React.useState(false);
 
   // Form states
-  const [name, setName] = React.useState("Demo User");
-  const [email] = React.useState("demo@zefflow.app");
-  const [orgName, setOrgName] = React.useState("Zefflow Studio Team");
+  const [name, setName] = React.useState("Pengguna Zefflow");
+  const [email, setEmail] = React.useState("loading@zefflow.app");
+  const [orgName, setOrgName] = React.useState("Zefflow Studio");
   const [defaultDurationUnit, setDefaultDurationUnit] = React.useState("menit");
   const [gridSnap, setGridSnap] = React.useState("8");
   const [autoSaveDelay, setAutoSaveDelay] = React.useState("1200");
@@ -41,12 +43,35 @@ export default function SettingsPage() {
   const [apiKey] = React.useState("zf_live_9a7f3e82b1c44d65e908f2a178bc");
   const [webhookUrl, setWebhookUrl] = React.useState("https://api.perusahaan.com/webhooks/zefflow");
 
+  React.useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user) {
+        setEmail(data.user.email || "");
+        const loadedName = data.user.user_metadata?.full_name || data.user.email?.split("@")[0] || "User";
+        setName(loadedName);
+        setOrgName(`${loadedName}'s Workspace`);
+      }
+    });
+  }, []);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    await new Promise((r) => setTimeout(r, 600));
-    setSaving(false);
-    toast.success("Pengaturan workspace berhasil diperbarui!");
+    try {
+      if (name.trim()) {
+        const res = await updateProfileAction({ fullName: name.trim() });
+        if (!res.ok) {
+          toast.error(res.error.message || "Gagal memperbarui profil.");
+          return;
+        }
+      }
+      toast.success("Profil berhasil diperbarui di database Supabase!");
+    } catch {
+      toast.error("Gagal menyimpan perubahan.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const copyApiKey = () => {

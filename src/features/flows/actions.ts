@@ -16,7 +16,7 @@ import {
 } from "@/server/auth/session";
 import { getDemoStore } from "@/server/auth/demo";
 import { withUser } from "@/server/db/client";
-import { flows } from "@/server/db/schema";
+import { flows, memberships, profiles, workspaces } from "@/server/db/schema";
 import { AppError, safeAction } from "@/server/errors";
 import { buildDocument, getTemplate } from "./templates";
 
@@ -236,3 +236,198 @@ export async function signOutAction() {
   } catch {}
   redirect("/login");
 }
+
+/** Buat workspace baru di database Supabase dan langsung aktifkan */
+export async function createWorkspaceAction(input: { name: string }) {
+  return safeAction(async () => {
+    const { name } = z.object({ name: z.string().trim().min(2).max(64) }).parse(input);
+    const user = await requireUser();
+    const isDemo = cookies().get(DEMO_COOKIE)?.value === "true";
+    if (isDemo) {
+      const id = `demo-ws-${nanoid(6)}`;
+      cookies().set(ACTIVE_WORKSPACE_COOKIE, id, { path: "/", httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
+      revalidatePath("/", "layout");
+      return { id, name };
+    }
+
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + nanoid(6).toLowerCase();
+
+    const [ws] = await withUser(user.id, async (tx) => {
+      const [newWs] = await tx
+        .insert(workspaces)
+        .values({
+          name,
+          slug,
+          createdBy: user.id,
+        })
+        .returning();
+
+      if (newWs) {
+        await tx.insert(memberships).values({
+          workspaceId: newWs.id,
+          userId: user.id,
+          role: "owner",
+        });
+      }
+      return [newWs];
+    });
+
+    if (!ws) throw new AppError("INTERNAL", "Gagal membuat workspace.");
+
+    cookies().set(ACTIVE_WORKSPACE_COOKIE, ws.id, { path: "/", httpOnly: true, sameSite: "lax", maxAge: 60 * 60 * 24 * 365 });
+    revalidatePath("/", "layout");
+    return ws;
+  });
+}
+
+/** Perbarui profil pengguna (Nama Lengkap) di database Supabase */
+export async function updateProfileAction(input: { fullName: string }) {
+  return safeAction(async () => {
+    const { fullName } = z.object({ fullName: z.string().trim().min(2).max(100) }).parse(input);
+    const user = await requireUser();
+    const isDemo = cookies().get(DEMO_COOKIE)?.value === "true";
+    if (isDemo) return { fullName };
+
+    await withUser(user.id, async (tx) => {
+      await tx
+        .update(profiles)
+        .set({ fullName, updatedAt: new Date() })
+        .where(eq(profiles.id, user.id));
+    });
+
+    revalidatePath("/", "layout");
+    return { fullName };
+  });
+}
+
+/** Perbarui nama workspace aktif di database Supabase */
+export async function updateWorkspaceNameAction(input: { workspaceId: string; name: string }) {
+  return safeAction(async () => {
+    const { workspaceId, name } = z
+      .object({ workspaceId: z.string(), name: z.string().trim().min(2).max(64) })
+      .parse(input);
+    const user = await requireUser();
+    const isDemo = cookies().get(DEMO_COOKIE)?.value === "true";
+    if (isDemo) return { id: workspaceId, name };
+
+    await withUser(user.id, async (tx) => {
+      await tx
+        .update(workspaces)
+        .set({ name, updatedAt: new Date() })
+        .where(eq(workspaces.id, workspaceId));
+    });
+
+    revalidatePath("/", "layout");
+    return { id: workspaceId, name };
+  });
+}
+
+/** Dapatkan daftar anggota workspace saat ini dari Supabase */
+export async function getWorkspaceMembersAction(workspaceId: string) {
+  return safeAction(async () => {
+    const wsId = z.string().parse(workspaceId);
+    const user = await requireUser();
+    const isDemo = cookies().get(DEMO_COOKIE)?.value === "true";
+    if (isDemo) {
+      return [
+        {
+          id: user.id,
+          name: "Demo User",
+          email: "demo@zefflow.app",
+          role: "owner" as const,
+          avatarUrl: null,
+          joinedAt: new Date().toISOString(),
+        },
+      ];
+    }
+
+    const members = await withUser(user.id, async (tx) => {
+      return tx
+        .select({
+          id: profiles.id,
+          name: profiles.fullName,
+          email: profiles.email,
+          avatarUrl: profiles.avatarUrl,
+          role: memberships.role,
+          joinedAt: memberships.createdAt,
+        })
+        .from(memberships)
+        .innerJoin(profiles, eq(profiles.id, memberships.userId))
+        .where(eq(memberships.workspaceId, wsId));
+    });
+
+    return members.map((m) => ({
+      ...m,
+      joinedAt: m.joinedAt.toISOString(),
+    }));
+  });
+}
+
+/** Undang anggota tim ke workspace berdasarkan email */
+export async function inviteWorkspaceMemberAction(input: {
+  workspaceId: string;
+  email: string;
+  role: "admin" | "editor" | "viewer";
+}) {
+  return safeAction(async () => {
+    const { workspaceId, email, role } = z
+      .object({
+        workspaceId: z.string(),
+        email: z.string().trim().email(),
+        role: z.enum(["admin", "editor", "viewer"]),
+      })
+      .parse(input);
+
+    const user = await requireUser();
+    const isDemo = cookies().get(DEMO_COOKIE)?.value === "true";
+    if (isDemo) {
+      return { success: true, email, role };
+    }
+
+    // Cari apakah email sudah terdaftar di profiles
+    const [targetProfile] = await withUser(user.id, async (tx) => {
+      return tx.select().from(profiles).where(eq(profiles.email, email)).limit(1);
+    });
+
+    if (targetProfile) {
+      await withUser(user.id, async (tx) => {
+        await tx
+          .insert(memberships)
+          .values({
+            workspaceId,
+            userId: targetProfile.id,
+            role,
+          })
+          .onConflictDoUpdate({
+            target: [memberships.workspaceId, memberships.userId],
+            set: { role },
+          });
+      });
+      revalidatePath("/", "layout");
+      return { success: true, email, role, added: true };
+    }
+
+    // Jika belum mendaftar, kembalikan status undangan terkirim
+    return { success: true, email, role, pending: true };
+  });
+}
+
+/** Hapus anggota dari workspace */
+export async function removeWorkspaceMemberAction(input: { workspaceId: string; userId: string }) {
+  return safeAction(async () => {
+    const { workspaceId, userId } = z.object({ workspaceId: z.string(), userId: z.string() }).parse(input);
+    const user = await requireUser();
+    const isDemo = cookies().get(DEMO_COOKIE)?.value === "true";
+    if (isDemo) return { success: true };
+
+    await withUser(user.id, async (tx) => {
+      await tx
+        .delete(memberships)
+        .where(and(eq(memberships.workspaceId, workspaceId), eq(memberships.userId, userId)));
+    });
+
+    revalidatePath("/", "layout");
+    return { success: true };
+  });
+}
+

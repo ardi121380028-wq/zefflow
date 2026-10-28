@@ -36,6 +36,8 @@ import {
 import { signOutAction, switchWorkspaceAction } from "@/features/flows/actions";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import type { WorkspaceContext } from "@/server/auth/session";
+import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
+import { TeamManagementModal } from "./TeamManagementModal";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -48,6 +50,8 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
   const searchParams = useSearchParams();
   const currentTab = searchParams.get("tab") || "overview";
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [createWsOpen, setCreateWsOpen] = React.useState(false);
+  const [teamModalOpen, setTeamModalOpen] = React.useState(false);
   const [isPending, startTransition] = React.useTransition();
 
   const { active, workspaces, profile } = workspaceCtx;
@@ -131,23 +135,41 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
                 <ChevronDown className="h-3.5 w-3.5 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-60 border-border bg-card text-foreground" align="start">
-              <DropdownMenuLabel className="text-[10px] text-muted-foreground">Workspace Terdaftar</DropdownMenuLabel>
-              {workspaces.map((ws) => (
-                <DropdownMenuItem
-                  key={ws.id}
-                  onClick={() => handleWorkspaceChange(ws.id)}
-                  className="flex items-center justify-between py-2 text-xs focus:bg-muted"
-                >
-                  <span className="truncate font-medium">{ws.name}</span>
-                  <span className="rounded bg-muted px-1.5 py-0.5 text-[9px] uppercase text-muted-foreground">
-                    {ws.role}
-                  </span>
-                </DropdownMenuItem>
-              ))}
-              <DropdownMenuSeparator className="bg-border" />
-              <DropdownMenuItem disabled className="text-xs text-muted-foreground">
-                <Users2 className="mr-2 h-3.5 w-3.5" /> Kelola Tim (Multi-User)
+            <DropdownMenuContent className="w-64 border-border bg-card text-foreground shadow-2xl rounded-2xl p-1.5 backdrop-blur-xl" align="start">
+              <DropdownMenuLabel className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground px-2 py-1">
+                Workspace Terdaftar
+              </DropdownMenuLabel>
+              <div className="max-h-48 overflow-y-auto no-scrollbar space-y-0.5">
+                {workspaces.map((ws) => (
+                  <DropdownMenuItem
+                    key={ws.id}
+                    onClick={() => handleWorkspaceChange(ws.id)}
+                    className={cn(
+                      "flex items-center justify-between py-2 px-2.5 rounded-xl text-xs cursor-pointer focus:bg-muted/80",
+                      ws.id === active.id && "bg-primary/10 text-primary font-semibold",
+                    )}
+                  >
+                    <span className="truncate font-medium">{ws.name}</span>
+                    <span className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-mono uppercase text-muted-foreground">
+                      {ws.role}
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </div>
+              <DropdownMenuSeparator className="bg-border my-1" />
+              <DropdownMenuItem
+                onClick={() => setCreateWsOpen(true)}
+                className="flex items-center gap-2 py-2 px-2.5 rounded-xl text-xs font-semibold text-primary cursor-pointer hover:bg-primary/10 focus:bg-primary/10"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                <span>Buat Workspace Baru</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => setTeamModalOpen(true)}
+                className="flex items-center gap-2 py-2 px-2.5 rounded-xl text-xs cursor-pointer focus:bg-muted/80 text-foreground"
+              >
+                <Users2 className="h-3.5 w-3.5 text-violet-500" />
+                <span>Kelola Tim (Multi-User)</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -332,6 +354,20 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
           <div className="mx-auto max-w-7xl">{children}</div>
         </main>
       </div>
+
+      {/* Modals for Workspace Creation and Team Management */}
+      <CreateWorkspaceModal
+        open={createWsOpen}
+        onOpenChange={setCreateWsOpen}
+      />
+
+      <TeamManagementModal
+        open={teamModalOpen}
+        onOpenChange={setTeamModalOpen}
+        workspaceId={active.id}
+        workspaceName={active.name}
+        currentUserRole={active.role}
+      />
     </div>
   );
 }
