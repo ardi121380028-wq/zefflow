@@ -45,7 +45,7 @@ export function Toolbar() {
   if (kind === "architect") {
     return (
       <div
-        className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-sky-500/30 bg-slate-900/95 dark:bg-[#0C0E16]/95 p-1.5 shadow-2xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(14,165,233,0.2)] backdrop-blur-2xl no-scrollbar text-foreground dark:text-white"
+        className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-sky-300/80 dark:border-sky-500/30 bg-white/95 dark:bg-[#0C0E16]/95 p-1.5 shadow-xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(14,165,233,0.2)] backdrop-blur-2xl no-scrollbar text-foreground dark:text-white"
         role="toolbar"
         aria-label="Alat Architect Studio"
       >

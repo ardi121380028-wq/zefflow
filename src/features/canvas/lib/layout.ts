@@ -289,9 +289,10 @@ export function pickHandles(src: Rect, tgt: Rect, srcIsDecision: boolean, orient
 
 /**
  * Susun ulang SELURUH diagram dari orientasi `from` ke `to` (boleh sama = "rapikan otomatis").
- * - Step dikelompokkan menjadi baris/kolom urutan berdasarkan posisinya.
- * - Jarak dihitung dari tinggi nyata tiap baris -> rapat, tidak saling menimpa.
- * - Handle tiap koneksi dihitung ulang agar garis mengalir natural.
+ * - Menggunakan Topological / Hierarchical Layering berdasarkan relasi koneksi edge.
+ * - Freeform (Architect Studio tanpa lane): Mengelompokkan komponen ke layer kolom/baris rapi & terpusat.
+ * - Swimlane (SOP): Mencegah node di lane yang sama saling bertumpukan dengan pembagian multi-slot vertikal & perpanjangan lane dinamis.
+ * - Handle tiap koneksi dihitung ulang agar garis mengalir natural tanpa menabrak bodi kartu.
  */
 export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike>(
   nodes: N[],
@@ -310,88 +311,270 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
     h: number;
     cx: number;
     cy: number;
-    lane: number;
+    laneId?: string;
+    laneIdx: number;
   }
+
   const infos: Info[] = steps.map((node) => {
     const { w, h } = sizeOfNode(node);
     const p = node.parentId ? laneById.get(node.parentId) : undefined;
     const ax = (p?.position.x ?? 0) + node.position.x;
     const ay = (p?.position.y ?? 0) + node.position.y;
-    return { node, w, h, cx: ax + w / 2, cy: ay + h / 2, lane: p ? (laneIndex.get(p.id) ?? 0) : 0 };
+    return {
+      node,
+      w,
+      h,
+      cx: ax + w / 2,
+      cy: ay + h / 2,
+      laneId: node.parentId,
+      laneIdx: p ? (laneIndex.get(p.id) ?? 0) : 0,
+    };
   });
 
-  // Kelompokkan menjadi baris/kolom berurutan di sumbu alur orientasi asal.
-  const axis: "cx" | "cy" = from === "vertical" ? "cy" : "cx";
-  const threshold = from === "vertical" ? 70 : 150;
-  const sorted = [...infos].sort((a, b) => a[axis] - b[axis]);
-  const seqOf = new Map<string, number>();
-  let seq = -1;
-  let last = -Infinity;
-  for (const it of sorted) {
-    if (it[axis] - last > threshold) seq++;
-    last = it[axis];
-    seqOf.set(it.node.id, seq);
+  const infoById = new Map(infos.map((it) => [it.node.id, it]));
+
+  // Bangun graph directed untuk topological layering
+  const inDegree = new Map<string, number>();
+  const successors = new Map<string, string[]>();
+  for (const it of infos) {
+    inDegree.set(it.node.id, 0);
+    successors.set(it.node.id, []);
   }
-  const seqCount = Math.max(0, seq + 1);
+
+  for (const edge of edges) {
+    if (infoById.has(edge.source) && infoById.has(edge.target)) {
+      successors.get(edge.source)!.push(edge.target);
+      inDegree.set(edge.target, (inDegree.get(edge.target) ?? 0) + 1);
+    }
+  }
+
+  // Hitung topological rank
+  const ranks = new Map<string, number>();
+  const queue: string[] = [];
+
+  for (const [id, deg] of inDegree.entries()) {
+    if (deg === 0) {
+      ranks.set(id, 0);
+      queue.push(id);
+    }
+  }
+
+  // Jika semua node memiliki loop / siklus, mulai dari node paling kiri/atas
+  if (queue.length === 0 && infos.length > 0) {
+    const first = [...infos].sort((a, b) => (from === "vertical" ? a.cy - b.cy : a.cx - b.cx))[0]!;
+    ranks.set(first.node.id, 0);
+    queue.push(first.node.id);
+  }
+
+  while (queue.length > 0) {
+    const currId = queue.shift()!;
+    const currRank = ranks.get(currId) ?? 0;
+    const nexts = successors.get(currId) ?? [];
+    for (const nextId of nexts) {
+      const nextRank = Math.max(ranks.get(nextId) ?? 0, currRank + 1);
+      ranks.set(nextId, nextRank);
+      queue.push(nextId);
+    }
+  }
+
+  // Untuk node yang belum terhubung ke graph (terisolasi), tentukan rank dari posisi koordinatnya
+  const axis: "cx" | "cy" = from === "vertical" ? "cy" : "cx";
+  const sortedInfos = [...infos].sort((a, b) => a[axis] - b[axis]);
+  let coordRank = 0;
+  let lastCoord = -Infinity;
+  const threshold = from === "vertical" ? 80 : 180;
+  for (const it of sortedInfos) {
+    if (!ranks.has(it.node.id)) {
+      if (it[axis] - lastCoord > threshold) coordRank++;
+      lastCoord = it[axis];
+      ranks.set(it.node.id, coordRank);
+    }
+  }
 
   const newPos = new Map<string, { x: number; y: number }>();
   const laneGeom = new Map<string, { x: number; y: number; width: number; height: number }>();
 
-  if (to === "vertical") {
-    const rowH = new Array<number>(seqCount).fill(0);
+  // =========================================================================
+  // KASUS 1: FREEFORM MODE (STUDIO 2 ARCHITECT TANPA SWIMLANE)
+  // =========================================================================
+  if (lanes.length === 0) {
+    // Kelompokkan node per rank / layer
+    const layerMap = new Map<number, Info[]>();
     for (const it of infos) {
-      const r = seqOf.get(it.node.id)!;
-      rowH[r] = Math.max(rowH[r]!, it.h);
+      const r = ranks.get(it.node.id) ?? 0;
+      if (!layerMap.has(r)) layerMap.set(r, []);
+      layerMap.get(r)!.push(it);
     }
-    const rowTop: number[] = [];
-    let y = FIRST_ROW_Y;
-    for (let r = 0; r < seqCount; r++) {
-      rowTop[r] = y;
-      y += rowH[r]! + ROW_GAP;
-    }
-    const length = Math.max(LANE_V_MIN_LENGTH, Math.ceil(y - ROW_GAP + LANE_V_BOTTOM_PAD));
 
-    let offsetX = 0;
-    const widthOf = (l: N) => (from === "vertical" ? (l.width ?? LANE_V_WIDTH) : LANE_V_WIDTH);
-    lanes.forEach((l) => {
-      const width = widthOf(l);
-      laneGeom.set(l.id, { x: offsetX, y: 0, width, height: length });
-      offsetX += width;
-    });
-    for (const it of infos) {
-      const r = seqOf.get(it.node.id)!;
-      const lane = it.node.parentId ? laneById.get(it.node.parentId) : undefined;
-      const laneW = lane ? widthOf(lane) : LANE_V_WIDTH;
-      newPos.set(it.node.id, {
-        x: Math.max(12, Math.round((laneW - it.w) / 2)),
-        y: rowTop[r]! + Math.round((rowH[r]! - it.h) / 2),
-      });
+    const sortedRankKeys = Array.from(layerMap.keys()).sort((a, b) => a - b);
+
+    if (to === "vertical") {
+      let currentY = 60;
+      for (const r of sortedRankKeys) {
+        const layerNodes = layerMap.get(r)!;
+        // Urutkan node di layer ini berdasarkan posisi horizontal sebelumnya
+        layerNodes.sort((a, b) => a.cx - b.cx);
+
+        const maxH = Math.max(...layerNodes.map((n) => n.h), STEP_EST_HEIGHT);
+        let currentX = 80;
+        for (const it of layerNodes) {
+          newPos.set(it.node.id, {
+            x: currentX,
+            y: currentY + Math.round((maxH - it.h) / 2),
+          });
+          currentX += it.w + 48;
+        }
+        currentY += maxH + 80;
+      }
+    } else {
+      // Horizontal freeform
+      let currentX = 60;
+      for (const r of sortedRankKeys) {
+        const layerNodes = layerMap.get(r)!;
+        // Urutkan node di layer ini berdasarkan posisi vertikal sebelumnya
+        layerNodes.sort((a, b) => a.cy - b.cy);
+
+        const maxW = Math.max(...layerNodes.map((n) => n.w), STEP_WIDTH);
+        let currentY = 80;
+        for (const it of layerNodes) {
+          newPos.set(it.node.id, {
+            x: currentX + Math.round((maxW - it.w) / 2),
+            y: currentY,
+          });
+          currentY += it.h + 40;
+        }
+        currentX += maxW + 90;
+      }
     }
   } else {
-    const width = Math.max(LANE_DEFAULT_WIDTH, FIRST_COL_X + seqCount * COL_GAP + 300);
-    let offsetY = 0;
-    const heightOf = (l: N) => (from === "horizontal" ? (l.height ?? LANE_DEFAULT_HEIGHT) : LANE_DEFAULT_HEIGHT);
-    lanes.forEach((l) => {
-      const height = heightOf(l);
-      laneGeom.set(l.id, { x: 0, y: offsetY, width, height });
-      offsetY += height;
-    });
-    for (const it of infos) {
-      const c = seqOf.get(it.node.id)!;
-      const lane = it.node.parentId ? laneById.get(it.node.parentId) : undefined;
-      const laneH = lane ? heightOf(lane) : LANE_DEFAULT_HEIGHT;
-      newPos.set(it.node.id, {
-        x: FIRST_COL_X + c * COL_GAP + Math.round((STEP_WIDTH - it.w) / 2),
-        y: Math.max(12, Math.round((laneH - it.h) / 2)),
+    // =========================================================================
+    // KASUS 2: SWIMLANE MODE (SOP MULTI-DIVISI)
+    // =========================================================================
+    const maxRank = Math.max(0, ...Array.from(ranks.values()));
+
+    if (to === "vertical") {
+      // Orientasi Ke Bawah: Lane = Kolom, Alur menurun
+      const stepsInLane = new Map<string, Info[]>();
+      lanes.forEach((l) => stepsInLane.set(l.id, []));
+      infos.forEach((it) => {
+        if (it.laneId && stepsInLane.has(it.laneId)) {
+          stepsInLane.get(it.laneId)!.push(it);
+        }
       });
+
+      // Hitung posisi Y tiap rank
+      const rowH = new Array<number>(maxRank + 1).fill(0);
+      for (const it of infos) {
+        const r = ranks.get(it.node.id) ?? 0;
+        rowH[r] = Math.max(rowH[r] ?? 0, it.h);
+      }
+      const rowTop: number[] = [];
+      let y = FIRST_ROW_Y;
+      for (let r = 0; r <= maxRank; r++) {
+        rowTop[r] = y;
+        y += (rowH[r] ?? STEP_EST_HEIGHT) + ROW_GAP;
+      }
+      const totalLength = Math.max(LANE_V_MIN_LENGTH, Math.ceil(y - ROW_GAP + LANE_V_BOTTOM_PAD));
+
+      let offsetX = 0;
+      for (const l of lanes) {
+        const laneItems = stepsInLane.get(l.id) ?? [];
+        // Cek apakah ada rank yang memiliki lebih dari 1 node di lane ini
+        const countByRank = new Map<number, number>();
+        laneItems.forEach((it) => {
+          const r = ranks.get(it.node.id) ?? 0;
+          countByRank.set(r, (countByRank.get(r) ?? 0) + 1);
+        });
+        const maxParallel = Math.max(1, ...Array.from(countByRank.values()));
+        const calculatedLaneWidth = Math.max(
+          l.width ?? LANE_V_WIDTH,
+          maxParallel * (STEP_WIDTH + 24) + 48,
+        );
+
+        laneGeom.set(l.id, { x: offsetX, y: 0, width: calculatedLaneWidth, height: totalLength });
+        offsetX += calculatedLaneWidth;
+
+        // Distribusikan slot node yang berbagi rank di lane yang sama
+        const rankSlotCounters = new Map<number, number>();
+        // Urutkan item per rank lalu per cx
+        laneItems.sort((a, b) => {
+          const ra = ranks.get(a.node.id) ?? 0;
+          const rb = ranks.get(b.node.id) ?? 0;
+          return ra !== rb ? ra - rb : a.cx - b.cx;
+        });
+
+        for (const it of laneItems) {
+          const r = ranks.get(it.node.id) ?? 0;
+          const slot = rankSlotCounters.get(r) ?? 0;
+          rankSlotCounters.set(r, slot + 1);
+
+          const rTop = rowTop[r] ?? FIRST_ROW_Y;
+          const rH = rowH[r] ?? it.h;
+
+          newPos.set(it.node.id, {
+            x: 24 + slot * (it.w + 20),
+            y: rTop + Math.round((rH - it.h) / 2),
+          });
+        }
+      }
+    } else {
+      // Orientasi Ke Samping: Lane = Baris, Alur horizontal ke kanan
+      const stepsInLane = new Map<string, Info[]>();
+      lanes.forEach((l) => stepsInLane.set(l.id, []));
+      infos.forEach((it) => {
+        if (it.laneId && stepsInLane.has(it.laneId)) {
+          stepsInLane.get(it.laneId)!.push(it);
+        }
+      });
+
+      const totalWidth = Math.max(LANE_DEFAULT_WIDTH, FIRST_COL_X + (maxRank + 1) * COL_GAP + 320);
+
+      let offsetY = 0;
+      for (const l of lanes) {
+        const laneItems = stepsInLane.get(l.id) ?? [];
+        // Cek berapa banyak node yang menempati kolom/rank yang sama di lane ini
+        const countByRank = new Map<number, number>();
+        laneItems.forEach((it) => {
+          const r = ranks.get(it.node.id) ?? 0;
+          countByRank.set(r, (countByRank.get(r) ?? 0) + 1);
+        });
+        const maxParallel = Math.max(1, ...Array.from(countByRank.values()));
+        // Lebarkan lane bila ada multi-node bertingkat
+        const calculatedLaneHeight = Math.max(
+          LANE_DEFAULT_HEIGHT,
+          maxParallel * (STEP_EST_HEIGHT + 24) + 48,
+        );
+
+        laneGeom.set(l.id, { x: 0, y: offsetY, width: totalWidth, height: calculatedLaneHeight });
+        offsetY += calculatedLaneHeight;
+
+        // Distribusikan slot node yang berbagi rank di lane yang sama
+        const rankSlotCounters = new Map<number, number>();
+        laneItems.sort((a, b) => {
+          const ra = ranks.get(a.node.id) ?? 0;
+          const rb = ranks.get(b.node.id) ?? 0;
+          return ra !== rb ? ra - rb : a.cy - b.cy;
+        });
+
+        for (const it of laneItems) {
+          const r = ranks.get(it.node.id) ?? 0;
+          const slot = rankSlotCounters.get(r) ?? 0;
+          rankSlotCounters.set(r, slot + 1);
+
+          newPos.set(it.node.id, {
+            x: FIRST_COL_X + r * COL_GAP + Math.round((STEP_WIDTH - it.w) / 2),
+            y: 24 + slot * (it.h + 20),
+          });
+        }
+      }
     }
   }
 
-  // Rect absolut baru untuk penentuan handle koneksi.
+  // Rect absolut baru untuk penentuan handle koneksi akurat
   const rectOf = new Map<string, { rect: Rect; decision: boolean }>();
   for (const it of infos) {
-    const p = newPos.get(it.node.id)!;
-    const lg = it.node.parentId ? laneGeom.get(it.node.parentId) : undefined;
+    const p = newPos.get(it.node.id) ?? it.node.position;
+    const lg = it.laneId ? laneGeom.get(it.laneId) : undefined;
     rectOf.set(it.node.id, {
       rect: { x: (lg?.x ?? 0) + p.x, y: (lg?.y ?? 0) + p.y, w: it.w, h: it.h },
       decision: it.node.type === "decision",
@@ -400,8 +583,8 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
 
   const nextNodes = nodes.map((n) => {
     if (n.type === "lane") {
-      const g = laneGeom.get(n.id)!;
-      return { ...n, position: { x: g.x, y: g.y }, width: g.width, height: g.height } as N;
+      const g = laneGeom.get(n.id);
+      return g ? ({ ...n, position: { x: g.x, y: g.y }, width: g.width, height: g.height } as N) : n;
     }
     const p = newPos.get(n.id);
     return (p ? { ...n, position: p } : n) as N;

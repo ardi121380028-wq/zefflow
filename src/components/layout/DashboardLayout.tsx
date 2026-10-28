@@ -205,6 +205,7 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
               <Link
                 key={item.label}
                 href={item.href}
+                prefetch={true}
                 className={cn(
                   "flex items-center justify-between gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150",
                   isActive
@@ -231,6 +232,7 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
             </p>
             <Link
               href="/api-docs"
+              prefetch={true}
               className={cn(
                 "flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150",
                 pathname === "/api-docs"
@@ -243,6 +245,7 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
             </Link>
             <Link
               href="/settings"
+              prefetch={true}
               className={cn(
                 "flex items-center gap-2.5 rounded-xl px-3 py-2 text-xs font-medium transition-all duration-150",
                 pathname === "/settings"

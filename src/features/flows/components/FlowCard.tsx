@@ -61,14 +61,14 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
   const isJourney = flow.kind === "journey";
 
   return (
-    <div className="card-premium group relative flex flex-col justify-between overflow-hidden p-5 hover:border-primary/50">
+    <div className="card-premium group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 dark:border-white/[0.08] bg-card p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
       <div>
         {/* Top Badges & Kind Indicator */}
-        <div className="flex items-start justify-between gap-2">
+        <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
             <span
               className={cn(
-                "grid h-8 w-8 place-items-center rounded-xl border",
+                "grid h-6 w-6 place-items-center rounded-lg border",
                 isArchitect
                   ? "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400"
                   : isJourney
@@ -77,16 +77,16 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
               )}
             >
               {isArchitect ? (
-                <Database className="h-4 w-4" />
+                <Database className="h-3.5 w-3.5" />
               ) : isJourney ? (
-                <Compass className="h-4 w-4" />
+                <Compass className="h-3.5 w-3.5" />
               ) : (
-                <Workflow className="h-4 w-4" />
+                <Workflow className="h-3.5 w-3.5" />
               )}
             </span>
             <span
               className={cn(
-                "rounded-md border px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider",
+                "rounded-md border px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase tracking-wider",
                 isArchitect
                   ? "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
                   : isJourney
@@ -94,7 +94,7 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
                   : "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
               )}
             >
-              {isArchitect ? "ARCHITECT STUDIO" : isJourney ? "CUSTOMER JOURNEY" : "SOP FLOW"}
+              {isArchitect ? "ARCHITECT" : isJourney ? "JOURNEY" : "SOP FLOW"}
             </span>
           </div>
 
@@ -102,13 +102,13 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="grid h-7 w-7 place-items-center rounded-lg text-muted-foreground opacity-60 transition-opacity hover:bg-muted hover:text-foreground hover:opacity-100 group-hover:opacity-100"
+                className="grid h-6 w-6 place-items-center rounded-md text-muted-foreground opacity-60 transition-opacity hover:bg-muted hover:text-foreground hover:opacity-100 group-hover:opacity-100"
                 aria-label="Opsi diagram"
               >
-                <MoreVertical className="h-4 w-4" />
+                <MoreVertical className="h-3.5 w-3.5" />
               </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-44 border-border bg-card text-foreground">
+            <DropdownMenuContent align="end" className="w-40 border-border bg-card text-foreground">
               <DropdownMenuItem onClick={() => router.push(`/flows/${flow.id}`)} className="text-xs">
                 <Pencil className="mr-2 h-3.5 w-3.5" /> Buka Editor
               </DropdownMenuItem>
@@ -131,18 +131,18 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
         </div>
 
         {/* Title & Description */}
-        <Link href={`/flows/${flow.id}`} className="mt-4 block group-hover:text-primary">
-          <h3 className="line-clamp-1 font-display text-[15px] font-bold text-foreground transition-colors group-hover:text-primary">
+        <Link href={`/flows/${flow.id}`} prefetch={true} className="mt-2.5 block group-hover:text-primary">
+          <h3 className="line-clamp-1 font-display text-sm font-semibold tracking-tight text-foreground transition-colors group-hover:text-primary">
             {flow.title}
           </h3>
-          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+          <p className="mt-1 line-clamp-1 text-[11px] leading-relaxed text-muted-foreground">
             {flow.description || "Diagram swimlane interaktif dengan pemisahan tugas antar divisi."}
           </p>
         </Link>
       </div>
 
       {/* Footer Info: Status, Share indicator, timeAgo */}
-      <div className="mt-6 flex items-center justify-between border-t border-border pt-3 text-[11px] text-muted-foreground">
+      <div className="mt-3.5 flex items-center justify-between border-t border-border/70 pt-2.5 text-[10px] text-muted-foreground">
         <div className="flex items-center gap-2">
           {flow.shareEnabled ? (
             <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium">
@@ -150,14 +150,14 @@ export function FlowCard({ flow, onShareClick }: FlowCardProps) {
               Publik
             </span>
           ) : (
-            <span className="flex items-center gap-1 text-zinc-500">
-              <Lock className="h-3 w-3" /> Privat
+            <span className="flex items-center gap-1 text-muted-foreground/80">
+              <Lock className="h-2.5 w-2.5" /> Privat
             </span>
           )}
-          <span className="h-1 w-1 rounded-full bg-zinc-700" />
-          <span className="capitalize text-zinc-400">{flow.status}</span>
+          <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground/40" />
+          <span className="capitalize">{flow.status}</span>
         </div>
-        <span title={new Date(flow.updatedAt).toLocaleString("id")} className="font-mono text-[10px] text-zinc-500">
+        <span title={new Date(flow.updatedAt).toLocaleString("id")} className="font-mono text-[9px] text-muted-foreground">
           {timeAgo(flow.updatedAt)}
         </span>
       </div>
