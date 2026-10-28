@@ -19,6 +19,7 @@ import {
   Undo2,
   UserPlus,
   Users,
+  Database,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -35,6 +36,7 @@ import { useCanvasStore } from "@/features/canvas/store/canvas-store";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { updateFlowMetaAction } from "../actions";
 import { ShareDialog } from "./ShareDialog";
+import { SqlExportModal } from "./SqlExportModal";
 
 interface FlowEditorHeaderProps {
   flowId: string;
@@ -59,11 +61,13 @@ export function FlowEditorHeader({
   const [shareEnabled, setShareEnabled] = React.useState(initialShareEnabled);
   const [shareToken, setShareToken] = React.useState(initialShareToken);
   const [isExporting, setIsExporting] = React.useState(false);
+  const [sqlExportOpen, setSqlExportOpen] = React.useState(false);
 
   const saveStatus = useCanvasStore((s) => s.saveStatus);
   const canUndo = useCanvasStore((s) => s.past.length > 0);
   const canRedo = useCanvasStore((s) => s.future.length > 0);
   const nodes = useCanvasStore((s) => s.nodes);
+  const edges = useCanvasStore((s) => s.edges);
   const orientation = useCanvasStore((s) => s.orientation);
   const companyLogo = useCanvasStore((s) => s.companyLogo);
   const companyName = useCanvasStore((s) => s.companyName);
@@ -232,11 +236,11 @@ export function FlowEditorHeader({
                 className="gap-1 sm:gap-1.5 text-xs h-8 px-2 sm:px-3 dark:border-white/15 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:hover:border-violet-500/40 dark:shadow-[0_0_12px_rgba(139,92,246,0.15)] transition-all"
               >
                 <Download className="h-3.5 w-3.5 text-violet-500" />
-                <span className="hidden xs:inline">Ekspor</span>
+                <span className="font-semibold text-xs">Ekspor</span>
                 <ChevronDown className="h-3 w-3 opacity-60" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56 border-border bg-card text-foreground">
+            <DropdownMenuContent align="end" className="w-60 border-border bg-card text-foreground">
               <DropdownMenuItem onClick={() => handleExport("png")} className="text-xs py-2">
                 <FileImage className="mr-2 h-4 w-4 text-violet-500" />
                 <div className="flex flex-col">
@@ -249,6 +253,14 @@ export function FlowEditorHeader({
                 <div className="flex flex-col">
                   <span className="font-medium">Dokumen PDF (Vector Quality)</span>
                   <span className="text-[10px] text-muted-foreground">Anti-pelangi, full diagram included</span>
+                </div>
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setSqlExportOpen(true)} className="text-xs py-2">
+                <Database className="mr-2 h-4 w-4 text-sky-500" />
+                <div className="flex flex-col">
+                  <span className="font-medium">Skrip SQL DDL (Database ERD)</span>
+                  <span className="text-[10px] text-muted-foreground">Postgres, MySQL, &amp; Prisma Schema</span>
                 </div>
               </DropdownMenuItem>
             </DropdownMenuContent>
@@ -313,6 +325,15 @@ export function FlowEditorHeader({
           setShareEnabled(enabled);
           if (token) setShareToken(token);
         }}
+      />
+
+      {/* Developer SQL DDL Exporter Modal */}
+      <SqlExportModal
+        open={sqlExportOpen}
+        onOpenChange={setSqlExportOpen}
+        nodes={nodes}
+        edges={edges}
+        flowTitle={title}
       />
     </>
   );

@@ -3,13 +3,17 @@
 import * as React from "react";
 import {
   Check,
+  ChevronDown,
   Clock,
   Code,
   Copy,
+  Edit3,
   ExternalLink,
+  Eye,
   Globe2,
   Lock,
   Mail,
+  MessageSquare,
   Shield,
   ShieldCheck,
   Sparkles,
@@ -20,6 +24,14 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
   Dialog,
   DialogContent,
@@ -48,6 +60,110 @@ interface Collaborator {
   role: "owner" | "editor" | "commenter" | "viewer";
   status: "active" | "invited";
   avatarColor: string;
+}
+
+const ROLE_OPTIONS = [
+  {
+    value: "editor" as const,
+    label: "Editor",
+    sublabel: "Bisa Edit",
+    description: "Bisa menambah & mengubah seluruh diagram alur",
+    icon: Edit3,
+    badgeColor: "text-violet-500 bg-violet-500/10",
+  },
+  {
+    value: "commenter" as const,
+    label: "Reviewer",
+    sublabel: "Beri Catatan",
+    description: "Bisa menyematkan review & catatan perbaikan",
+    icon: MessageSquare,
+    badgeColor: "text-sky-500 bg-sky-500/10",
+  },
+  {
+    value: "viewer" as const,
+    label: "Viewer",
+    sublabel: "Lihat Saja",
+    description: "Hanya melihat kanvas & mencetak dokumen ekspor",
+    icon: Eye,
+    badgeColor: "text-emerald-500 bg-emerald-500/10",
+  },
+];
+
+/** Dropdown kustom elegan & modern dengan Radix Portal */
+function RoleDropdown({
+  value,
+  onChange,
+  size = "md",
+}: {
+  value: "editor" | "commenter" | "viewer";
+  onChange: (val: "editor" | "commenter" | "viewer") => void;
+  size?: "sm" | "md";
+}) {
+  const current = ROLE_OPTIONS.find((r) => r.value === value) ?? ROLE_OPTIONS[0]!;
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className={cn(
+            "group inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-background font-semibold text-foreground transition-all hover:bg-muted/70 hover:border-primary/40 focus:outline-none focus:ring-1 focus:ring-primary active:scale-95 shadow-2xs select-none",
+            size === "sm" ? "h-7 px-2 text-[10px]" : "h-8 px-2.5 text-xs",
+          )}
+        >
+          <current.icon className={cn("shrink-0 text-muted-foreground group-hover:text-primary transition-colors", size === "sm" ? "h-3 w-3" : "h-3.5 w-3.5")} />
+          <span className="truncate">
+            {current.label} {size !== "sm" && <span className="font-normal text-muted-foreground">({current.sublabel})</span>}
+          </span>
+          <ChevronDown
+            className={cn(
+              "opacity-60 shrink-0 transition-transform duration-200 group-hover:opacity-100",
+              size === "sm" ? "h-2.5 w-2.5" : "h-3 w-3",
+            )}
+          />
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        align="end"
+        sideOffset={6}
+        className="w-64 p-1.5 rounded-2xl border border-border/80 dark:border-white/[0.1] bg-popover/98 text-popover-foreground shadow-2xl backdrop-blur-2xl z-[100]"
+      >
+        <DropdownMenuLabel className="px-2 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
+          Pilih Izin Akses
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator className="-mx-1.5 my-1" />
+        {ROLE_OPTIONS.map((opt) => {
+          const isSelected = opt.value === value;
+          return (
+            <DropdownMenuItem
+              key={opt.value}
+              onClick={() => onChange(opt.value)}
+              className={cn(
+                "flex items-start gap-2.5 rounded-xl p-2 cursor-pointer transition-colors focus:bg-muted/80",
+                isSelected && "bg-primary/10 text-primary font-bold focus:bg-primary/15",
+              )}
+            >
+              <div className={cn("grid h-6 w-6 place-items-center rounded-lg shrink-0 mt-0.5", opt.badgeColor)}>
+                <opt.icon className="h-3.5 w-3.5" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold truncate">
+                    {opt.label} <span className="text-[10px] font-normal text-muted-foreground font-mono">({opt.sublabel})</span>
+                  </p>
+                  {isSelected && <Check className="h-3.5 w-3.5 text-primary shrink-0 ml-1" />}
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-snug mt-0.5 font-normal">
+                  {opt.description}
+                </p>
+              </div>
+            </DropdownMenuItem>
+          );
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 export function ShareDialog({
@@ -284,15 +400,10 @@ export function ShareDialog({
                 </div>
 
                 <div className="flex items-center gap-1.5">
-                  <select
+                  <RoleDropdown
                     value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value as any)}
-                    className="h-8 rounded-xl border border-border/80 bg-background px-2.5 text-xs font-semibold text-foreground focus:border-primary focus:outline-none"
-                  >
-                    <option value="editor">Editor (Bisa Edit)</option>
-                    <option value="commenter">Reviewer (Beri Catatan)</option>
-                    <option value="viewer">Viewer (Lihat Saja)</option>
-                  </select>
+                    onChange={(r) => setInviteRole(r)}
+                  />
 
                   <Button
                     type="submit"
@@ -349,17 +460,17 @@ export function ShareDialog({
                               className={cn(
                                 "rounded-lg px-2 py-0.5 text-[10px] font-semibold font-mono",
                                 c.status === "active"
-                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                  : "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+                                    ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400",
                               )}
                             >
                               {c.status === "active" ? "ONLINE" : "TERKIRIM"}
                             </span>
 
-                            <select
-                              value={c.role}
-                              onChange={(e) => {
-                                const nextRole = e.target.value as any;
+                            <RoleDropdown
+                              value={c.role as "editor" | "commenter" | "viewer"}
+                              size="sm"
+                              onChange={(nextRole) => {
                                 setCollaborators((prev) =>
                                   prev.map((item) =>
                                     item.id === c.id ? { ...item, role: nextRole } : item,
@@ -367,12 +478,7 @@ export function ShareDialog({
                                 );
                                 toast.success(`Peran ${c.name} diubah menjadi ${nextRole}.`);
                               }}
-                              className="h-7 rounded-lg border border-border bg-background px-2 text-[11px] font-medium text-foreground focus:outline-none"
-                            >
-                              <option value="editor">Editor</option>
-                              <option value="commenter">Reviewer</option>
-                              <option value="viewer">Viewer</option>
-                            </select>
+                            />
 
                             <button
                               type="button"
