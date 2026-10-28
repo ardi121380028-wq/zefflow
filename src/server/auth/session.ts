@@ -3,7 +3,7 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { createClient } from "@/lib/supabase/server";
-import { withUser } from "@/server/db/client";
+import { db, withUser } from "@/server/db/client";
 import { memberships, profiles, workspaces, type MemberRole, type Profile, type Workspace } from "@/server/db/schema";
 import { AppError } from "@/server/errors";
 
@@ -95,7 +95,7 @@ export const getWorkspaceContext = cache(async (userId: string): Promise<Workspa
     const fullName = (authUser?.user_metadata?.full_name as string) || email.split("@")[0] || "User";
     const slugBase = email.split("@")[0].toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + Math.random().toString(36).substring(2, 7);
 
-    const newWs = await withUser(userId, async (tx) => {
+    const newWs = await db.transaction(async (tx) => {
       await tx
         .insert(profiles)
         .values({

@@ -48,6 +48,7 @@ export function FlowEditorClient({
           flowId={flowId}
           initialDocument={initialDocument}
           initialVersion={initialVersion}
+          kind={kind}
           onReady={handleCanvasReady}
         />
       </div>

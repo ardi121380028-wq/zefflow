@@ -49,6 +49,7 @@ interface Props {
   flowId: string;
   initialDocument: FlowDocument;
   initialVersion: number;
+  kind?: "sop" | "journey" | "architect";
   readOnly?: boolean;
   /** Dipanggil agar header editor bisa memicu simpan manual (Ctrl+S / tombol). */
   onReady?: (api: { saveNow: () => Promise<void> }) => void;
@@ -63,7 +64,7 @@ export function SwimlaneCanvas(props: Props) {
   );
 }
 
-function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false, onReady }: Props) {
+function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly = false, onReady }: Props) {
   const nodes = useCanvasStore((s) => s.nodes);
   const edges = useCanvasStore((s) => s.edges);
   const hydrated = useCanvasStore((s) => s.flowId === flowId);
@@ -79,7 +80,7 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
 
   // Hydrate store sekali per flow.
   useEffect(() => {
-    useCanvasStore.getState().init({ flowId, doc: initialDocument, version: initialVersion, readOnly });
+    useCanvasStore.getState().init({ flowId, doc: initialDocument, version: initialVersion, readOnly, kind });
     // fitView setelah node ter-render
     const t = setTimeout(() => fitView({ padding: 0.15, maxZoom: 1, duration: 300 }), 80);
     return () => clearTimeout(t);

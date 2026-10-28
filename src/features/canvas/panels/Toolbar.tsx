@@ -1,6 +1,23 @@
 "use client";
 
-import { ArrowDown, ArrowRight, ArrowRightFromLine, Columns3, GitBranch, Maximize2, Plus, Redo2, Rows3, Sparkles, Square, Undo2 } from "lucide-react";
+import {
+  ArrowDown,
+  ArrowRight,
+  ArrowRightFromLine,
+  Columns3,
+  Database,
+  GitBranch,
+  Maximize2,
+  Network,
+  Plus,
+  Radio,
+  Redo2,
+  Rows3,
+  Server,
+  Sparkles,
+  Square,
+  Undo2,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCanvasStore } from "../store/canvas-store";
 import type { StepNodeType } from "../types";
@@ -8,11 +25,13 @@ import type { StepNodeType } from "../types";
 export const PALETTE_MIME = "application/zefflow-node";
 
 /**
- * Toolbar studio melayang — gaya ElevenLabs command bar.
- * Responsif di mobile (overflow-x-auto, icon-first pada layar kecil).
+ * Toolbar studio melayang — adaptif:
+ * - Studio 1 (SOP / Swimlane): Alat jalur divisi, durasi, flow arah.
+ * - Studio 2 (Architect): Alat Tabel Database ERD, Microservices, Event Broker, API Gateway.
  */
 export function Toolbar() {
   const readOnly = useCanvasStore((s) => s.readOnly);
+  const kind = useCanvasStore((s) => s.kind);
   const hasLanes = useCanvasStore((s) => s.nodes.some((n) => n.type === "lane"));
   const canUndo = useCanvasStore((s) => s.past.length > 0);
   const canRedo = useCanvasStore((s) => s.future.length > 0);
@@ -22,11 +41,53 @@ export function Toolbar() {
 
   if (readOnly) return null;
 
+  // Studio 2: Dedicated Architect Toolbar
+  if (kind === "architect") {
+    return (
+      <div
+        className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-sky-500/30 bg-slate-900/95 dark:bg-[#0C0E16]/95 p-1.5 shadow-2xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.8),0_0_24px_rgba(14,165,233,0.2)] backdrop-blur-2xl no-scrollbar text-foreground dark:text-white"
+        role="toolbar"
+        aria-label="Alat Architect Studio"
+      >
+        <Tool
+          icon={<Database className="h-3.5 w-3.5 text-sky-400" />}
+          label="Tabel ERD"
+          hint="Tambah Tabel Database Relasional"
+          onClick={() => addStep("step")}
+        />
+        <Tool
+          icon={<Server className="h-3.5 w-3.5 text-violet-400" />}
+          label="Service API"
+          hint="Tambah Microservice / Container Node"
+          onClick={() => addStep("step")}
+        />
+        <Tool
+          icon={<Radio className="h-3.5 w-3.5 text-amber-400" />}
+          label="Event Broker"
+          hint="Tambah Kafka / RabbitMQ Event Stream"
+          onClick={() => addStep("decision")}
+        />
+        <Tool
+          icon={<Network className="h-3.5 w-3.5 text-emerald-400" />}
+          label="Gateway"
+          hint="Tambah API Gateway / Reverse Proxy"
+          onClick={() => addStep("terminal")}
+        />
+        <Divider />
+        <Tool icon={<Sparkles className="h-3.5 w-3.5 text-sky-400" />} label="Rapikan" hint="Rapikan posisi komponen otomatis" onClick={tidyLayout} />
+        <Divider />
+        <Tool icon={<Undo2 className="h-3.5 w-3.5" />} label="" hint="Undo (Ctrl+Z)" onClick={undo} disabled={!canUndo} />
+        <Tool icon={<Redo2 className="h-3.5 w-3.5" />} label="" hint="Redo (Ctrl+Shift+Z)" onClick={redo} disabled={!canRedo} />
+      </div>
+    );
+  }
+
+  // Studio 1: Standard SOP Swimlane Toolbar
   return (
     <div
       className="flex max-w-[calc(100vw-1.5rem)] items-center gap-1 overflow-x-auto rounded-full border border-border dark:border-white/[0.12] bg-white/95 dark:bg-[#0D0E16]/90 p-1.5 shadow-2xl dark:shadow-[0_12px_40px_rgba(0,0,0,0.7),0_0_24px_rgba(139,92,246,0.18),inset_0_1px_1px_rgba(255,255,255,0.12)] backdrop-blur-2xl no-scrollbar text-foreground dark:text-white"
       role="toolbar"
-      aria-label="Alat diagram"
+      aria-label="Alat diagram SOP"
     >
       <Tool
         icon={vertical ? <Columns3 className="h-3.5 w-3.5 text-violet-500" /> : <Rows3 className="h-3.5 w-3.5 text-violet-500" />}

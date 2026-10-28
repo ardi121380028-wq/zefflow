@@ -4,7 +4,9 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  ArrowRight,
   Compass,
+  Database,
   FileCheck2,
   FolderGit2,
   LayoutDashboard,
@@ -40,8 +42,14 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
   const [activeTab, setActiveTab] = React.useState<string>(initialTab);
   const [searchQuery, setSearchQuery] = React.useState("");
   const [createOpen, setCreateOpen] = React.useState(false);
+  const [createKind, setCreateKind] = React.useState<"sop" | "journey" | "architect">("sop");
   const [selectedShareFlow, setSelectedShareFlow] = React.useState<FlowCardData | null>(null);
   const [isCloning, setIsCloning] = React.useState(false);
+
+  const handleOpenCreate = (k: "sop" | "journey" | "architect" = "sop") => {
+    setCreateKind(k);
+    setCreateOpen(true);
+  };
 
   React.useEffect(() => {
     const current = searchParams.get("tab");
@@ -100,52 +108,179 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
   const isTemplatesTab = activeTab === "templates";
 
   return (
-    <div className="space-y-8 animate-fade-up">
-      {/* Studio Hero Banner (Tampil di Overview atau saat filter belum dipersempit) */}
-      {isOverview && (
-        <div className="relative overflow-hidden rounded-3xl border border-border bg-gradient-to-r from-violet-500/10 via-background to-indigo-500/10 dark:from-[#0F1017] dark:via-[#0D0E14] dark:to-[#14121E] p-6 md:p-8 shadow-sm dark:shadow-[0_12px_40px_rgba(0,0,0,0.8)]">
-          {/* Ambient glow background */}
-          <div className="pointer-events-none absolute -right-20 -top-20 h-72 w-72 rounded-full bg-violet-600/15 blur-[100px]" />
-          <div className="pointer-events-none absolute -left-20 -bottom-20 h-64 w-64 rounded-full bg-indigo-600/10 blur-[90px]" />
+    <div className="space-y-6 animate-fade-up">
+      {/* Figma-Style Header & Quick Actions */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-border/80 pb-5">
+        <div>
+          <div className="flex items-center gap-2.5">
+            <h1 className="font-display text-xl font-bold tracking-tight text-foreground md:text-2xl">
+              {isTemplatesTab ? "Pustaka Template Alur Kerja & Arsitektur" : "Recents & File Diagram"}
+            </h1>
+            <span className="rounded-full border border-border bg-muted/60 px-2.5 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
+              {isTemplatesTab ? `${TEMPLATES.length} Template` : `${flows.length} File`}
+            </span>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Workspace: <span className="font-semibold text-foreground">{workspaceName}</span> • Kelola SOP operasional dan arsitektur database Anda.
+          </p>
+        </div>
 
-          <div className="relative z-10 max-w-2xl">
-            <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/30 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
-              <span className="h-1.5 w-1.5 rounded-full bg-violet-500 shadow-[0_0_8px_#a78bfa]" />
-              <span>Workspace: {workspaceName}</span>
+        {/* Distinct Quick Create Buttons (Figma-Style) */}
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="brand"
+            size="sm"
+            onClick={() => handleOpenCreate("sop")}
+            className="gap-2 font-semibold text-xs h-9 px-3.5 bg-gradient-to-r from-violet-600 to-indigo-600 shadow-[0_0_16px_rgba(139,92,246,0.25)]"
+          >
+            <Workflow className="h-4 w-4" />
+            <span>+ Swimlane SOP</span>
+          </Button>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => handleOpenCreate("architect")}
+            className="gap-2 font-semibold text-xs h-9 px-3.5 border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-300 hover:bg-sky-500/20 hover:border-sky-500/70 shadow-[0_0_16px_rgba(14,165,233,0.15)] transition-all"
+          >
+            <Database className="h-4 w-4 text-sky-500" />
+            <span>+ Studio 2: Architect</span>
+          </Button>
+
+          {!isTemplatesTab && (
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => handleTabChange("templates")}
+              className="gap-1.5 text-xs h-9 px-3 text-muted-foreground hover:text-foreground"
+              title="Jelajahi template bawaan"
+            >
+              <LayoutTemplate className="h-3.5 w-3.5" />
+              <span className="hidden md:inline">Template</span>
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Primary Projects Section (Ditampilkan langsung di atas tanpa tertutup template) */}
+      {!isTemplatesTab && (
+        <section className="space-y-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {/* Segmented Pill Controls */}
+            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 p-1 overflow-x-auto max-w-full">
+              <TabPill
+                active={activeTab === "overview" || activeTab === "recent"}
+                onClick={() => handleTabChange("overview")}
+                label="Terbaru"
+                count={flows.length}
+              />
+              <TabPill
+                active={activeTab === "all"}
+                onClick={() => handleTabChange("all")}
+                label="Semua Diagram"
+                count={flows.length}
+              />
+              <TabPill
+                active={activeTab === "sop"}
+                onClick={() => handleTabChange("sop")}
+                label="Studio 1: SOP"
+                count={sopCount}
+              />
+              <TabPill
+                active={activeTab === "architect"}
+                onClick={() => handleTabChange("architect")}
+                label="Studio 2: Architect"
+                count={architectCount}
+              />
+              <TabPill
+                active={activeTab === "journey"}
+                onClick={() => handleTabChange("journey")}
+                label="Customer Journey"
+                count={journeyCount}
+              />
+              <TabPill
+                active={activeTab === "drafts"}
+                onClick={() => handleTabChange("drafts")}
+                label="Drafts"
+                count={draftCount}
+              />
             </div>
 
-            <h1 className="mt-3.5 font-display text-2xl font-semibold tracking-tight text-foreground md:text-3xl">
-              Desain SOP &amp; Alur Kerja Multi-Divisi
-            </h1>
-            <p className="mt-2 text-xs md:text-sm leading-relaxed text-muted-foreground">
-              Rancang tanggung jawab departemen, waktu siklus tugas, dan output deliverables dalam kanvas swimlane interaktif siap ekspor.
-            </p>
-
-            <div className="mt-6 flex flex-wrap items-center gap-3">
-              <Button
-                variant="brand"
-                onClick={() => setCreateOpen(true)}
-                className="gap-2 font-semibold text-xs"
-              >
-                <Plus className="h-4 w-4" />
-                <span>Buat Diagram Baru</span>
-              </Button>
-              <Button
-                variant="secondary"
-                onClick={() => handleTabChange("templates")}
-                className="gap-2 text-xs font-semibold"
-              >
-                <LayoutTemplate className="h-4 w-4 text-violet-500" />
-                <span>Jelajahi Template ({TEMPLATES.length})</span>
-              </Button>
+            {/* Search Input */}
+            <div className="relative w-full sm:w-72">
+              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/75" />
+              <input
+                type="text"
+                placeholder="Cari file diagram..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 w-full rounded-xl border border-border/80 dark:border-white/[0.08] bg-slate-100/70 dark:bg-[#12131F] pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500/60 focus:bg-white dark:focus:bg-[#0E0F16] focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-150 shadow-sm"
+              />
             </div>
           </div>
-        </div>
+
+          {/* User's Project Files Grid (Front and Center) */}
+          {filteredFlows.length > 0 ? (
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {filteredFlows.map((flow) => (
+                <FlowCard
+                  key={flow.id}
+                  flow={flow}
+                  onShareClick={(f) => setSelectedShareFlow(f)}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/60 p-12 text-center shadow-sm">
+              <div className="grid h-12 w-12 place-items-center rounded-2xl border border-border bg-muted/60 text-muted-foreground">
+                <Workflow className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="mt-4 font-display text-sm font-semibold text-foreground">
+                {searchQuery
+                  ? "Diagram tidak ditemukan"
+                  : activeTab === "architect"
+                  ? "Belum ada Diagram Arsitektur / Database"
+                  : activeTab === "journey"
+                  ? "Belum ada Customer Journey Map"
+                  : activeTab === "sop"
+                  ? "Belum ada diagram SOP Bisnis"
+                  : "Belum ada diagram di workspace ini"}
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground max-w-sm">
+                {searchQuery
+                  ? `Tidak ada diagram yang cocok dengan kata kunci "${searchQuery}".`
+                  : "Mulai buat dokumen SOP swimlane multi-divisi atau skema database relasional baru sekarang."}
+              </p>
+              {!searchQuery && (
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <Button
+                    variant="brand"
+                    size="sm"
+                    onClick={() => handleOpenCreate("sop")}
+                    className="text-xs font-semibold gap-1.5"
+                  >
+                    <Workflow className="h-3.5 w-3.5" />
+                    <span>Buat Swimlane SOP</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleOpenCreate("architect")}
+                    className="text-xs font-semibold gap-1.5 border-sky-500/40 text-sky-400 bg-sky-500/10 hover:bg-sky-500/20"
+                  >
+                    <Database className="h-3.5 w-3.5" />
+                    <span>Buat Studio 2: Architect</span>
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </section>
       )}
 
-      {/* Templates Section (Ditampilkan penuh di tab Templates, atau ringkas di tab Overview) */}
+      {/* Templates Shelf: Tampil rapi di bawah proyek, atau tampil penuh di tab Templates */}
       {(isOverview || isTemplatesTab) && (
-        <section className="space-y-4">
+        <section className={cn("space-y-4", isOverview ? "pt-6 border-t border-border/70" : "pt-2")}>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="grid h-7 w-7 place-items-center rounded-lg bg-violet-500/10 text-violet-500 border border-violet-500/20">
@@ -153,36 +288,50 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
               </div>
               <div>
                 <h2 className="font-display text-sm font-semibold text-foreground tracking-tight">
-                  {isTemplatesTab ? "Pustaka Template Alur Kerja & SOP Siap Pakai" : "Template Siap Pakai"}
+                  {isTemplatesTab ? "Pustaka Template Lengkap" : "Mulai Cepat dengan Template"}
                 </h2>
-                {isTemplatesTab && (
-                  <p className="text-[11px] text-muted-foreground">
-                    Gunakan kerangka terstandarisasi untuk mempercepat perancangan alur divisi Anda.
-                  </p>
-                )}
+                <p className="text-[11px] text-muted-foreground">
+                  {isTemplatesTab
+                    ? "Kerangka siap pakai untuk mempercepat desain proses divisi atau arsitektur sistem."
+                    : "Pilih skema atau SOP siap pakai yang bisa langsung Anda edit."}
+                </p>
               </div>
             </div>
             {!isTemplatesTab && (
               <button
                 type="button"
                 onClick={() => handleTabChange("templates")}
-                className="text-[11px] font-semibold text-primary hover:underline"
+                className="text-[11px] font-semibold text-primary hover:underline flex items-center gap-1"
               >
-                Lihat Semua ({TEMPLATES.length})
+                <span>Lihat Semua ({TEMPLATES.length})</span>
+                <ArrowRight className="h-3 w-3" />
               </button>
             )}
           </div>
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {TEMPLATES.map((tmpl) => (
+            {(isOverview ? TEMPLATES.slice(0, 3) : TEMPLATES).map((tmpl) => (
               <div
                 key={tmpl.id}
                 className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span className="rounded-md border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
-                      {tmpl.kind === "journey" ? "CUSTOMER JOURNEY" : "SOP STANDAR"}
+                    <span
+                      className={cn(
+                        "rounded-md border px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider",
+                        tmpl.kind === "architect"
+                          ? "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400"
+                          : tmpl.kind === "journey"
+                          ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                          : "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400",
+                      )}
+                    >
+                      {tmpl.kind === "architect"
+                        ? "STUDIO 2: ARCHITECT"
+                        : tmpl.kind === "journey"
+                        ? "CUSTOMER JOURNEY"
+                        : "SOP STANDAR"}
                     </span>
                     <span className="font-mono text-[10px] text-muted-foreground">
                       {tmpl.lanes.length} Divisi
@@ -231,121 +380,12 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
         </section>
       )}
 
-      {/* Tabs & Search Filter (Ditampilkan jika bukan halaman murni template) */}
-      {!isTemplatesTab && (
-        <section className="space-y-4 pt-2">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Segmented Pill Controls */}
-            <div className="inline-flex items-center gap-1 rounded-full border border-border bg-muted/50 p-1 overflow-x-auto max-w-full">
-              <TabPill
-                active={activeTab === "overview" || activeTab === "recent"}
-                onClick={() => handleTabChange("overview")}
-                label="Terbaru"
-                count={flows.length}
-              />
-              <TabPill
-                active={activeTab === "all"}
-                onClick={() => handleTabChange("all")}
-                label="Semua Diagram"
-                count={flows.length}
-              />
-              <TabPill
-                active={activeTab === "sop"}
-                onClick={() => handleTabChange("sop")}
-                label="SOP Bisnis"
-                count={sopCount}
-              />
-              <TabPill
-                active={activeTab === "journey"}
-                onClick={() => handleTabChange("journey")}
-                label="Customer Journey"
-                count={journeyCount}
-              />
-              <TabPill
-                active={activeTab === "architect"}
-                onClick={() => handleTabChange("architect")}
-                label="Studio 2: Architect"
-                count={architectCount}
-              />
-              <TabPill
-                active={activeTab === "drafts"}
-                onClick={() => handleTabChange("drafts")}
-                label="Drafts"
-                count={draftCount}
-              />
-            </div>
-
-            {/* Search Input */}
-            <div className="relative w-full sm:w-72">
-              <Search className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/75" />
-              <input
-                type="text"
-                placeholder="Filter diagram, SOP, atau divisi..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 w-full rounded-xl border border-border/80 dark:border-white/[0.08] bg-slate-100/70 dark:bg-[#12131F] pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground/70 focus:border-violet-500/60 focus:bg-white dark:focus:bg-[#0E0F16] focus:outline-none focus:ring-2 focus:ring-violet-500/20 transition-all duration-150 shadow-sm"
-              />
-            </div>
-          </div>
-
-          {/* Flows Grid */}
-          {filteredFlows.length > 0 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {filteredFlows.map((flow) => (
-                <FlowCard
-                  key={flow.id}
-                  flow={flow}
-                  onShareClick={(f) => setSelectedShareFlow(f)}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/60 p-12 text-center shadow-sm">
-              <div className="grid h-12 w-12 place-items-center rounded-2xl border border-border bg-muted/60 text-muted-foreground">
-                <Workflow className="h-6 w-6 text-primary" />
-              </div>
-              <h3 className="mt-4 font-display text-sm font-semibold text-foreground">
-                {searchQuery
-                  ? "Diagram tidak ditemukan"
-                  : activeTab === "journey"
-                  ? "Belum ada Customer Journey Map"
-                  : activeTab === "sop"
-                  ? "Belum ada diagram SOP Bisnis"
-                  : "Belum ada diagram di kategori ini"}
-              </h3>
-              <p className="mt-1 text-xs text-muted-foreground max-w-sm">
-                {searchQuery
-                  ? `Tidak ada diagram yang cocok dengan kata kunci "${searchQuery}".`
-                  : activeTab === "journey"
-                  ? "Petakan titik interaksi pengalaman pelanggan Anda lintas departemen sekarang."
-                  : activeTab === "sop"
-                  ? "Mulai standarisasi tugas divisi, waktu siklus SLA, dan deliverables."
-                  : "Mulai buat swimlane baru untuk memetakan proses divisi Anda."}
-              </p>
-              {!searchQuery && (
-                <Button
-                  variant="brand"
-                  size="sm"
-                  onClick={() => setCreateOpen(true)}
-                  className="mt-4 text-xs font-semibold gap-1.5"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>
-                    {activeTab === "journey"
-                      ? "Buat Customer Journey Baru"
-                      : activeTab === "sop"
-                      ? "Buat SOP Bisnis Baru"
-                      : "Buat Diagram Baru"}
-                  </span>
-                </Button>
-              )}
-            </div>
-          )}
-        </section>
-      )}
-
       {/* Create Flow Modal */}
-      <CreateFlowDialog open={createOpen} onOpenChange={setCreateOpen} />
+      <CreateFlowDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        defaultKind={createKind}
+      />
 
       {/* Share Modal */}
       {selectedShareFlow && (

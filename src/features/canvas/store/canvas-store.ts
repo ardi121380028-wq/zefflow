@@ -62,6 +62,7 @@ interface CanvasState {
   nodes: AppNode[];
   edges: AppEdge[];
   selectedId: string | null;
+  kind: "sop" | "journey" | "architect";
   saveStatus: SaveStatus;
   past: Snapshot[];
   future: Snapshot[];
@@ -69,7 +70,7 @@ interface CanvasState {
   updateBranding: (b: { companyLogo?: string; companyName?: string; docCode?: string }) => void;
 
   // lifecycle
-  init: (p: { flowId: string; doc: FlowDocument; version: number; readOnly: boolean }) => void;
+  init: (p: { flowId: string; doc: FlowDocument; version: number; readOnly: boolean; kind?: "sop" | "journey" | "architect" }) => void;
   // React Flow handlers
   onNodesChange: (changes: NodeChange<AppNode>[]) => void;
   onEdgesChange: (changes: EdgeChange<AppEdge>[]) => void;
@@ -185,6 +186,7 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     nodes: [],
     edges: [],
     selectedId: null,
+    kind: "sop",
     sidebarOpen: false,
     activeSidebarTab: null,
     saveStatus: "idle",
@@ -220,8 +222,8 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         };
       }),
 
-    init: ({ flowId, doc, version, readOnly }) =>
-      set({ flowId, version, readOnly, ...documentToFlow(doc), selectedId: null, saveStatus: "idle", past: [], future: [] }),
+    init: ({ flowId, doc, version, readOnly, kind = "sop" }) =>
+      set({ flowId, version, readOnly, kind, ...documentToFlow(doc), selectedId: null, saveStatus: "idle", past: [], future: [] }),
 
     onNodesChange: (changes) => {
       const s = get();
@@ -374,7 +376,24 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     addStep: (type, opts) =>
       mutate((s) => {
         const lanes = s.nodes.filter(isLane);
-        if (lanes.length === 0) return {}; // UI menonaktifkan tombol; guard tambahan
+        if (lanes.length === 0 || s.kind === "architect") {
+          const titles = {
+            step: "tabel_baru",
+            decision: "Router / Event",
+            terminal: "API Endpoint",
+          } as const;
+          const pos = opts?.position ?? {
+            x: 180 + (s.nodes.length % 4) * 320,
+            y: 100 + Math.floor(s.nodes.length / 4) * 220,
+          };
+          const node = createStepNode(`n_${nanoid(8)}`, type, pos, undefined as any, titles[type]);
+          if (type === "step") {
+            node.data.description = "id (UUID PK)\ncreated_at (TIMESTAMP)\nupdated_at (TIMESTAMP)";
+            node.data.output = "Database Table";
+          }
+          return { nodes: [...s.nodes, node], selectedId: node.id };
+        }
+
         const vertical = s.orientation === "vertical";
         const selected = s.nodes.find((n) => n.id === s.selectedId);
         const lane =
@@ -415,10 +434,41 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
 
     quickAddStepFromNode: (sourceNodeId, handle, type) =>
       mutate((s) => {
-        const lanes = s.nodes.filter(isLane);
-        if (lanes.length === 0) return {};
         const sourceNode = s.nodes.find((n) => n.id === sourceNodeId);
         if (!sourceNode || sourceNode.type === "lane") return {};
+
+        const lanes = s.nodes.filter(isLane);
+        if (lanes.length === 0 || s.kind === "architect") {
+          const titles = { step: "tabel_terkait", decision: "Event Broker", terminal: "Service API" } as const;
+          const defaultTitle = titles[type];
+          const newSize = estimateNodeSize(type, { title: defaultTitle });
+          const sourceSize = sizeOfNode(sourceNode);
+          let pos = { x: sourceNode.position.x + sourceSize.w + 80, y: sourceNode.position.y };
+          if (handle === "b") pos = { x: sourceNode.position.x, y: sourceNode.position.y + sourceSize.h + 80 };
+          else if (handle === "t") pos = { x: sourceNode.position.x, y: sourceNode.position.y - newSize.h - 80 };
+          else if (handle === "l") pos = { x: sourceNode.position.x - newSize.w - 80, y: sourceNode.position.y };
+
+          const newNodeId = `step_${nanoid(8)}`;
+          const newNode = createStepNode(newNodeId, type, pos, undefined as any, defaultTitle);
+          if (type === "step") {
+            newNode.data.description = "id (UUID PK)\nrelasi_id (UUID FK)\ncreated_at (TIMESTAMP)";
+            newNode.data.output = "Database Table";
+          }
+          const newEdge: AppEdge = {
+            id: `e_${nanoid(8)}`,
+            source: sourceNode.id,
+            target: newNodeId,
+            sourceHandle: handle,
+            targetHandle: handle === "r" ? "l" : handle === "l" ? "r" : handle === "b" ? "t" : "b",
+            type: "smoothstep",
+            markerEnd: EDGE_MARKER,
+          };
+          return {
+            nodes: [...s.nodes, newNode],
+            edges: [...s.edges, newEdge],
+            selectedId: newNodeId,
+          };
+        }
 
         const vertical = s.orientation === "vertical";
         const currentLaneIdx = lanes.findIndex((l) => l.id === sourceNode.parentId);
@@ -589,6 +639,7 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     /** Dipanggil saat drag berakhir: pindahkan step ke lane yang berada di bawahnya. */
     reparentOnDragStop: (nodeId) => {
       const s = get();
+      if (s.kind === "architect" || s.nodes.filter(isLane).length === 0) return;
       const node = s.nodes.find((n) => n.id === nodeId);
       if (!isStep(node) || s.readOnly) return;
       const lanes = s.nodes.filter(isLane);

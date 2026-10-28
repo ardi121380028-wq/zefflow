@@ -15,7 +15,7 @@ import {
   requireUser,
 } from "@/server/auth/session";
 import { getDemoStore } from "@/server/auth/demo";
-import { withUser } from "@/server/db/client";
+import { db, withUser } from "@/server/db/client";
 import { flows, memberships, profiles, workspaces } from "@/server/db/schema";
 import { AppError, safeAction } from "@/server/errors";
 import { buildDocument, getTemplate } from "./templates";
@@ -252,7 +252,7 @@ export async function createWorkspaceAction(input: { name: string }) {
 
     const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-") + "-" + nanoid(6).toLowerCase();
 
-    const [ws] = await withUser(user.id, async (tx) => {
+    const [ws] = await db.transaction(async (tx) => {
       const [newWs] = await tx
         .insert(workspaces)
         .values({

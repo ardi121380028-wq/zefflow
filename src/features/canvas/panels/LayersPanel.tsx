@@ -11,12 +11,16 @@ import {
   ChevronRight,
   Clock,
   Compass,
+  Database,
   GitBranch,
   Image as ImageIcon,
   Layers,
   ListOrdered,
+  Network,
   Plus,
+  Radio,
   Search,
+  Server,
   Square,
   Trash2,
   Upload,
@@ -59,6 +63,7 @@ export function LayersPanel() {
   const companyName = useCanvasStore((s) => s.companyName);
   const docCode = useCanvasStore((s) => s.docCode);
   const orientation = useCanvasStore((s) => s.orientation);
+  const kind = useCanvasStore((s) => s.kind);
 
   const { select, removeLane, deleteSelected, addStep, addLane, updateBranding, setOrientation } =
     useCanvasStore.getState();
@@ -618,43 +623,75 @@ export function LayersPanel() {
         {activeSidebarTab === "assets" && (
           <div className="flex-1 overflow-y-auto p-3.5 space-y-3 no-scrollbar">
             <p className="text-[10px] font-mono font-bold uppercase tracking-wider text-muted-foreground">
-              Tarik ke Kanvas atau Klik untuk Menambah
+              {kind === "architect" ? "Katalog Komponen Database & Arsitektur" : "Tarik ke Kanvas atau Klik untuk Menambah"}
             </p>
 
-            <AssetCard
-              type="step"
-              icon={<Square className="h-4 w-4 text-sky-500" />}
-              title="Langkah Kerja"
-              desc="Tugas standar dengan durasi, PIC, & output dokumen"
-              onAdd={() => addStep("step")}
-            />
-
-            <AssetCard
-              type="decision"
-              icon={<GitBranch className="h-4 w-4 text-amber-500" />}
-              title="Titik Keputusan"
-              desc="Percabangan kondisi logika (Ya / Tidak / Alternatif)"
-              onAdd={() => addStep("decision")}
-            />
-
-            <AssetCard
-              type="terminal"
-              icon={<ArrowRightFromLine className="h-4 w-4 text-emerald-500" />}
-              title="Mulai / Selesai"
-              desc="Titik awal proses atau hasil akhir alur kerja"
-              onAdd={() => addStep("terminal")}
-            />
-
-            <div className="pt-2 border-t border-border/70 dark:border-white/[0.06]">
-              <button
-                type="button"
-                onClick={() => addLane()}
-                className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-dashed border-violet-500/40 bg-violet-500/5 text-violet-600 dark:text-violet-400 font-semibold text-xs hover:bg-violet-500/10 transition-colors"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Tambah Jalur Divisi (Lane)</span>
-              </button>
-            </div>
+            {kind === "architect" ? (
+              <>
+                <AssetCard
+                  type="step"
+                  icon={<Database className="h-4 w-4 text-sky-400" />}
+                  title="Tabel Database (ERD)"
+                  desc="Tabel relasional multi-kolom lengkap dengan PK & FK"
+                  onAdd={() => addStep("step")}
+                />
+                <AssetCard
+                  type="step"
+                  icon={<Server className="h-4 w-4 text-violet-400" />}
+                  title="Microservice API"
+                  desc="Service container backend terisolasi (Node, Go, Python)"
+                  onAdd={() => addStep("step")}
+                />
+                <AssetCard
+                  type="decision"
+                  icon={<Radio className="h-4 w-4 text-amber-400" />}
+                  title="Event Broker / Stream"
+                  desc="Apache Kafka, RabbitMQ, Redis Pub/Sub topic"
+                  onAdd={() => addStep("decision")}
+                />
+                <AssetCard
+                  type="terminal"
+                  icon={<Network className="h-4 w-4 text-emerald-400" />}
+                  title="API Gateway / Proxy"
+                  desc="Kong, Envoy, Cloudflare, Reverse Proxy"
+                  onAdd={() => addStep("terminal")}
+                />
+              </>
+            ) : (
+              <>
+                <AssetCard
+                  type="step"
+                  icon={<Square className="h-4 w-4 text-sky-500" />}
+                  title="Langkah Kerja"
+                  desc="Tugas standar dengan durasi, PIC, & output dokumen"
+                  onAdd={() => addStep("step")}
+                />
+                <AssetCard
+                  type="decision"
+                  icon={<GitBranch className="h-4 w-4 text-amber-500" />}
+                  title="Titik Keputusan"
+                  desc="Percabangan kondisi logika (Ya / Tidak / Alternatif)"
+                  onAdd={() => addStep("decision")}
+                />
+                <AssetCard
+                  type="terminal"
+                  icon={<ArrowRightFromLine className="h-4 w-4 text-emerald-500" />}
+                  title="Mulai / Selesai"
+                  desc="Titik awal proses atau hasil akhir alur kerja"
+                  onAdd={() => addStep("terminal")}
+                />
+                <div className="pt-2 border-t border-border/70 dark:border-white/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => addLane()}
+                    className="w-full flex items-center justify-center gap-2 h-9 rounded-xl border border-dashed border-violet-500/40 bg-violet-500/5 text-violet-600 dark:text-violet-400 font-semibold text-xs hover:bg-violet-500/10 transition-colors"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Tambah Jalur Divisi (Lane)</span>
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         )}
       </aside>

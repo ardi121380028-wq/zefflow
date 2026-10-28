@@ -6,8 +6,10 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import {
   ArrowRightFromLine,
   Clock,
+  Database,
   FileOutput,
   GitBranch,
+  Key,
   Square,
   User2,
   X,
@@ -150,8 +152,110 @@ function formatDuration(v: number | null, unit: string) {
   return v == null || v === 0 ? null : `${v} ${unit}`;
 }
 
-/** Langkah kerja standar (SOP step) - ElevenLabs Studio Card adaptif, tulisan besar & tegas */
+function parseErdColumns(desc: string) {
+  if (!desc) return [];
+  return desc.split("\n").filter(Boolean).map((line) => {
+    const trimmed = line.trim();
+    const match = trimmed.match(/^([a-zA-Z0-9_]+)\s*(?:\(([^)]+)\))?/);
+    if (!match) return { name: trimmed, type: "VARCHAR", isPk: false, isFk: false };
+    const name = match[1];
+    const details = (match[2] || "VARCHAR").toUpperCase();
+    const isPk = details.includes("PK");
+    const isFk = details.includes("FK");
+    const cleanType = details.replace(/PK|FK|UNIQUE/g, "").trim() || "VARCHAR";
+    return { name, type: cleanType, isPk, isFk };
+  });
+}
+
+/** Langkah kerja standar (SOP step) atau ERD Database Table di Architect mode */
 function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
+  const storeKind = useCanvasStore((s) => s.kind);
+  const isErd =
+    storeKind === "architect" ||
+    data.output === "Database Table" ||
+    data.output?.toLowerCase().includes("table") ||
+    (data.description && (data.description.includes("PK") || data.description.includes("FK")));
+
+  if (isErd) {
+    const columns = parseErdColumns(data.description);
+    return (
+      <div
+        className={cn(
+          "group/node relative rounded-2xl border bg-card dark:bg-[#0C0E17] shadow-md transition-all duration-200 overflow-hidden",
+          selected
+            ? "border-sky-500 ring-2 ring-sky-500/80 shadow-[0_0_24px_rgba(14,165,233,0.35)]"
+            : "border-sky-500/30 hover:border-sky-500/60 hover:shadow-lg",
+        )}
+        style={{ width: STEP_WIDTH }}
+      >
+        <NodeHandles nodeId={id} />
+        {/* Table Title Bar */}
+        <div className="flex items-center justify-between border-b border-border dark:border-white/[0.08] bg-sky-500/10 px-3.5 py-2.5">
+          <div className="flex items-center gap-2 min-w-0">
+            <Database className="h-4 w-4 text-sky-500 shrink-0" />
+            <span className="font-mono text-xs font-bold text-foreground dark:text-sky-200 tracking-tight truncate">
+              {data.title || "tabel_baru"}
+            </span>
+          </div>
+          <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-sky-600 dark:text-sky-400">
+            TABLE
+          </span>
+        </div>
+
+        {/* Columns Listing */}
+        <div className="divide-y divide-border/40 p-1 font-mono text-xs">
+          {columns.length > 0 ? (
+            columns.map((col, idx) => (
+              <div
+                key={idx}
+                className="flex items-center justify-between px-2.5 py-1.5 hover:bg-muted/40 transition-colors rounded-lg"
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span
+                    className={cn(
+                      "truncate",
+                      col.isPk
+                        ? "text-amber-500 dark:text-amber-300 font-bold"
+                        : col.isFk
+                        ? "text-sky-500 dark:text-sky-300 font-semibold"
+                        : "text-foreground font-medium",
+                    )}
+                  >
+                    {col.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <span className="text-[10px] text-muted-foreground">{col.type}</span>
+                  {col.isPk && (
+                    <span className="rounded bg-amber-500/20 px-1 text-[8px] font-bold text-amber-600 dark:text-amber-400">
+                      PK
+                    </span>
+                  )}
+                  {col.isFk && (
+                    <span className="rounded bg-sky-500/20 px-1 text-[8px] font-bold text-sky-600 dark:text-sky-400">
+                      FK
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))
+          ) : (
+            <p className="px-3 py-2 text-[11px] text-muted-foreground italic">
+              Klik untuk menambah kolom skema
+            </p>
+          )}
+        </div>
+
+        {/* Output indicator if exists */}
+        {data.output && data.output !== "Database Table" && (
+          <div className="border-t border-border/40 px-3 py-1.5 bg-muted/20 text-[10px] text-muted-foreground font-sans truncate">
+            {data.output}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   const duration = formatDuration(data.durationValue, data.durationUnit);
   return (
     <div

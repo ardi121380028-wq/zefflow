@@ -28,14 +28,22 @@ import { TEMPLATES, type FlowTemplate } from "../templates";
 interface CreateFlowDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultKind?: "sop" | "journey" | "architect";
 }
 
-export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) {
+export function CreateFlowDialog({ open, onOpenChange, defaultKind = "sop" }: CreateFlowDialogProps) {
   const router = useRouter();
   const [tab, setTab] = React.useState<"blank" | "templates">("blank");
   const [title, setTitle] = React.useState("");
-  const [kind, setKind] = React.useState<"sop" | "journey" | "architect">("sop");
+  const [kind, setKind] = React.useState<"sop" | "journey" | "architect">(defaultKind);
   const [isLoading, setIsLoading] = React.useState(false);
+
+  React.useEffect(() => {
+    if (open) {
+      setKind(defaultKind);
+      setTitle("");
+    }
+  }, [open, defaultKind]);
 
   const handleCreateBlank = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,9 +90,19 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
-        <DialogTitle>Buat Diagram Swimlane Baru</DialogTitle>
+        <DialogTitle>
+          {kind === "architect"
+            ? "Buat Diagram Arsitektur Baru (Studio 2)"
+            : kind === "journey"
+            ? "Buat Diagram Customer Journey"
+            : "Buat Diagram Swimlane SOP (Studio 1)"}
+        </DialogTitle>
         <DialogDescription>
-          Rancang Standard Operating Procedure (SOP) atau alur perjalanan pelanggan lintas divisi.
+          {kind === "architect"
+            ? "Studio 2: Freeform canvas untuk ERD database relasional, topologi microservice, dan event broker dengan ekspor SQL DDL."
+            : kind === "journey"
+            ? "Visualisasikan perjalanan interaksi dan touchpoint pelanggan dari awal hingga akhir."
+            : "Studio 1: Rancang Standard Operating Procedure (SOP) dengan jalur departemen terstruktur, cycle times, dan deliverables."}
         </DialogDescription>
 
         {/* Tab Selection */}
@@ -99,7 +117,7 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
                 : "text-muted-foreground hover:text-foreground",
             )}
           >
-            <FolderPlus className="h-3.5 w-3.5 text-violet-500" /> Alur Kosong
+            <FolderPlus className="h-3.5 w-3.5 text-violet-500" /> Kanvas Kosong
           </button>
           <button
             type="button"
@@ -118,9 +136,15 @@ export function CreateFlowDialog({ open, onOpenChange }: CreateFlowDialogProps) 
         {tab === "blank" ? (
           <form onSubmit={handleCreateBlank} className="mt-5 space-y-4">
             <div>
-              <Label>Nama Alur / SOP</Label>
+              <Label>
+                {kind === "architect" ? "Nama Skema / Arsitektur" : "Nama Alur / SOP"}
+              </Label>
               <Input
-                placeholder="mis. SOP Pengajuan Cuti Karyawan"
+                placeholder={
+                  kind === "architect"
+                    ? "mis. Skema Database SaaS & E-Commerce / Microservice Auth"
+                    : "mis. SOP Pengajuan Cuti Karyawan / Alur Onboarding"
+                }
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 maxLength={100}

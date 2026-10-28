@@ -39,6 +39,7 @@ export function CreateWorkspaceModal({
         toast.success(`Workspace "${name.trim()}" berhasil dibuat!`);
         setName("");
         onOpenChange(false);
+        window.location.href = "/dashboard";
       }
     } catch {
       toast.error("Terjadi kesalahan saat membuat workspace.");

@@ -39,6 +39,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import type { WorkspaceContext } from "@/server/auth/session";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
 import { TeamManagementModal } from "./TeamManagementModal";
+import { CreateFlowDialog } from "@/features/flows/components/CreateFlowDialog";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -53,7 +54,18 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
   const [createWsOpen, setCreateWsOpen] = React.useState(false);
   const [teamModalOpen, setTeamModalOpen] = React.useState(false);
+  const [createFlowOpen, setCreateFlowOpen] = React.useState(false);
+  const [createFlowKind, setCreateFlowKind] = React.useState<"sop" | "journey" | "architect">("sop");
   const [isPending, startTransition] = React.useTransition();
+
+  const handleOpenFlowModal = (k: "sop" | "journey" | "architect" = "sop") => {
+    if (onOpenCreateFlow) {
+      onOpenCreateFlow();
+    } else {
+      setCreateFlowKind(k);
+      setCreateFlowOpen(true);
+    }
+  };
 
   const { active, workspaces, profile } = workspaceCtx;
 
@@ -344,16 +356,25 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <ThemeToggle />
             <Button
               variant="brand"
               size="sm"
-              onClick={onOpenCreateFlow}
-              className="gap-1.5 text-xs font-semibold"
+              onClick={() => handleOpenFlowModal("sop")}
+              className="gap-1.5 text-xs font-semibold h-8 px-2.5 sm:px-3 bg-gradient-to-r from-violet-600 to-indigo-600"
             >
-              <Plus className="h-3.5 w-3.5" />
-              <span>Diagram Baru</span>
+              <Workflow className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Swimlane SOP</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handleOpenFlowModal("architect")}
+              className="gap-1.5 text-xs font-semibold h-8 px-2.5 sm:px-3 border-sky-500/40 bg-sky-500/10 text-sky-600 dark:text-sky-300 hover:bg-sky-500/20"
+            >
+              <Database className="h-3.5 w-3.5 text-sky-500" />
+              <span className="hidden sm:inline">Studio 2: Architect</span>
             </Button>
           </div>
         </header>
@@ -364,7 +385,7 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
         </main>
       </div>
 
-      {/* Modals for Workspace Creation and Team Management */}
+      {/* Modals for Workspace Creation, Team Management, and Flow Creation */}
       <CreateWorkspaceModal
         open={createWsOpen}
         onOpenChange={setCreateWsOpen}
@@ -376,6 +397,12 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
         workspaceId={active.id}
         workspaceName={active.name}
         currentUserRole={active.role}
+      />
+
+      <CreateFlowDialog
+        open={createFlowOpen}
+        onOpenChange={setCreateFlowOpen}
+        defaultKind={createFlowKind}
       />
     </div>
   );
