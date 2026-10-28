@@ -500,10 +500,12 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
           countByRank.set(r, nextCount);
           if (nextCount > maxParallel) maxParallel = nextCount;
         });
-        const calculatedLaneWidth = Math.max(
-          l.width ?? LANE_V_WIDTH,
-          maxParallel * (STEP_WIDTH + 24) + 48,
-        );
+        // Jangan mewarisi `l.width` dari orientasi horizontal (2600px+).
+        // Lebar kolom vertikal = 340px (1 jalur), melebar proporsional hanya bila ada cabang paralel di baris yang sama.
+        const calculatedLaneWidth =
+          maxParallel > 1
+            ? maxParallel * (STEP_WIDTH + 20) + 36
+            : LANE_V_WIDTH;
 
         laneGeom.set(l.id, { x: offsetX, y: 0, width: calculatedLaneWidth, height: totalLength });
         offsetX += calculatedLaneWidth;
@@ -521,13 +523,19 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
           const r = ranks.get(it.node.id) ?? 0;
           const slot = rankSlotCounters.get(r) ?? 0;
           rankSlotCounters.set(r, slot + 1);
+          const slotsInRank = countByRank.get(r) ?? 1;
 
           const rTop = rowTop[r] ?? FIRST_ROW_Y;
           const rH = rowH[r] ?? it.h;
 
-          const xPos = maxParallel > 1
-            ? 24 + slot * (it.w + 20)
-            : Math.max(16, Math.round((calculatedLaneWidth - it.w) / 2));
+          let xPos: number;
+          if (slotsInRank > 1) {
+            const groupW = slotsInRank * STEP_WIDTH + (slotsInRank - 1) * 20;
+            const startX = Math.max(18, Math.round((calculatedLaneWidth - groupW) / 2));
+            xPos = startX + slot * (STEP_WIDTH + 20) + Math.round((STEP_WIDTH - it.w) / 2);
+          } else {
+            xPos = Math.max(16, Math.round((calculatedLaneWidth - it.w) / 2));
+          }
 
           newPos.set(it.node.id, {
             x: xPos,
@@ -580,8 +588,9 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
           const r = ranks.get(it.node.id) ?? 0;
           const slot = rankSlotCounters.get(r) ?? 0;
           rankSlotCounters.set(r, slot + 1);
+          const slotsInRank = countByRank.get(r) ?? 1;
 
-          const yPos = maxParallel > 1
+          const yPos = slotsInRank > 1
             ? 24 + slot * (it.h + 20)
             : Math.max(16, Math.round((calculatedLaneHeight - it.h) / 2));
 
@@ -608,7 +617,14 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
   const nextNodes = nodes.map((n) => {
     if (n.type === "lane") {
       const g = laneGeom.get(n.id);
-      return g ? ({ ...n, position: { x: g.x, y: g.y }, width: g.width, height: g.height } as N) : n;
+      if (!g) return n;
+      return {
+        ...n,
+        position: { x: g.x, y: g.y },
+        width: g.width,
+        height: g.height,
+        ...(n.measured ? { measured: { width: g.width, height: g.height } } : {}),
+      } as N;
     }
     const p = newPos.get(n.id);
     return (p ? { ...n, position: p } : n) as N;

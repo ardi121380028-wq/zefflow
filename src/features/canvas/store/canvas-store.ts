@@ -139,7 +139,7 @@ const defaultEdge = (c: Connection): AppEdge => ({
 });
 
 /** Ubah dokumen tersimpan -> node/edge React Flow. */
-export function documentToFlow(doc: FlowDocument): Snapshot {
+export function documentToFlow(doc: FlowDocument): Snapshot & { healed?: boolean } {
   const orientation: Orientation = doc.orientation ?? "horizontal";
   const vertical = orientation === "vertical";
   const nodes: AppNode[] = doc.nodes.map((n) => {
@@ -166,8 +166,28 @@ export function documentToFlow(doc: FlowDocument): Snapshot {
     type: "smoothstep",
     markerEnd: EDGE_MARKER,
   }));
+
+  const sortedNodes = relayoutLanes(sortParentsFirst(nodes), orientation);
+
+  // Self-healing otomatis untuk diagram vertikal lama yang sempat tersimpan dengan lebar horizontal (2600px+)
+  const hasOversizedVerticalLane =
+    vertical && sortedNodes.some((n) => n.type === "lane" && (n.width ?? 0) >= LANE_DEFAULT_WIDTH);
+
+  if (hasOversizedVerticalLane) {
+    const healed = convertLayout(sortedNodes, edges, "vertical", "vertical");
+    return {
+      nodes: healed.nodes,
+      edges: healed.edges,
+      orientation,
+      companyLogo: doc.companyLogo ?? "",
+      companyName: doc.companyName ?? "",
+      docCode: doc.docCode ?? "",
+      healed: true,
+    };
+  }
+
   return {
-    nodes: relayoutLanes(sortParentsFirst(nodes), orientation),
+    nodes: sortedNodes,
     edges,
     orientation,
     companyLogo: doc.companyLogo ?? "",
@@ -262,8 +282,9 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
       }),
 
     init: ({ flowId, doc, version, readOnly, kind = "sop" }) => {
-      const flow = documentToFlow(doc);
+      const { healed, ...flow } = documentToFlow(doc);
       const stats = computeNodeStats(flow.nodes);
+      const shouldAutosaveHeal = Boolean(healed && !readOnly);
       set({
         flowId,
         version,
@@ -271,11 +292,11 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         kind,
         ...flow,
         ...stats,
-        mutationTick: 0,
+        mutationTick: shouldAutosaveHeal ? 1 : 0,
         isDragging: false,
         isExporting: false,
         selectedId: null,
-        saveStatus: "idle",
+        saveStatus: shouldAutosaveHeal ? "dirty" : "idle",
         past: [],
         future: [],
       });
@@ -423,9 +444,20 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
           nodes: relayoutLanes(
             s.nodes.map((n) => {
               if (n.id !== id) return n;
-              return vertical
-                ? { ...n, width: Math.max(LANE_V_MIN_WIDTH, Math.round(size)) }
-                : { ...n, height: Math.max(LANE_MIN_HEIGHT, Math.round(size)) };
+              if (vertical) {
+                const nextW = Math.max(LANE_V_MIN_WIDTH, Math.round(size));
+                return {
+                  ...n,
+                  width: nextW,
+                  ...(n.measured ? { measured: { ...n.measured, width: nextW } } : {}),
+                };
+              }
+              const nextH = Math.max(LANE_MIN_HEIGHT, Math.round(size));
+              return {
+                ...n,
+                height: nextH,
+                ...(n.measured ? { measured: { ...n.measured, height: nextH } } : {}),
+              };
             }),
             s.orientation,
           ),
@@ -438,9 +470,20 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         return {
           nodes: s.nodes.map((n) => {
             if (!isLane(n)) return n;
-            return vertical
-              ? { ...n, height: (n.height ?? LANE_V_DEFAULT_LENGTH) + by }
-              : { ...n, width: (n.width ?? LANE_DEFAULT_WIDTH) + by };
+            if (vertical) {
+              const nextH = (n.height ?? LANE_V_DEFAULT_LENGTH) + by;
+              return {
+                ...n,
+                height: nextH,
+                ...(n.measured ? { measured: { ...n.measured, height: nextH } } : {}),
+              };
+            }
+            const nextW = (n.width ?? LANE_DEFAULT_WIDTH) + by;
+            return {
+              ...n,
+              width: nextW,
+              ...(n.measured ? { measured: { ...n.measured, width: nextW } } : {}),
+            };
           }),
         };
       }),
