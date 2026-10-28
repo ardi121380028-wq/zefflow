@@ -539,32 +539,80 @@ export function InteractiveFlowShowcase() {
   return (
     <div className="w-full">
       {/* Category Tab Bar & Simulation Controls */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        {/* Preset Selector */}
-        <div className="flex flex-wrap items-center gap-2">
-          {PRESETS.map((p) => {
-            const isSelected = p.id === selectedPresetId;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => handleSelectPreset(p.id)}
-                className={cn(
-                  "flex items-center gap-2 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all duration-200",
-                  isSelected
-                    ? "bg-violet-600 text-white shadow-[0_0_18px_rgba(139,92,246,0.5),inset_0_1px_1px_rgba(255,255,255,0.4)] border border-violet-400/40"
-                    : "border border-border bg-card/70 text-muted-foreground hover:bg-muted hover:text-foreground",
-                )}
-              >
-                <Layers className="h-3.5 w-3.5" />
-                <span>{p.category}</span>
-              </button>
-            );
-          })}
+      <div className="mb-4 sm:mb-6 flex flex-col gap-3">
+        {/* Row 1: Horizontal Scrollable Preset Categories with touch swipe support */}
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 -mx-2 px-2 sm:mx-0 sm:px-0 sm:flex-wrap flex-1">
+            {PRESETS.map((p) => {
+              const isSelected = p.id === selectedPresetId;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => handleSelectPreset(p.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 sm:gap-2 rounded-xl px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-semibold whitespace-nowrap shrink-0 transition-all duration-200",
+                    isSelected
+                      ? "bg-violet-600 text-white shadow-[0_0_18px_rgba(139,92,246,0.5),inset_0_1px_1px_rgba(255,255,255,0.4)] border border-violet-400/40"
+                      : "border border-border bg-card/70 text-muted-foreground hover:bg-muted hover:text-foreground",
+                  )}
+                >
+                  <Layers className="h-3.5 w-3.5 shrink-0" />
+                  <span>{p.category}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Desktop Animation Action Buttons */}
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <Button
+              variant="default"
+              size="sm"
+              onClick={() => {
+                if (isBuilding) {
+                  setIsBuilding(false);
+                } else if (buildStep >= 5) {
+                  startBuildAnimation();
+                } else {
+                  setIsBuilding(true);
+                }
+              }}
+              className={cn(
+                "gap-2 text-xs font-semibold transition-all duration-200",
+                isBuilding
+                  ? "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.4)]"
+                  : "bg-violet-600 text-white hover:bg-violet-500 shadow-[0_0_16px_rgba(139,92,246,0.4)]",
+              )}
+            >
+              {isBuilding ? (
+                <>
+                  <Pause className="h-3.5 w-3.5 fill-current" />
+                  <span>Jeda Animasi</span>
+                </>
+              ) : (
+                <>
+                  <Play className="h-3.5 w-3.5 fill-current" />
+                  <span>{buildStep < 5 ? "Lanjutkan Buat Alur" : "Animasi Buat Swimlane"}</span>
+                </>
+              )}
+            </Button>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={startBuildAnimation}
+              className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+              title="Ulangi simulasi dari tahap 1"
+            >
+              <RotateCcw className="h-3.5 w-3.5" />
+              <span>Ulangi</span>
+            </Button>
+          </div>
         </div>
 
-        {/* Animation Action Buttons */}
-        <div className="flex items-center gap-2">
+        {/* Mobile Animation Action Buttons (Compact Single Line) */}
+        <div className="flex sm:hidden items-center gap-2 w-full">
           <Button
             variant="default"
             size="sm"
@@ -578,10 +626,10 @@ export function InteractiveFlowShowcase() {
               }
             }}
             className={cn(
-              "gap-2 text-xs font-semibold transition-all duration-200",
+              "flex-1 gap-2 text-xs font-semibold transition-all duration-200 h-9",
               isBuilding
-                ? "bg-amber-500 text-black hover:bg-amber-400 shadow-[0_0_16px_rgba(245,158,11,0.4)]"
-                : "bg-violet-600 text-white hover:bg-violet-500 shadow-[0_0_16px_rgba(139,92,246,0.4)]",
+                ? "bg-amber-500 text-black hover:bg-amber-400"
+                : "bg-violet-600 text-white hover:bg-violet-500 shadow-[0_0_14px_rgba(139,92,246,0.35)]",
             )}
           >
             {isBuilding ? (
@@ -592,7 +640,7 @@ export function InteractiveFlowShowcase() {
             ) : (
               <>
                 <Play className="h-3.5 w-3.5 fill-current" />
-                <span>{buildStep < 5 ? "Lanjutkan Buat Alur" : "Animasi Buat Swimlane"}</span>
+                <span>{buildStep < 5 ? "Lanjut Buat Alur" : "Animasi Buat Swimlane"}</span>
               </>
             )}
           </Button>
@@ -601,34 +649,33 @@ export function InteractiveFlowShowcase() {
             variant="outline"
             size="sm"
             onClick={startBuildAnimation}
-            className="gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+            className="h-9 px-3 text-xs text-muted-foreground hover:text-foreground shrink-0"
             title="Ulangi simulasi dari tahap 1"
           >
             <RotateCcw className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Ulangi</span>
           </Button>
         </div>
       </div>
 
       {/* Stepper Process Timeline Bar */}
-      <div className="mb-4 rounded-2xl border border-border dark:border-white/[0.08] bg-card p-3 shadow-sm">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-2.5 border-b border-border/60">
-          <div className="flex items-center gap-2.5">
+      <div className="mb-4 rounded-2xl border border-border dark:border-white/[0.08] bg-card p-3 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pb-2.5 border-b border-border/60">
+          <div className="flex items-center gap-2.5 min-w-0">
             <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 font-mono text-xs font-bold shrink-0">
               {buildStep}/5
             </span>
-            <div>
-              <p className="text-xs font-bold text-foreground">
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-foreground truncate">
                 {currentStage?.title}
               </p>
-              <p className="text-[11px] text-muted-foreground">
+              <p className="text-[11px] text-muted-foreground truncate">
                 {currentStage?.description}
               </p>
             </div>
           </div>
 
           {/* Timeline Step Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5 -mx-1 px-1">
             {preset.buildStages.map((stage) => {
               const isPastOrActive = buildStep >= stage.step;
               const isCurrent = buildStep === stage.step;

@@ -21,10 +21,10 @@ import { LaneNode } from "./nodes/LaneNode";
 import { CustomEdge } from "./edges/CustomEdge";
 import { Inspector } from "./panels/Inspector";
 import { LayersPanel } from "./panels/LayersPanel";
+import { StudioSidebarRail } from "./panels/StudioSidebarRail";
 import { PALETTE_MIME, Toolbar } from "./panels/Toolbar";
 import { EDGE_MARKER, useCanvasStore } from "./store/canvas-store";
 import { absRect, pickHandles } from "./lib/layout";
-import { Building2, Layers } from "lucide-react";
 import { useAutosave } from "./store/use-autosave";
 import type { StepNodeType } from "./types";
 import { cn } from "@/lib/utils";
@@ -242,10 +242,7 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
       <Controls
         showInteractive={false}
         position="bottom-left"
-        className={cn(
-          "transition-all duration-300",
-          !readOnly && sidebarOpen ? "md:!left-[324px]" : "!left-3 sm:!left-4",
-        )}
+        className="!left-3 sm:!left-4 !bottom-3 sm:!bottom-4"
       />
       <MiniMap
         pannable
@@ -256,58 +253,11 @@ function CanvasInner({ flowId, initialDocument, initialVersion, readOnly = false
         className="!hidden md:!block"
       />
 
-      {/* Tombol buka Layers saat panel kiri ditutup */}
-      {!readOnly && !sidebarOpen && (
-        <Panel position="top-left" className="!m-2.5 sm:!m-4">
-          <button
-            type="button"
-            onClick={toggleSidebar}
-            title="Buka panel struktur & layers (Ctrl+B)"
-            className="flex items-center gap-2 rounded-full border border-border dark:border-white/[0.12] bg-white/95 dark:bg-[#0D0E16]/90 px-3.5 py-1.5 text-xs font-semibold shadow-xl backdrop-blur-2xl transition-all duration-150 hover:bg-muted dark:hover:bg-white/[0.08] active:scale-95 text-foreground dark:text-white"
-          >
-            <Layers className="h-3.5 w-3.5 text-violet-500" />
-            <span>Layers</span>
-            <span className="font-mono text-[10px] text-muted-foreground bg-muted dark:bg-white/[0.08] px-1.5 py-0.2 rounded-full">
-              {nodes.filter((n) => n.type !== "lane").length}
-            </span>
-          </button>
-        </Panel>
-      )}
+      {/* Rail Ikon Vertikal Figma-Style di Kiri Kanvas */}
+      {!readOnly && <StudioSidebarRail />}
 
-      {/* Panel Layers & Ringkasan SOP Kiri (Figma-Style) */}
-      {!readOnly && <LayersPanel isOpen={sidebarOpen} onToggle={toggleSidebar} />}
-
-      {/* Badge Branding Logo Perusahaan di Pojok Kanan Atas Kanvas */}
-      {!readOnly && (
-        <Panel position="top-right" className="!m-2.5 sm:!m-4 pointer-events-auto">
-          <button
-            type="button"
-            onClick={() => useCanvasStore.getState().select(null)}
-            title="Klik untuk mengatur logo & branding perusahaan"
-            className="flex items-center gap-2.5 rounded-2xl border border-border/80 bg-white/95 dark:bg-[#0E0F16]/95 px-3 py-1.5 shadow-xl backdrop-blur-2xl transition-all duration-150 hover:border-primary/50 active:scale-95 text-foreground max-w-[260px]"
-          >
-            {companyLogo ? (
-              <div className="h-6 w-9 rounded-md bg-white dark:bg-black/50 border border-border/70 flex items-center justify-center p-0.5 overflow-hidden shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={companyLogo} alt="Logo" className="max-h-full max-w-full object-contain" />
-              </div>
-            ) : (
-              <div className="grid h-6 w-6 place-items-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 shrink-0">
-                <Building2 className="h-3.5 w-3.5" />
-              </div>
-            )}
-
-            <div className="text-left min-w-0">
-              <p className="text-[11px] font-bold truncate leading-tight">
-                {companyName || (companyLogo ? "Logo Perusahaan" : "+ Logo Perusahaan")}
-              </p>
-              <p className="text-[9px] font-mono text-muted-foreground truncate leading-tight">
-                {docCode || (companyLogo ? "Branding Aktif" : "Kop Resmi")}
-              </p>
-            </div>
-          </button>
-        </Panel>
-      )}
+      {/* Drawer Flyout Samping (Struktur, Ringkasan, Logo, & Aset) */}
+      {!readOnly && <LayersPanel />}
 
       {/* Toolbar studio melayang di Bawah Tengah (Figma-Style Command Dock) */}
       {!readOnly && (

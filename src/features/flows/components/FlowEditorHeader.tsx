@@ -17,6 +17,8 @@ import {
   Save,
   Share2,
   Undo2,
+  UserPlus,
+  Users,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -252,15 +254,36 @@ export function FlowEditorHeader({
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Share Button */}
+          {/* Active Collaborators Presence Bubble (Figma-Style Multiplayer) */}
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={() => setShareOpen(true)}
+            title="3 anggota tim terdaftar. Klik untuk mengundang rekan kerja"
+            className="hidden lg:flex items-center -space-x-1.5 cursor-pointer hover:opacity-90 transition-opacity px-1"
+          >
+            <div className="relative grid h-7 w-7 place-items-center rounded-full bg-violet-600 text-white font-bold text-[10px] ring-2 ring-card shadow-xs">
+              AD
+              <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-card" />
+            </div>
+            <div className="relative grid h-7 w-7 place-items-center rounded-full bg-emerald-600 text-white font-bold text-[10px] ring-2 ring-card shadow-xs">
+              SL
+              <span className="absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full bg-emerald-500 ring-1 ring-card" />
+            </div>
+            <div className="grid h-7 w-7 place-items-center rounded-full bg-muted border border-border text-[9px] font-mono font-bold text-muted-foreground ring-2 ring-card">
+              +1
+            </div>
+          </div>
+
+          {/* Invite Collaborator / Share Button */}
           <Button
-            variant="secondary"
+            variant="brand"
             size="sm"
             onClick={() => setShareOpen(true)}
-            className="gap-1 sm:gap-1.5 text-xs h-8 px-2 sm:px-3 dark:border-white/15 dark:bg-white/[0.04] dark:hover:bg-white/[0.08] dark:hover:border-sky-500/40 dark:shadow-[0_0_12px_rgba(56,189,248,0.15)] transition-all"
+            className="gap-1 sm:gap-1.5 text-xs h-8 px-2.5 sm:px-3 font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white shadow-[0_0_14px_rgba(139,92,246,0.35)] transition-all"
           >
-            <Share2 className="h-3.5 w-3.5 text-sky-500" />
-            <span className="hidden sm:inline">Bagikan</span>
+            <UserPlus className="h-3.5 w-3.5" />
+            <span className="hidden xs:inline">Undang</span>
           </Button>
 
           {/* Manual Save Button - Glossy Glowing Modern AI button */}

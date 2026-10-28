@@ -49,6 +49,8 @@ type Snapshot = {
 /** Panah koneksi sedikit lebih besar agar terlihat jelas di layar maupun hasil ekspor. */
 export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 20, height: 20 } as const;
 
+export type SidebarTab = "layers" | "outline" | "branding" | "assets";
+
 interface CanvasState {
   flowId: string | null;
   version: number;
@@ -96,9 +98,12 @@ interface CanvasState {
   updateEdgeLabel: (id: string, label: string) => void;
   select: (id: string | null) => void;
   deleteSelected: (id?: string) => void;
-  // sidebar
+  // sidebar & icon rail (figma style)
   sidebarOpen: boolean;
+  activeSidebarTab: SidebarTab | null;
   setSidebarOpen: (open: boolean) => void;
+  setActiveSidebarTab: (tab: SidebarTab | null) => void;
+  toggleSidebarTab: (tab: SidebarTab) => void;
   toggleSidebar: () => void;
   // persistence
   setSaveStatus: (s: SaveStatus) => void;
@@ -180,7 +185,8 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     nodes: [],
     edges: [],
     selectedId: null,
-    sidebarOpen: true,
+    sidebarOpen: false,
+    activeSidebarTab: null,
     saveStatus: "idle",
     past: [],
     future: [],
@@ -193,8 +199,26 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
       }));
     },
 
-    setSidebarOpen: (sidebarOpen) => set({ sidebarOpen }),
-    toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
+    setSidebarOpen: (sidebarOpen) =>
+      set({ sidebarOpen, activeSidebarTab: sidebarOpen ? (get().activeSidebarTab ?? "layers") : null }),
+    setActiveSidebarTab: (activeSidebarTab) =>
+      set({ activeSidebarTab, sidebarOpen: activeSidebarTab !== null }),
+    toggleSidebarTab: (tab) =>
+      set((s) => {
+        const isCurrentOpen = s.sidebarOpen && s.activeSidebarTab === tab;
+        return {
+          sidebarOpen: !isCurrentOpen,
+          activeSidebarTab: !isCurrentOpen ? tab : null,
+        };
+      }),
+    toggleSidebar: () =>
+      set((s) => {
+        const nextOpen = !s.sidebarOpen;
+        return {
+          sidebarOpen: nextOpen,
+          activeSidebarTab: nextOpen ? (s.activeSidebarTab ?? "layers") : null,
+        };
+      }),
 
     init: ({ flowId, doc, version, readOnly }) =>
       set({ flowId, version, readOnly, ...documentToFlow(doc), selectedId: null, saveStatus: "idle", past: [], future: [] }),
