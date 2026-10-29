@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ZefflowLogo } from "@/components/ui/zefflow-logo";
 
 export const metadata = {
   title: "Panduan Penggunaan — Zefflow Studio",
@@ -45,13 +46,8 @@ export default function GuidePage() {
 
       {/* Header */}
       <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/90 px-4 sm:px-6 backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_18px_rgba(139,92,246,0.4)] transition-transform group-hover:scale-105">
-            <Workflow className="h-4.5 w-4.5 text-white" />
-          </div>
-          <span className="font-display text-base font-semibold tracking-tight text-foreground">
-            Zefflow
-          </span>
+        <Link href="/" className="flex items-center transition-opacity hover:opacity-90">
+          <ZefflowLogo size="md" badge="STUDIO" hideBadgeOnMobile />
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-xs font-medium text-muted-foreground">

@@ -8,7 +8,6 @@ import {
   FileDown,
   FileImage,
   Sparkles,
-  Workflow,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -22,6 +21,7 @@ import { exportDiagram } from "@/features/canvas/lib/export";
 import { useCanvasStore } from "@/features/canvas/store/canvas-store";
 import { SwimlaneCanvas } from "@/features/canvas/SwimlaneCanvas";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ZefflowLogo } from "@/components/ui/zefflow-logo";
 import type { FlowDocument } from "@/lib/validation/flow";
 
 interface PublicFlowViewProps {
@@ -63,11 +63,8 @@ export function PublicFlowView({
       {/* Top Read-Only Bar */}
       <header className="relative z-30 flex h-14 items-center justify-between border-b border-border/80 bg-surface/90 px-5 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-gradient">
-              <Workflow className="h-4 w-4 text-white" />
-            </div>
-            <span className="font-display text-sm font-bold tracking-tight">Zefflow</span>
+          <Link href="/" className="flex items-center transition-opacity hover:opacity-90">
+            <ZefflowLogo size="sm" />
           </Link>
 
           <span className="h-4 w-px bg-border/80" />

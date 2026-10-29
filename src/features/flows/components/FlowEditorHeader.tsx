@@ -35,6 +35,7 @@ import { exportDiagram } from "@/features/canvas/lib/export";
 import { useCanvasStore } from "@/features/canvas/store/canvas-store";
 import { useRealtimeFlow } from "@/features/canvas/store/use-realtime-flow";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ZefflowLogo } from "@/components/ui/zefflow-logo";
 import { updateFlowMetaAction } from "../actions";
 import { ShareDialog } from "./ShareDialog";
 import { SqlExportModal } from "./SqlExportModal";
@@ -114,10 +115,11 @@ export function FlowEditorHeader({
         <div className="flex items-center gap-2 sm:gap-3 min-w-0">
           <Link
             href="/dashboard"
-            className="grid h-8 w-8 shrink-0 place-items-center rounded-xl border border-border bg-muted/60 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+            className="flex h-8 shrink-0 items-center gap-1.5 rounded-xl border border-border bg-muted/60 px-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
             title="Kembali ke Dashboard"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <ZefflowLogo variant="mark" size="sm" imgClassName="h-5 w-5" />
           </Link>
 
           <button

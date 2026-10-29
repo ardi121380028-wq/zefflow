@@ -25,6 +25,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ZefflowLogo } from "@/components/ui/zefflow-logo";
 import { InteractiveFlowShowcase } from "@/features/landing/InteractiveFlowShowcase";
 import { PricingSection } from "@/features/landing/PricingSection";
 import { FaqSection } from "@/features/landing/FaqSection";
@@ -49,18 +50,8 @@ export default function HomePage() {
 
       {/* Floating Studio Header */}
       <header className="sticky top-0 z-50 mx-auto flex h-16 max-w-7xl items-center justify-between border-b border-border/80 bg-background/90 px-3 sm:px-6 backdrop-blur-md">
-        <Link href="/" className="flex items-center gap-2 group shrink-0">
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_18px_rgba(139,92,246,0.4)] transition-transform group-hover:scale-105">
-            <Workflow className="h-4.5 w-4.5 text-white" />
-          </div>
-          <div className="flex items-center gap-1.5">
-            <span className="font-display text-base font-semibold tracking-tight text-foreground">
-              Zefflow
-            </span>
-            <span className="hidden sm:inline-block rounded-md border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.2 text-[9px] font-mono font-semibold tracking-widest text-violet-600 dark:text-violet-400">
-              STUDIO
-            </span>
-          </div>
+        <Link href="/" className="flex items-center shrink-0 transition-opacity hover:opacity-90">
+          <ZefflowLogo size="md" badge="STUDIO" hideBadgeOnMobile />
         </Link>
 
         {/* Center links */}
@@ -225,16 +216,8 @@ export default function HomePage() {
           <div className="grid grid-cols-1 gap-10 md:grid-cols-5">
             {/* Brand column */}
             <div className="md:col-span-2 space-y-3">
-              <div className="flex items-center gap-2">
-                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-md">
-                  <Workflow className="h-4 w-4 text-white" />
-                </div>
-                <span className="font-display text-base font-bold text-foreground">
-                  Zefflow
-                </span>
-                <span className="rounded-md border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.2 text-[9px] font-mono font-bold tracking-widest text-violet-600 dark:text-violet-400">
-                  STUDIO
-                </span>
+              <div className="flex items-center">
+                <ZefflowLogo size="md" badge="STUDIO" />
               </div>
               <p className="text-xs text-muted-foreground leading-relaxed max-w-sm">
                 Platform visualisasi diagram swimlane dan standarisasi SOP multi-divisi modern. Didesain untuk memperjelas alur kerja tim dan bisnis di Indonesia.

@@ -38,6 +38,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { signOutAction, switchWorkspaceAction } from "@/features/flows/actions";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ZefflowLogo } from "@/components/ui/zefflow-logo";
 import type { WorkspaceContext } from "@/server/auth/session";
 import { CreateWorkspaceModal } from "./CreateWorkspaceModal";
 import { TeamManagementModal } from "./TeamManagementModal";
@@ -135,18 +136,8 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
       >
         {/* Brand Header */}
         <div className="flex h-16 items-center justify-between border-b border-border/80 px-5">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <div className="relative flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_18px_rgba(139,92,246,0.5)] transition-transform group-hover:scale-105">
-              <Workflow className="h-4.5 w-4.5 text-white" />
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="font-display text-base font-bold tracking-tight text-foreground">
-                Zefflow
-              </span>
-              <span className="rounded-md border border-violet-500/30 bg-violet-500/10 px-1.5 py-0.2 text-[9px] font-mono font-bold tracking-widest text-violet-600 dark:text-violet-400">
-                STUDIO
-              </span>
-            </div>
+          <Link href="/dashboard" className="flex items-center group transition-opacity hover:opacity-90">
+            <ZefflowLogo size="md" badge="STUDIO" />
           </Link>
 
           <button
@@ -385,6 +376,9 @@ export function DashboardLayout({ children, workspaceCtx, onOpenCreateFlow }: Da
             >
               <Menu className="h-4 w-4" />
             </button>
+            <Link href="/dashboard" className="lg:hidden">
+              <ZefflowLogo size="sm" />
+            </Link>
 
             {/* Modern Raycast/Linear-style Search Pill (terhubung ke DashboardView + Ctrl/Cmd+K) */}
             <div className="relative hidden items-center md:flex">

@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, FileText, Shield, Workflow } from "lucide-react";
+import { ArrowLeft, FileText, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ZefflowLogo } from "@/components/ui/zefflow-logo";
 
 export const metadata = {
   title: "Syarat & Ketentuan Layanan - Zefflow Studio",
@@ -13,13 +14,8 @@ export default function TermsPage() {
       {/* Top Header */}
       <header className="sticky top-0 z-50 border-b border-border/80 bg-background/80 px-6 py-4 backdrop-blur-xl">
         <div className="mx-auto flex max-w-5xl items-center justify-between">
-          <Link href="/" className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-md">
-              <Workflow className="h-4.5 w-4.5 text-white" />
-            </div>
-            <span className="font-display text-base font-bold tracking-tight text-foreground">
-              Zefflow
-            </span>
+          <Link href="/" className="flex items-center transition-opacity hover:opacity-90">
+            <ZefflowLogo size="md" badge="STUDIO" hideBadgeOnMobile />
           </Link>
 
           <Button variant="outline" size="sm" asChild className="gap-2 text-xs">

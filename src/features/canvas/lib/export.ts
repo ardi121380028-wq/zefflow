@@ -189,6 +189,25 @@ async function render(
       ctx.fillText(branding.docCode, width - PADDING, bannerH * 0.72);
     }
     ctx.textAlign = "left";
+  } else {
+    // Default identitas Zefflow resmi di kanan atas hasil ekspor bila user belum mengatur logo perusahaan
+    try {
+      const brandLogo = new Image();
+      await new Promise<void>((resolve) => {
+        brandLogo.onload = () => resolve();
+        brandLogo.onerror = () => resolve();
+        brandLogo.src = isLight ? "/brand/logo-light.png" : "/brand/logo-dark.png";
+      });
+      if (brandLogo.naturalWidth > 0) {
+        const targetH = Math.min(34, Math.round(bannerH * 0.34));
+        const targetW = Math.round((brandLogo.naturalWidth / brandLogo.naturalHeight) * targetH);
+        const logoX = width - PADDING - targetW;
+        const logoY = Math.round((bannerH - targetH) / 2);
+        ctx.drawImage(brandLogo, logoX, logoY, targetW, targetH);
+      }
+    } catch {
+      // Abaikan bila aset gagal dimuat
+    }
   }
 
   // Garis pemisah banner

@@ -3,11 +3,12 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowLeft, ArrowRight, CheckCircle2, Lock, Mail, Sparkles, Workflow } from "lucide-react";
+import { ArrowLeft, ArrowRight, CheckCircle2, Lock, Mail, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { ZefflowLogo } from "@/components/ui/zefflow-logo";
 import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
@@ -130,9 +131,9 @@ function LoginForm() {
       >
         {/* Brand logo & header */}
         <div className="flex flex-col items-center text-center">
-          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 via-indigo-600 to-fuchsia-600 shadow-[0_0_24px_rgba(139,92,246,0.4)]">
-            <Workflow className="h-6 w-6 text-white" />
-          </div>
+          <Link href="/" className="transition-opacity hover:opacity-90">
+            <ZefflowLogo size="lg" />
+          </Link>
           <h1 className="mt-4 font-display text-xl sm:text-2xl font-extrabold tracking-tight text-foreground">
             {isSignUp ? "Daftar Akun Zefflow" : "Masuk ke Zefflow"}
           </h1>
