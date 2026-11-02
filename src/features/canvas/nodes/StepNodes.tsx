@@ -5,6 +5,8 @@ import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import {
   ArrowRightFromLine,
+  ChevronDown,
+  ChevronUp,
   Database,
   FileOutput,
   GitBranch,
@@ -162,6 +164,14 @@ function parseErdColumns(desc: string) {
 /** Langkah kerja standar (SOP step) atau ERD Database Table di Architect mode */
 function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   const storeKind = useCanvasStore((s) => s.kind);
+  const showDescriptions = useCanvasStore((s) => s.showDescriptions);
+  const isExporting = useCanvasStore((s) => s.isExporting);
+  const [localDescOpen, setLocalDescOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    setLocalDescOpen(false);
+  }, [showDescriptions]);
+
   const isErd =
     storeKind === "architect" ||
     data.output === "Database Table" ||
@@ -252,6 +262,8 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
     );
   }
 
+  const isDescExpanded = showDescriptions || localDescOpen;
+
   return (
     <div
       className={cn(
@@ -261,14 +273,36 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
       style={{ width: STEP_WIDTH }}
     >
       <NodeHandles nodeId={id} />
-      <p className="font-display text-[38px] font-extrabold tracking-tight text-foreground dark:text-white leading-[45px]">
-        {data.title || "Tanpa judul"}
-      </p>
-      {data.description && (
-        <p className="mt-2.5 line-clamp-3 text-[26px] leading-[36px] text-muted-foreground dark:text-zinc-300 font-medium">
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-display text-[38px] font-extrabold tracking-tight text-foreground dark:text-white leading-[45px] flex-1">
+          {data.title || "Tanpa judul"}
+        </p>
+        {data.description && !isExporting && (
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLocalDescOpen((prev) => !prev);
+            }}
+            title={isDescExpanded ? "Sembunyikan detail deskripsi" : "Tampilkan detail deskripsi"}
+            className={cn(
+              "nodrag nopan shrink-0 mt-1 grid h-9 w-9 place-items-center rounded-xl border transition-colors",
+              isDescExpanded
+                ? "border-primary/40 bg-primary/10 text-primary"
+                : "border-border/80 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
+            )}
+          >
+            {isDescExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+          </button>
+        )}
+      </div>
+
+      {data.description && (isDescExpanded || isExporting) && (
+        <p className="mt-3 line-clamp-4 text-[26px] leading-[36px] text-muted-foreground dark:text-zinc-300 font-medium animate-in fade-in duration-200">
           {data.description}
         </p>
       )}
+
       {(data.owner || data.output) && (
         <div className="mt-4 flex flex-wrap gap-2">
           {data.owner && <Chip icon={<User2 className="h-6 w-6 text-sky-500 shrink-0" />}>{data.owner}</Chip>}

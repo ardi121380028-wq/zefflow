@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Download,
   Eye,
+  EyeOff,
   FileDown,
   FileImage,
   Sparkles,
@@ -40,6 +41,8 @@ export function PublicFlowView({
   document,
 }: PublicFlowViewProps) {
   const [isExporting, setIsExporting] = React.useState(false);
+  const showDescriptions = useCanvasStore((s) => s.showDescriptions);
+  const toggleDescriptions = useCanvasStore((s) => s.toggleDescriptions);
 
   const handleExport = async (format: "png" | "pdf") => {
     setIsExporting(true);
@@ -78,6 +81,23 @@ export function PublicFlowView({
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Toggle Deskripsi */}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={toggleDescriptions}
+            className="gap-1.5 text-xs"
+            title={showDescriptions ? "Sembunyikan deskripsi langkah" : "Tampilkan deskripsi langkah"}
+          >
+            {showDescriptions ? (
+              <Eye className="h-3.5 w-3.5 text-violet-500" />
+            ) : (
+              <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+            )}
+            <span className="hidden sm:inline">Deskripsi</span>
+          </Button>
+
           {/* Theme Toggle */}
           <ThemeToggle />
 

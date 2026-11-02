@@ -6,6 +6,8 @@ import {
   ArrowRightFromLine,
   Columns3,
   Database,
+  Eye,
+  EyeOff,
   GitBranch,
   Maximize2,
   Network,
@@ -26,7 +28,7 @@ export const PALETTE_MIME = "application/zefflow-node";
 
 /**
  * Toolbar studio melayang — adaptif:
- * - Studio 1 (SOP / Swimlane): Alat jalur divisi, durasi, flow arah.
+ * - Studio 1 (SOP / Swimlane): Alat jalur divisi, toggle deskripsi, flow arah.
  * - Studio 2 (Architect): Alat Tabel Database ERD, Microservices, Event Broker, API Gateway.
  */
 export function Toolbar() {
@@ -36,7 +38,9 @@ export function Toolbar() {
   const canUndo = useCanvasStore((s) => s.past.length > 0);
   const canRedo = useCanvasStore((s) => s.future.length > 0);
   const orientation = useCanvasStore((s) => s.orientation);
-  const { addLane, addStep, undo, redo, widenLanes, setOrientation, tidyLayout } = useCanvasStore.getState();
+  const showDescriptions = useCanvasStore((s) => s.showDescriptions);
+  const { addLane, addStep, undo, redo, widenLanes, setOrientation, tidyLayout, toggleDescriptions } =
+    useCanvasStore.getState();
   const vertical = orientation === "vertical";
 
   if (readOnly) return null;
@@ -101,6 +105,25 @@ export function Toolbar() {
         <OrientBtn active={!vertical} onClick={() => setOrientation("horizontal")} icon={<ArrowRight className="h-3.5 w-3.5" />} label="Ke samping" />
       </div>
       <Tool icon={<Sparkles className="h-3.5 w-3.5 text-amber-500" />} label="Rapikan" hint="Rapikan otomatis: susun ulang jarak & garis" onClick={tidyLayout} disabled={!hasLanes} />
+      <button
+        type="button"
+        onClick={toggleDescriptions}
+        aria-pressed={showDescriptions}
+        title={showDescriptions ? "Sembunyikan rincian deskripsi kartu" : "Tampilkan rincian deskripsi kartu"}
+        className={cn(
+          "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 sm:px-3 text-xs font-semibold transition-all duration-150 active:scale-95",
+          showDescriptions
+            ? "bg-violet-500/15 text-violet-700 dark:bg-violet-500/25 dark:text-violet-200 ring-1 ring-violet-500/40"
+            : "text-foreground/80 dark:text-zinc-300 hover:bg-muted dark:hover:bg-white/[0.08] hover:text-foreground dark:hover:text-white",
+        )}
+      >
+        {showDescriptions ? (
+          <Eye className="h-3.5 w-3.5 text-violet-500 shrink-0" />
+        ) : (
+          <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+        )}
+        <span>Deskripsi</span>
+      </button>
       <Divider />
       <PaletteTool type="step" icon={<Square className="h-3.5 w-3.5 text-sky-500" />} label="Langkah" disabled={!hasLanes} onAdd={() => addStep("step")} />
       <PaletteTool type="decision" icon={<GitBranch className="h-3.5 w-3.5 text-amber-500" />} label="Keputusan" disabled={!hasLanes} onAdd={() => addStep("decision")} />

@@ -177,6 +177,8 @@
    React Flow — Studio Canvas Theming
    ========================================================= */
 .react-flow {
+  touch-action: none;
+  overscroll-behavior: none;
   --xy-background-color: hsl(var(--canvas-bg));
   --xy-edge-stroke: rgba(255, 255, 255, 0.18);
   --xy-edge-stroke-selected: hsl(var(--primary));

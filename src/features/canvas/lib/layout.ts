@@ -8,26 +8,26 @@ import type { AppEdge, AppNode, LaneNodeType, StepNodeType } from "../types";
    ===================================================================== */
 
 // Horizontal
-export const LANE_HEADER_WIDTH = 340;
+export const LANE_HEADER_WIDTH = 380;
 export const LANE_DEFAULT_WIDTH = 3200;
-export const LANE_DEFAULT_HEIGHT = 400;
-export const LANE_MIN_HEIGHT = 300;
+export const LANE_DEFAULT_HEIGHT = 360;
+export const LANE_MIN_HEIGHT = 280;
 export const COL_GAP = 568;
 export const FIRST_COL_X = LANE_HEADER_WIDTH + 64;
 
 // Vertical
-export const LANE_V_WIDTH = 560;
+export const LANE_V_WIDTH = 580;
 export const LANE_V_MIN_WIDTH = 500;
 export const LANE_V_HEADER_HEIGHT = 176;
 export const LANE_V_MIN_LENGTH = 860;
 export const LANE_V_DEFAULT_LENGTH = 1800;
-export const ROW_GAP = 96;
+export const ROW_GAP = 128;
 export const FIRST_ROW_Y = LANE_V_HEADER_HEIGHT + 56;
 const LANE_V_BOTTOM_PAD = 84;
 
 // Node (2x Typography Scale untuk keterbacaan jarak jauh)
 export const STEP_WIDTH = 480;
-export const STEP_EST_HEIGHT = 290;
+export const STEP_EST_HEIGHT = 220;
 export const DECISION_W = 420;
 export const DECISION_H = 280;
 export const TERMINAL_MIN_W = 320;
@@ -124,7 +124,11 @@ export function sortParentsFirst(nodes: AppNode[]): AppNode[] {
  * Estimasi ukuran node berdasarkan isi teks (dipakai saat node belum terukur, mis. di server/template).
  * Disesuaikan dengan skala tipografi 2x agar kartu tidak pernah saling menimpa.
  */
-export function estimateNodeSize(type: string | undefined, data: unknown): { w: number; h: number } {
+export function estimateNodeSize(
+  type: string | undefined,
+  data: unknown,
+  includeDescription = false,
+): { w: number; h: number } {
   if (type === "decision") return { w: DECISION_W, h: DECISION_H };
   const d = (data ?? {}) as Partial<StepData>;
   if (type === "terminal") {
@@ -146,7 +150,8 @@ export function estimateNodeSize(type: string | undefined, data: unknown): { w: 
   const inner = STEP_WIDTH - 48;
   const title = d.title || "Tanpa judul";
   const titleLines = Math.max(1, Math.ceil((title.length * 19.5) / inner));
-  const descLines = d.description ? Math.min(3, Math.max(1, Math.ceil((d.description.length * 13.8) / inner))) : 0;
+  const descLines =
+    includeDescription && d.description ? Math.min(3, Math.max(1, Math.ceil((d.description.length * 13.8) / inner))) : 0;
 
   const chips: string[] = [];
   if (d.owner) chips.push(d.owner);
@@ -173,8 +178,8 @@ export function estimateNodeSize(type: string | undefined, data: unknown): { w: 
 }
 
 /** Ukuran nyata (terukur) bila ada, jika tidak pakai estimasi. */
-export function sizeOfNode(n: LayoutNodeLike): { w: number; h: number } {
-  const est = estimateNodeSize(n.type, n.data);
+export function sizeOfNode(n: LayoutNodeLike, includeDescription = false): { w: number; h: number } {
+  const est = estimateNodeSize(n.type, n.data, includeDescription);
   return { w: n.measured?.width ?? n.width ?? est.w, h: n.measured?.height ?? n.height ?? est.h };
 }
 

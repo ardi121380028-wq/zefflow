@@ -6,7 +6,7 @@ import { LANE_DEFAULT_HEIGHT, LANE_DEFAULT_WIDTH, LANE_V_DEFAULT_LENGTH, LANE_V_
 
 export type ExportFormat = "png" | "pdf";
 
-const PADDING = 56;
+const PADDING = 80;
 const MAX_SIDE = 16000;
 const MAX_PIXELS = 48_000_000;
 
@@ -117,8 +117,8 @@ async function render(
     img.src = dataUrl;
   });
 
-  // Banner judul agar hasil ekspor langsung informatif dan beridentitas resmi.
-  const bannerH = Math.max(104, Math.round(Math.min(width, 1800) * 0.065));
+  // Banner judul beresolusi proporsional (skala 3x lebih besar untuk presentasi & cetak eksekutif).
+  const bannerH = Math.max(300, Math.round(Math.min(width, 5000) * 0.08));
   const totalH = height + bannerH;
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(width * pixelRatio);
@@ -131,18 +131,26 @@ async function render(
   ctx.fillRect(0, 0, width, totalH);
 
   const family = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
-  const titleSize = Math.round(bannerH * 0.32);
+  // Judul 3x lipat lebih besar (~100px - 115px) & deskripsi bawah 3x lipat (~44px - 48px)
+  const titleSize = Math.max(90, Math.round(bannerH * 0.33));
+  const subSize = Math.max(38, Math.round(titleSize * 0.42));
+
+  // Tentukan alokasi lebar logo kanan agar teks judul tidak menabrak
+  const maxLogoH = Math.min(160, Math.round(bannerH * 0.56));
+  const maxLogoW = Math.round(bannerH * 1.8);
+  const reservedLogoRight = Math.max(360, maxLogoW + 40);
+
   ctx.textBaseline = "middle";
   ctx.fillStyle = fg;
-  ctx.font = `600 ${titleSize}px ${family}`;
-  ctx.fillText(title || "Diagram SOP", PADDING, bannerH * 0.38, width - PADDING * 2 - 240);
+  ctx.font = `800 ${titleSize}px ${family}`;
+  ctx.fillText(title || "Diagram SOP", PADDING, bannerH * 0.38, width - PADDING * 2 - reservedLogoRight);
 
   ctx.fillStyle = muted;
-  ctx.font = `500 ${Math.round(titleSize * 0.48)}px ${family}`;
+  ctx.font = `600 ${subSize}px ${family}`;
   const date = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-  ctx.fillText(`Dibuat dengan Zefflow  ·  ${date}`, PADDING, bannerH * 0.72);
+  ctx.fillText(`Dibuat dengan Zefflow  ·  ${date}`, PADDING, bannerH * 0.74, width - PADDING * 2 - reservedLogoRight);
 
-  // Gambar Logo dan Identitas Perusahaan di sisi kanan banner
+  // Gambar Logo dan Identitas Perusahaan di sisi kanan banner (skala 3x lebih besar)
   if (branding?.companyLogo) {
     try {
       const logoImg = new Image();
@@ -152,22 +160,20 @@ async function render(
         logoImg.src = branding.companyLogo!;
       });
       if (logoImg.naturalWidth > 0) {
-        const maxLogoH = Math.min(52, bannerH * 0.52);
-        const maxLogoW = 160;
         const ratio = Math.min(maxLogoH / logoImg.naturalHeight, maxLogoW / logoImg.naturalWidth);
         const logoW = Math.round(logoImg.naturalWidth * ratio);
         const logoH = Math.round(logoImg.naturalHeight * ratio);
         const logoX = width - PADDING - logoW;
-        const logoY = Math.round((bannerH - logoH) / 2) - 4;
+        const logoY = Math.round((bannerH - logoH) / 2) - 6;
         ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
 
         if (branding.companyName || branding.docCode) {
           ctx.textAlign = "right";
           ctx.textBaseline = "middle";
-          ctx.font = `600 11px ${family}`;
+          ctx.font = `600 ${Math.round(subSize * 0.8)}px ${family}`;
           ctx.fillStyle = muted;
           if (branding.docCode) {
-            ctx.fillText(branding.docCode, width - PADDING, bannerH - 12);
+            ctx.fillText(branding.docCode, width - PADDING, bannerH - 20);
           }
           ctx.textAlign = "left";
         }
@@ -179,18 +185,18 @@ async function render(
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";
     if (branding.companyName) {
-      ctx.font = `600 13px ${family}`;
+      ctx.font = `700 ${Math.round(subSize * 1.15)}px ${family}`;
       ctx.fillStyle = fg;
       ctx.fillText(branding.companyName, width - PADDING, bannerH * 0.38);
     }
     if (branding.docCode) {
-      ctx.font = `500 11px ${family}`;
+      ctx.font = `600 ${Math.round(subSize * 0.85)}px ${family}`;
       ctx.fillStyle = muted;
-      ctx.fillText(branding.docCode, width - PADDING, bannerH * 0.72);
+      ctx.fillText(branding.docCode, width - PADDING, bannerH * 0.74);
     }
     ctx.textAlign = "left";
   } else {
-    // Default identitas Zefflow resmi di kanan atas hasil ekspor bila user belum mengatur logo perusahaan
+    // Default identitas Zefflow resmi (3x lebih besar, ~105px tinggi)
     try {
       const brandLogo = new Image();
       await new Promise<void>((resolve) => {
@@ -199,7 +205,7 @@ async function render(
         brandLogo.src = isLight ? "/brand/logo-light.png" : "/brand/logo-dark.png";
       });
       if (brandLogo.naturalWidth > 0) {
-        const targetH = Math.min(34, Math.round(bannerH * 0.34));
+        const targetH = Math.min(105, Math.round(bannerH * 0.36));
         const targetW = Math.round((brandLogo.naturalWidth / brandLogo.naturalHeight) * targetH);
         const logoX = width - PADDING - targetW;
         const logoY = Math.round((bannerH - targetH) / 2);
@@ -210,9 +216,9 @@ async function render(
     }
   }
 
-  // Garis pemisah banner
+  // Garis pemisah banner tebal proporsional
   ctx.fillStyle = line;
-  ctx.fillRect(PADDING, bannerH - 2, width - PADDING * 2, 1);
+  ctx.fillRect(PADDING, bannerH - 4, width - PADDING * 2, 3);
 
   ctx.drawImage(img, 0, 0, img.naturalWidth, img.naturalHeight, 0, bannerH, width, height);
 

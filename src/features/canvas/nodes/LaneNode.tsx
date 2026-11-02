@@ -8,6 +8,16 @@ import { useCanvasStore } from "../store/canvas-store";
 import { LANE_HEADER_WIDTH, LANE_MIN_HEIGHT, LANE_STYLES, LANE_V_HEADER_HEIGHT, LANE_V_MIN_WIDTH } from "../lib/layout";
 import type { LaneNodeType } from "../types";
 
+export function normalizeLaneTitle(rawTitle: string): string {
+  const trimmed = rawTitle.trim();
+  const lower = trimmed.toLowerCase();
+  if (lower === "cust. service" || lower === "cust.service" || lower === "cust service") return "Customer Service";
+  if (lower === "t. support" || lower === "t.support" || lower === "t support") return "Technical Support";
+  if (lower === "cs & finance" || lower === "cs & fin") return "Customer Service & Finance";
+  if (lower === "cs") return "Customer Success";
+  return rawTitle;
+}
+
 /**
  * Satu lane = satu divisi/departemen (Parent node di React Flow).
  * - horizontal: header di kiri, alur ke samping.
@@ -20,9 +30,10 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
   const select = useCanvasStore((s) => s.select);
   const { moveLane, removeLane, resizeLane } = useCanvasStore.getState();
   const style = LANE_STYLES[data.color];
+  const displayTitle = normalizeLaneTitle(data.title || "Tanpa nama");
 
   const confirmRemove = () => {
-    if (window.confirm(`Hapus lane "${data.title}" beserta semua langkah di dalamnya?`)) removeLane(id);
+    if (window.confirm(`Hapus lane "${displayTitle}" beserta semua langkah di dalamnya?`)) removeLane(id);
   };
 
   const headerContent = (
@@ -31,7 +42,7 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
         <div className="flex items-start gap-3">
           <span className={cn("mt-2.5 h-5 w-5 shrink-0 rounded-full", style.dot)} />
           <p className="line-clamp-2 break-words font-display text-[36px] font-extrabold leading-[41px] tracking-tight text-foreground">
-            {data.title || "Tanpa nama"}
+            {displayTitle}
           </p>
         </div>
         {data.division && (
@@ -150,7 +161,7 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
           onResizeEnd={(_, p) => resizeLane(id, p.height)}
           className="pointer-events-auto !border-0 !bg-transparent"
         >
-          <div className="absolute left-[170px] top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize rounded-full border border-border bg-card px-2.5 py-1 shadow-lg">
+          <div className="absolute left-[190px] top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize rounded-full border border-border bg-card px-2.5 py-1 shadow-lg">
             <GripHorizontal className="h-4 w-4 text-muted-foreground" />
           </div>
         </NodeResizeControl>

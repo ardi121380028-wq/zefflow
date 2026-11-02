@@ -78,6 +78,7 @@ interface CanvasState {
   mutationTick: number;
   isDragging: boolean;
   isExporting: boolean;
+  showDescriptions: boolean;
   selectedId: string | null;
   kind: "sop" | "journey" | "architect";
   saveStatus: SaveStatus;
@@ -87,6 +88,8 @@ interface CanvasState {
   updateBranding: (b: { companyLogo?: string; companyName?: string; docCode?: string }) => void;
   setDragging: (dragging: boolean) => void;
   setExporting: (exporting: boolean) => void;
+  toggleDescriptions: () => void;
+  setShowDescriptions: (show: boolean) => void;
 
   // lifecycle
   init: (p: { flowId: string; doc: FlowDocument; version: number; readOnly: boolean; kind?: "sop" | "journey" | "architect" }) => void;
@@ -140,20 +143,30 @@ const defaultEdge = (c: Connection): AppEdge => ({
   markerEnd: EDGE_MARKER,
 });
 
+const LEGACY_LANE_TITLE_MAP: Record<string, string> = {
+  "Cust. Service": "Customer Service",
+  "T. Support": "Technical Support",
+  "CS & Finance": "Customer Service & Finance",
+};
+
 /** Ubah dokumen tersimpan -> node/edge React Flow. */
 export function documentToFlow(doc: FlowDocument): Snapshot & { healed?: boolean } {
   const orientation: Orientation = doc.orientation ?? "horizontal";
   const vertical = orientation === "vertical";
+  let expandedAbbreviations = false;
   const nodes: AppNode[] = doc.nodes.map((n) => {
     if (n.type === "lane") {
+      const normalizedTitle = LEGACY_LANE_TITLE_MAP[n.data.title] ?? n.data.title;
+      if (normalizedTitle !== n.data.title) expandedAbbreviations = true;
+      const normalizedData = normalizedTitle !== n.data.title ? { ...n.data, title: normalizedTitle } : n.data;
       const base = createLaneNode(
         n.id,
-        n.data.title,
+        normalizedTitle,
         n.data.color,
         n.width ?? (vertical ? LANE_V_WIDTH : LANE_DEFAULT_WIDTH),
         n.height ?? (vertical ? LANE_V_DEFAULT_LENGTH : LANE_DEFAULT_HEIGHT),
       );
-      return { ...base, position: n.position, data: n.data };
+      return { ...base, position: n.position, data: normalizedData };
     }
     const est = estimateNodeSize(n.type, n.data);
     return {
@@ -224,6 +237,7 @@ export function documentToFlow(doc: FlowDocument): Snapshot & { healed?: boolean
     companyLogo: doc.companyLogo ?? "",
     companyName: doc.companyName ?? "",
     docCode: doc.docCode ?? "",
+    ...(expandedAbbreviations ? { healed: true } : {}),
   };
 }
 
@@ -268,6 +282,7 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     mutationTick: 0,
     isDragging: false,
     isExporting: false,
+    showDescriptions: false,
     selectedId: null,
     kind: "sop",
     sidebarOpen: false,
@@ -281,6 +296,12 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     },
     setExporting: (isExporting) => {
       if (get().isExporting !== isExporting) set({ isExporting });
+    },
+    toggleDescriptions: () => {
+      set((s) => ({ showDescriptions: !s.showDescriptions }));
+    },
+    setShowDescriptions: (showDescriptions) => {
+      if (get().showDescriptions !== showDescriptions) set({ showDescriptions });
     },
 
     updateBranding: (b) => {

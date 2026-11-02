@@ -72,7 +72,7 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
   const orientation = useCanvasStore((s) => s.orientation);
   const isExporting = useCanvasStore((s) => s.isExporting);
   const [forceMiniMap, setForceMiniMap] = useState(false);
-  const { screenToFlowPosition, fitView } = useReactFlow();
+  const { screenToFlowPosition, fitView, zoomIn, zoomOut, getZoom, zoomTo } = useReactFlow();
   const { saveNow } = useAutosave();
   const { theme } = useTheme();
   const largeGraph = nodes.length > 350;
@@ -96,7 +96,37 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
 
   useEffect(() => onReady?.({ saveNow }), [onReady, saveNow]);
 
-  // Shortcut keyboard (abaikan saat mengetik di input).
+  // Cegah Ctrl+Scroll / Pinch-to-Zoom memicu Browser Zoom bawaan Chrome/Safari di seluruh area Studio,
+  // termasuk saat kursor berada di atas panel/toolbar atau saat mencapai batas minZoom/maxZoom.
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const alreadyHandledByCanvas = e.defaultPrevented;
+      e.preventDefault();
+      if (!alreadyHandledByCanvas && e.deltaY !== 0) {
+        const current = getZoom();
+        const factor = Math.exp(-e.deltaY * 0.002);
+        const nextZoom = Math.min(2.5, Math.max(0.05, current * factor));
+        if (Math.abs(nextZoom - current) > 0.0005) {
+          void zoomTo(nextZoom);
+        }
+      }
+    };
+    const preventSafariGesture = (e: Event) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener("wheel", onWheel, { passive: false, capture: true });
+    window.addEventListener("gesturestart", preventSafariGesture, { passive: false, capture: true } as AddEventListenerOptions);
+    window.addEventListener("gesturechange", preventSafariGesture, { passive: false, capture: true } as AddEventListenerOptions);
+    return () => {
+      window.removeEventListener("wheel", onWheel, { capture: true } as EventListenerOptions);
+      window.removeEventListener("gesturestart", preventSafariGesture, { capture: true } as EventListenerOptions);
+      window.removeEventListener("gesturechange", preventSafariGesture, { capture: true } as EventListenerOptions);
+    };
+  }, [getZoom, zoomTo]);
+
+  // Shortcut keyboard (abaikan saat mengetik di input, dan tangkap Ctrl +/-/0 ke zoom kanvas sebelum browser zoom).
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const t = e.target as HTMLElement;
@@ -105,7 +135,20 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
       const s = useCanvasStore.getState();
       if (mod && e.key.toLowerCase() === "s") {
         e.preventDefault();
+        e.stopPropagation();
         void saveNow();
+      } else if (!typing && mod && (e.key === "=" || e.key === "+" || e.code === "NumpadAdd")) {
+        e.preventDefault();
+        e.stopPropagation();
+        void zoomIn({ duration: 150 });
+      } else if (!typing && mod && (e.key === "-" || e.key === "_" || e.code === "NumpadSubtract")) {
+        e.preventDefault();
+        e.stopPropagation();
+        void zoomOut({ duration: 150 });
+      } else if (!typing && mod && (e.key === "0" || e.code === "Numpad0")) {
+        e.preventDefault();
+        e.stopPropagation();
+        void fitView({ padding: 0.15, maxZoom: 1, duration: 250 });
       } else if (!typing && mod && e.key.toLowerCase() === "z") {
         e.preventDefault();
         e.shiftKey ? s.redo() : s.undo();
@@ -117,9 +160,9 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
         s.toggleSidebar();
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [saveNow]);
+    window.addEventListener("keydown", onKey, { capture: true });
+    return () => window.removeEventListener("keydown", onKey, { capture: true } as EventListenerOptions);
+  }, [saveNow, zoomIn, zoomOut, fitView]);
 
   const onSelectionChange = useCallback(({ nodes: ns, edges: es }: OnSelectionChangeParams) => {
     const id = ns[0]?.id ?? es[0]?.id ?? null;
