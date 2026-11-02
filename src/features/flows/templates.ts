@@ -374,8 +374,8 @@ function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vert
         id: `n_${s.id}`,
         type: s.type ?? ("step" as const),
         position: {
-          x: 80 + col * 420,
-          y: 60 + row * 340,
+          x: 80 + col * 600,
+          y: 60 + row * 560,
         },
         data,
       };
@@ -399,36 +399,55 @@ function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vert
   }
 
   // STUDIO 1: SWIMLANE SOP DENGAN JALUR DIVISI
-  const maxCol = Math.max(...t.steps.map((s) => s.col), 7);
-  const calculatedWidth = Math.max(LANE_DEFAULT_WIDTH, FIRST_COL_X + (maxCol + 1) * COL_GAP + 300);
+  const maxCol = Math.max(...t.steps.map((s) => s.col), 5);
+  const calculatedWidth = Math.max(LANE_DEFAULT_WIDTH, FIRST_COL_X + maxCol * COL_GAP + STEP_WIDTH + 140);
 
-  const lanes = t.lanes.map((l, i) => ({
-    id: `lane_${i}`,
-    type: "lane" as const,
-    position: { x: 0, y: i * LANE_DEFAULT_HEIGHT },
-    width: calculatedWidth,
-    height: LANE_DEFAULT_HEIGHT,
-    data: { title: l.title, division: l.division, color: l.color },
-  }));
-
-  const steps = t.steps.map((s) => {
+  // Hitung estimasi ukuran tiap step terlebih dahulu agar tinggi tiap lane selalu muat untuk skala 2x
+  const preparedSteps = t.steps.map((s) => {
     const data = {
       title: s.title,
       description: s.description ?? "",
-      durationValue: s.duration?.[0] ?? null,
-      durationUnit: s.duration?.[1] ?? ("menit" as const),
+      durationValue: null,
+      durationUnit: "menit" as const,
       output: s.output ?? "",
       owner: s.owner ?? "",
     };
     const { w, h } = estimateNodeSize(s.type, data);
+    return { spec: s, data, w, h };
+  });
 
+  const maxStepHeightByLane = new Map<number, number>();
+  for (const item of preparedSteps) {
+    const prev = maxStepHeightByLane.get(item.spec.lane) ?? 0;
+    if (item.h > prev) maxStepHeightByLane.set(item.spec.lane, item.h);
+  }
+
+  let currentLaneY = 0;
+  const laneHeights: number[] = [];
+  const lanes = t.lanes.map((l, i) => {
+    const laneH = Math.max(LANE_DEFAULT_HEIGHT, (maxStepHeightByLane.get(i) ?? 0) + 56);
+    laneHeights[i] = laneH;
+    const node = {
+      id: `lane_${i}`,
+      type: "lane" as const,
+      position: { x: 0, y: currentLaneY },
+      width: calculatedWidth,
+      height: laneH,
+      data: { title: l.title, division: l.division, color: l.color },
+    };
+    currentLaneY += laneH;
+    return node;
+  });
+
+  const steps = preparedSteps.map(({ spec: s, data, w, h }) => {
+    const laneH = laneHeights[s.lane] ?? LANE_DEFAULT_HEIGHT;
     return {
       id: `n_${s.id}`,
       type: s.type ?? ("step" as const),
       parentId: `lane_${s.lane}`,
       position: {
         x: FIRST_COL_X + s.col * COL_GAP + Math.round((STEP_WIDTH - w) / 2),
-        y: Math.round((LANE_DEFAULT_HEIGHT - h) / 2),
+        y: Math.max(20, Math.round((laneH - h) / 2)),
       },
       data,
     };

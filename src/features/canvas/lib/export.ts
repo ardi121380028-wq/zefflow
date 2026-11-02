@@ -6,9 +6,9 @@ import { LANE_DEFAULT_HEIGHT, LANE_DEFAULT_WIDTH, LANE_V_DEFAULT_LENGTH, LANE_V_
 
 export type ExportFormat = "png" | "pdf";
 
-const PADDING = 40;
+const PADDING = 56;
 const MAX_SIDE = 16000;
-const MAX_PIXELS = 40_000_000;
+const MAX_PIXELS = 48_000_000;
 
 export interface BrandingInfo {
   companyLogo?: string | null;
@@ -84,9 +84,9 @@ async function render(
   const muted = isLight ? "#64748B" : "#8B8D98";
   const line = isLight ? "#E2E8F0" : "#23252D";
 
-  // Resolusi adaptif: setajam mungkin tanpa melewati batas canvas browser.
-  const maxSide = Math.max(width, height);
-  const pixelRatio = Math.max(1, Math.min(3, MAX_SIDE / maxSide, Math.sqrt(MAX_PIXELS / (width * height))));
+  // Resolusi adaptif: setajam mungkin tanpa melewati batas canvas browser (~16.384px).
+  const maxSide = Math.max(width, height + 200);
+  const pixelRatio = Math.max(0.5, Math.min(2.5, MAX_SIDE / maxSide, Math.sqrt(MAX_PIXELS / (width * height))));
 
   const dataUrl = await toPng(viewportEl, {
     width,

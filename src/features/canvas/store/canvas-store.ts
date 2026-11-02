@@ -34,6 +34,8 @@ import {
   ROW_GAP,
   sizeOfNode,
   sortParentsFirst,
+  STEP_WIDTH,
+  LANE_HEADER_WIDTH,
 } from "../lib/layout";
 
 const HISTORY_LIMIT = 40;
@@ -56,8 +58,8 @@ function computeNodeStats(nodes: AppNode[]): { stepCount: number; hasLanes: bool
   return { stepCount, hasLanes };
 }
 
-/** Panah koneksi sedikit lebih besar agar terlihat jelas di layar maupun hasil ekspor. */
-export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 20, height: 20 } as const;
+/** Panah koneksi diperbesar agar seimbang dengan skala tipografi & kartu 2x. */
+export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 24, height: 24 } as const;
 
 export type SidebarTab = "layers" | "outline" | "branding" | "assets";
 
@@ -169,12 +171,41 @@ export function documentToFlow(doc: FlowDocument): Snapshot & { healed?: boolean
 
   const sortedNodes = relayoutLanes(sortParentsFirst(nodes), orientation);
 
-  // Self-healing otomatis untuk diagram vertikal lama yang sempat tersimpan dengan lebar horizontal (2600px+)
-  const hasOversizedVerticalLane =
-    vertical && sortedNodes.some((n) => n.type === "lane" && (n.width ?? 0) >= LANE_DEFAULT_WIDTH);
+  // Self-healing otomatis untuk diagram tersimpan versi lama (baik lebar vertikal berlebih maupun geometri pra-skala 2x)
+  const laneNodes = sortedNodes.filter((n) => n.type === "lane");
+  const childStepNodes = sortedNodes.filter((n) => n.type !== "lane");
 
-  if (hasOversizedVerticalLane) {
-    const healed = convertLayout(sortedNodes, edges, "vertical", "vertical");
+  const hasLegacyVerticalGeometry =
+    vertical &&
+    laneNodes.length > 0 &&
+    laneNodes.some((n) => (n.width ?? 0) >= LANE_DEFAULT_WIDTH || (n.width ?? 0) < LANE_V_MIN_WIDTH);
+
+  const hasLegacyHorizontalGeometry =
+    !vertical &&
+    laneNodes.length > 0 &&
+    (laneNodes.some((n) => (n.height ?? 0) < LANE_MIN_HEIGHT) ||
+      childStepNodes.some((n) => Boolean(n.parentId) && n.position.x < LANE_HEADER_WIDTH));
+
+  let hasOverlappingFreeform = false;
+  if (laneNodes.length === 0 && childStepNodes.length > 1) {
+    for (let i = 0; i < childStepNodes.length && !hasOverlappingFreeform; i++) {
+      const a = childStepNodes[i]!;
+      const sa = sizeOfNode(a);
+      for (let j = i + 1; j < childStepNodes.length; j++) {
+        const b = childStepNodes[j]!;
+        const sb = sizeOfNode(b);
+        const overlapX = a.position.x < b.position.x + sb.w - 16 && a.position.x + sa.w - 16 > b.position.x;
+        const overlapY = a.position.y < b.position.y + sb.h - 16 && a.position.y + sa.h - 16 > b.position.y;
+        if (overlapX && overlapY) {
+          hasOverlappingFreeform = true;
+          break;
+        }
+      }
+    }
+  }
+
+  if (hasLegacyVerticalGeometry || hasLegacyHorizontalGeometry || hasOverlappingFreeform) {
+    const healed = convertLayout(sortedNodes, edges, orientation, orientation);
     return {
       nodes: healed.nodes,
       edges: healed.edges,
@@ -498,8 +529,8 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
             terminal: "API Endpoint",
           } as const;
           const pos = opts?.position ?? {
-            x: 180 + (s.nodes.length % 4) * 320,
-            y: 100 + Math.floor(s.nodes.length / 4) * 220,
+            x: 180 + (s.nodes.length % 4) * (STEP_WIDTH + 120),
+            y: 100 + Math.floor(s.nodes.length / 4) * 520,
           };
           const node = createStepNode(`n_${nanoid(8)}`, type, pos, undefined as any, titles[type]);
           if (type === "step") {
@@ -568,10 +599,10 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
           const defaultTitle = titles[type];
           const newSize = estimateNodeSize(type, { title: defaultTitle });
           const sourceSize = sizeOfNode(sourceNode);
-          let pos = { x: sourceNode.position.x + sourceSize.w + 80, y: sourceNode.position.y };
-          if (handle === "b") pos = { x: sourceNode.position.x, y: sourceNode.position.y + sourceSize.h + 80 };
-          else if (handle === "t") pos = { x: sourceNode.position.x, y: sourceNode.position.y - newSize.h - 80 };
-          else if (handle === "l") pos = { x: sourceNode.position.x - newSize.w - 80, y: sourceNode.position.y };
+          let pos = { x: sourceNode.position.x + sourceSize.w + 120, y: sourceNode.position.y };
+          if (handle === "b") pos = { x: sourceNode.position.x, y: sourceNode.position.y + sourceSize.h + 120 };
+          else if (handle === "t") pos = { x: sourceNode.position.x, y: sourceNode.position.y - newSize.h - 120 };
+          else if (handle === "l") pos = { x: sourceNode.position.x - newSize.w - 120, y: sourceNode.position.y };
 
           const newNodeId = `step_${nanoid(8)}`;
           const newNode = createStepNode(newNodeId, type, pos, undefined as any, defaultTitle);

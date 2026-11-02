@@ -7,9 +7,9 @@ import {
 } from "lucide-react";
 import { useShallow } from "zustand/react/shallow";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select, Textarea } from "@/components/ui/field";
+import { Input, Label, Textarea } from "@/components/ui/field";
 import { cn } from "@/lib/utils";
-import { DURATION_UNITS, LANE_COLORS, type LaneData, type StepData } from "@/lib/validation/flow";
+import { LANE_COLORS, type LaneData, type StepData } from "@/lib/validation/flow";
 import { LANE_STYLES } from "../lib/layout";
 import { useCanvasStore } from "../store/canvas-store";
 import { isLane, isStep, type AppNode } from "../types";
@@ -179,38 +179,6 @@ export function Inspector() {
             </Field>
             {node.type !== "terminal" && (
               <>
-                <Field label="Durasi Kerja Estimasi">
-                  <div className="grid grid-cols-2 gap-2">
-                    <Input
-                      type="number"
-                      min={0}
-                      max={10000}
-                      value={node.data.durationValue ?? ""}
-                      placeholder="0"
-                      disabled={readOnly}
-                      onChange={(e) =>
-                        handleNodeChange(node.id, {
-                          durationValue: e.target.value === "" ? null : Number(e.target.value),
-                        })
-                      }
-                    />
-                    <Select
-                      value={node.data.durationUnit ?? "menit"}
-                      disabled={readOnly}
-                      onChange={(e) =>
-                        handleNodeChange(node.id, {
-                          durationUnit: e.target.value as "menit" | "jam" | "hari",
-                        })
-                      }
-                    >
-                      {DURATION_UNITS.map((u) => (
-                        <option key={u} value={u}>
-                          {u}
-                        </option>
-                      ))}
-                    </Select>
-                  </div>
-                </Field>
                 <Field label="Penanggung Jawab (PIC)">
                   <Input
                     value={node.data.owner}

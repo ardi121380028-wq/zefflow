@@ -234,7 +234,7 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
       deleteKeyCode={readOnly ? null : ["Backspace", "Delete"]}
       snapToGrid
       snapGrid={[8, 8]}
-      minZoom={0.15}
+      minZoom={0.05}
       maxZoom={1.75}
       panOnScroll
       selectionOnDrag={false}
@@ -244,8 +244,8 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
     >
       <Background
         variant={BackgroundVariant.Dots}
-        gap={22}
-        size={1.4}
+        gap={28}
+        size={1.6}
         color={theme === "dark" ? "rgba(255, 255, 255, 0.09)" : "rgba(15, 23, 42, 0.12)"}
       />
       <Controls

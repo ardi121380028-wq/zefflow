@@ -35,7 +35,7 @@ export function StudioSidebarRail() {
     },
     {
       id: "outline",
-      label: "Ringkasan SOP & Durasi",
+      label: "Ringkasan SOP",
       icon: <ListOrdered className="h-4 w-4" />,
     },
     {

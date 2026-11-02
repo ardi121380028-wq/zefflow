@@ -6,14 +6,10 @@ import {
   ArrowRightFromLine,
   Boxes,
   Building2,
-  CheckCircle2,
   ChevronDown,
   ChevronRight,
-  Clock,
-  Compass,
   Database,
   GitBranch,
-  Image as ImageIcon,
   Layers,
   ListOrdered,
   Network,
@@ -24,7 +20,6 @@ import {
   Square,
   Trash2,
   Upload,
-  User2,
   X,
 } from "lucide-react";
 import { useReactFlow } from "@xyflow/react";
@@ -160,36 +155,18 @@ function LayersPanelContent({ activeSidebarTab }: { activeSidebarTab: SidebarTab
     return map;
   }, [activeSidebarTab, deferredSearch, stepsByLane, laneById]);
 
-  // Hitung total estimasi waktu hanya saat tab outline aktif
-  const timeSummary = React.useMemo(() => {
+  // Hitung ringkasan kelengkapan SOP hanya saat tab outline aktif
+  const outlineStats = React.useMemo(() => {
     if (activeSidebarTab !== "outline") {
-      return { formatted: "0 menit", minutes: 0, missingInfoCount: 0 };
+      return { missingPicCount: 0 };
     }
-    let minutes = 0;
-    let missingInfoCount = 0;
-
+    let missingPicCount = 0;
     for (const s of steps) {
-      if (!s.data.durationValue && !s.data.owner) {
-        missingInfoCount++;
+      if (s.type === "step" && !s.data.owner && !s.data.output) {
+        missingPicCount++;
       }
-      if (!s.data.durationValue) continue;
-      const v = s.data.durationValue;
-      const u = s.data.durationUnit || "menit";
-      if (u === "menit") minutes += v;
-      else if (u === "jam") minutes += v * 60;
-      else if (u === "hari") minutes += v * 60 * 8; // asumsi 8 jam kerja/hari
     }
-
-    const days = Math.floor(minutes / (60 * 8));
-    const hours = Math.floor((minutes % (60 * 8)) / 60);
-    const mins = minutes % 60;
-
-    const parts: string[] = [];
-    if (days > 0) parts.push(`${days} hari`);
-    if (hours > 0) parts.push(`${hours} jam`);
-    if (mins > 0 || parts.length === 0) parts.push(`${mins} menit`);
-
-    return { formatted: parts.join(" "), minutes, missingInfoCount };
+    return { missingPicCount };
   }, [activeSidebarTab, steps]);
 
   // Progressive infinite scroll pada tab Outline untuk ribuan item
@@ -497,23 +474,6 @@ function LayersPanelContent({ activeSidebarTab }: { activeSidebarTab: SidebarTab
                                 </div>
 
                                 <div className="flex items-center gap-1.5 shrink-0">
-                                  {step.data.durationValue && (
-                                    <span
-                                      className={cn(
-                                        "font-mono text-[9px] px-1 rounded",
-                                        isStepSelected
-                                          ? "bg-white/20 text-white"
-                                          : "text-muted-foreground/80 bg-muted/40",
-                                      )}
-                                    >
-                                      {step.data.durationValue}
-                                      {step.data.durationUnit === "jam"
-                                        ? "j"
-                                        : step.data.durationUnit === "hari"
-                                          ? "h"
-                                          : "m"}
-                                    </span>
-                                  )}
                                   {!readOnly && (
                                     <button
                                       type="button"
@@ -576,13 +536,13 @@ function LayersPanelContent({ activeSidebarTab }: { activeSidebarTab: SidebarTab
           <div className="flex flex-1 flex-col overflow-hidden">
             <div className="p-3 border-b border-border/70 dark:border-white/[0.06] space-y-2 bg-muted/20">
               <div className="grid grid-cols-2 gap-2">
-                <MetricBox label="Total Durasi" value={timeSummary.formatted} />
+                <MetricBox label="Jalur Divisi" value={`${lanes.length} divisi`} />
                 <MetricBox label="Jumlah Langkah" value={`${steps.length} item`} />
               </div>
-              {timeSummary.missingInfoCount > 0 && (
+              {outlineStats.missingPicCount > 0 && (
                 <div className="flex items-center gap-2 rounded-xl border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5 text-[11px] text-amber-600 dark:text-amber-400">
                   <AlertCircle className="h-3.5 w-3.5 shrink-0" />
-                  <span>{timeSummary.missingInfoCount} langkah belum ada PIC/durasi</span>
+                  <span>{outlineStats.missingPicCount} langkah belum dilengkapi PIC / Output</span>
                 </div>
               )}
             </div>
@@ -617,11 +577,7 @@ function LayersPanelContent({ activeSidebarTab }: { activeSidebarTab: SidebarTab
                               <span className="font-medium text-foreground/80">{parentLane.data.title}</span>
                             )}
                             {step.data.owner && <span>• {step.data.owner}</span>}
-                            {step.data.durationValue && (
-                              <span>
-                                • {step.data.durationValue} {step.data.durationUnit || "menit"}
-                              </span>
-                            )}
+                            {step.data.output && <span>• {step.data.output}</span>}
                           </div>
                         </div>
                       </div>
@@ -808,7 +764,7 @@ function LayersPanelContent({ activeSidebarTab }: { activeSidebarTab: SidebarTab
                   type="step"
                   icon={<Square className="h-4 w-4 text-sky-500" />}
                   title="Langkah Kerja"
-                  desc="Tugas standar dengan durasi, PIC, & output dokumen"
+                  desc="Tugas standar dengan PIC & output dokumen"
                   onAdd={() => addStep("step")}
                 />
                 <AssetCard

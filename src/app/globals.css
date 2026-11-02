@@ -235,10 +235,10 @@
   @apply overflow-hidden rounded-2xl border border-border bg-card shadow-xl;
 }
 .react-flow__handle {
-  width: 13.5px !important;
-  height: 13.5px !important;
+  width: 16px !important;
+  height: 16px !important;
   border-radius: 9999px !important;
-  border: 2.5px solid #8b5cf6 !important;
+  border: 2.75px solid #8b5cf6 !important;
   background: hsl(var(--card)) !important;
   box-shadow: 0 0 10px rgba(139, 92, 246, 0.7) !important;
   transition: transform 0.15s cubic-bezier(0.2, 0, 0, 1), box-shadow 0.15s ease, background-color 0.15s ease !important;

@@ -5,7 +5,6 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
-  Clock,
   Compass,
   FileCheck2,
   FileOutput,
@@ -1092,16 +1091,16 @@ export function InteractiveFlowShowcase() {
                       </p>
 
                       <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
-                        {step.duration && (
-                          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-white/[0.08] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-300 px-1.5 py-0.2 font-mono text-[9px]">
-                            <Clock className="h-2.5 w-2.5 text-violet-500" />
-                            {step.duration}
-                          </span>
-                        )}
                         {step.pic && (
                           <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-white/[0.08] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-300 px-1.5 py-0.2 font-mono text-[9px]">
                             <User2 className="h-2.5 w-2.5 text-sky-500" />
                             {step.pic}
+                          </span>
+                        )}
+                        {step.output && (
+                          <span className="inline-flex items-center gap-1 rounded-md border border-slate-200 dark:border-white/[0.08] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-300 px-1.5 py-0.2 font-mono text-[9px]">
+                            <FileOutput className="h-2.5 w-2.5 text-emerald-500" />
+                            {step.output}
                           </span>
                         )}
                       </div>

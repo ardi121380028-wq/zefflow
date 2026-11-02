@@ -8,30 +8,30 @@ import type { AppEdge, AppNode, LaneNodeType, StepNodeType } from "../types";
    ===================================================================== */
 
 // Horizontal
-export const LANE_HEADER_WIDTH = 200;
-export const LANE_DEFAULT_WIDTH = 2600;
-export const LANE_DEFAULT_HEIGHT = 260;
-export const LANE_MIN_HEIGHT = 180;
-export const COL_GAP = 344;
-export const FIRST_COL_X = LANE_HEADER_WIDTH + 48;
+export const LANE_HEADER_WIDTH = 340;
+export const LANE_DEFAULT_WIDTH = 3200;
+export const LANE_DEFAULT_HEIGHT = 400;
+export const LANE_MIN_HEIGHT = 300;
+export const COL_GAP = 568;
+export const FIRST_COL_X = LANE_HEADER_WIDTH + 64;
 
 // Vertical
-export const LANE_V_WIDTH = 340;
-export const LANE_V_MIN_WIDTH = 280;
-export const LANE_V_HEADER_HEIGHT = 112;
-export const LANE_V_MIN_LENGTH = 560;
-export const LANE_V_DEFAULT_LENGTH = 1200;
-export const ROW_GAP = 68;
-export const FIRST_ROW_Y = LANE_V_HEADER_HEIGHT + 40;
-const LANE_V_BOTTOM_PAD = 56;
+export const LANE_V_WIDTH = 560;
+export const LANE_V_MIN_WIDTH = 500;
+export const LANE_V_HEADER_HEIGHT = 176;
+export const LANE_V_MIN_LENGTH = 860;
+export const LANE_V_DEFAULT_LENGTH = 1800;
+export const ROW_GAP = 96;
+export const FIRST_ROW_Y = LANE_V_HEADER_HEIGHT + 56;
+const LANE_V_BOTTOM_PAD = 84;
 
-// Node
-export const STEP_WIDTH = 288;
-export const STEP_EST_HEIGHT = 150;
-export const DECISION_W = 232;
-export const DECISION_H = 160;
-export const TERMINAL_MIN_W = 184;
-export const TERMINAL_H = 54;
+// Node (2x Typography Scale untuk keterbacaan jarak jauh)
+export const STEP_WIDTH = 480;
+export const STEP_EST_HEIGHT = 290;
+export const DECISION_W = 420;
+export const DECISION_H = 280;
+export const TERMINAL_MIN_W = 320;
+export const TERMINAL_H = 88;
 
 export const LANE_PALETTE: LaneColor[] = ["violet", "sky", "emerald", "amber", "rose", "slate"];
 
@@ -122,22 +122,33 @@ export function sortParentsFirst(nodes: AppNode[]): AppNode[] {
 
 /**
  * Estimasi ukuran node berdasarkan isi teks (dipakai saat node belum terukur, mis. di server/template).
- * Sedikit dilebihkan agar tidak pernah saling menimpa.
+ * Disesuaikan dengan skala tipografi 2x agar kartu tidak pernah saling menimpa.
  */
 export function estimateNodeSize(type: string | undefined, data: unknown): { w: number; h: number } {
   if (type === "decision") return { w: DECISION_W, h: DECISION_H };
   const d = (data ?? {}) as Partial<StepData>;
   if (type === "terminal") {
-    const w = Math.min(STEP_WIDTH, Math.max(TERMINAL_MIN_W, 96 + (d.title?.length ?? 8) * 9));
+    const w = Math.min(STEP_WIDTH, Math.max(TERMINAL_MIN_W, 136 + (d.title?.length ?? 8) * 18));
     return { w, h: TERMINAL_H };
   }
-  const inner = STEP_WIDTH - 34;
+
+  const isErd =
+    d.output === "Database Table" ||
+    Boolean(d.output?.toLowerCase().includes("table")) ||
+    Boolean(d.description && (d.description.includes("PK") || d.description.includes("FK")));
+
+  if (isErd) {
+    const colCount = d.description ? Math.max(1, d.description.split("\n").filter(Boolean).length) : 1;
+    const footerH = d.output && d.output !== "Database Table" ? 44 : 16;
+    return { w: STEP_WIDTH, h: Math.ceil(74 + colCount * 46 + footerH) };
+  }
+
+  const inner = STEP_WIDTH - 48;
   const title = d.title || "Tanpa judul";
-  const titleLines = Math.max(1, Math.ceil((title.length * 9.6) / inner));
-  const descLines = d.description ? Math.min(3, Math.max(1, Math.ceil((d.description.length * 7.4) / inner))) : 0;
+  const titleLines = Math.max(1, Math.ceil((title.length * 19.5) / inner));
+  const descLines = d.description ? Math.min(3, Math.max(1, Math.ceil((d.description.length * 13.8) / inner))) : 0;
 
   const chips: string[] = [];
-  if (d.durationValue) chips.push(`${d.durationValue} ${d.durationUnit ?? "menit"}`);
   if (d.owner) chips.push(d.owner);
   if (d.output) chips.push(d.output);
   let chipRows = 0;
@@ -145,15 +156,19 @@ export function estimateNodeSize(type: string | undefined, data: unknown): { w: 
     chipRows = 1;
     let used = 0;
     for (const c of chips) {
-      const cw = Math.min(inner, 44 + c.length * 7.2);
+      const cw = Math.min(inner, 68 + c.length * 13.5);
       if (used > 0 && used + cw > inner) {
         chipRows++;
         used = 0;
       }
-      used += cw + 6;
+      used += cw + 8;
     }
   }
-  const h = 36 + titleLines * 24 + (descLines ? 8 + descLines * 21 : 0) + (chipRows ? 12 + chipRows * 30 + (chipRows - 1) * 6 : 0);
+  const h =
+    48 +
+    titleLines * 45 +
+    (descLines ? 10 + descLines * 36 : 0) +
+    (chipRows ? 16 + chipRows * 46 + (chipRows - 1) * 8 : 0);
   return { w: STEP_WIDTH, h: Math.ceil(h) };
 }
 
@@ -268,26 +283,26 @@ export function pickHandles(src: Rect, tgt: Rect, srcIsDecision: boolean, orient
   const dy = tgt.y + tgt.h / 2 - (src.y + src.h / 2);
 
   if (orientation === "vertical") {
-    const sameLane = Math.abs(dx) < 60;
-    if (dy > 24) {
+    const sameLane = Math.abs(dx) < 100;
+    if (dy > 32) {
       if (sameLane) return ["b", "t"];
       if (srcIsDecision) return [dx > 0 ? "r" : "l", "t"];
       return ["b", "t"];
     }
-    if (dy < -24) {
+    if (dy < -32) {
       if (sameLane) return ["r", "r"]; // loop kembali ke atas
       return [dx > 0 ? "r" : "l", dx > 0 ? "l" : "r"];
     }
     return [dx > 0 ? "r" : "l", dx > 0 ? "l" : "r"]; // sejajar (beda lane)
   }
 
-  const sameLane = Math.abs(dy) < 40;
-  if (dx > 24) {
+  const sameLane = Math.abs(dy) < 70;
+  if (dx > 32) {
     if (sameLane) return ["r", "l"];
     if (srcIsDecision) return [dy > 0 ? "b" : "t", "l"];
     return ["r", "l"];
   }
-  if (dx < -24) {
+  if (dx < -32) {
     if (sameLane) return ["b", "b"]; // loop kembali ke kiri
     return [dy > 0 ? "b" : "t", dy > 0 ? "t" : "b"];
   }
@@ -439,8 +454,8 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
       return a.cy - b.cy;
     });
 
-    const colWidth = 400;
-    const rowHeight = 330;
+    const colWidth = 600;
+    const rowHeight = 560;
     let col = 0;
     let row = 0;
 
@@ -500,11 +515,11 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
           countByRank.set(r, nextCount);
           if (nextCount > maxParallel) maxParallel = nextCount;
         });
-        // Jangan mewarisi `l.width` dari orientasi horizontal (2600px+).
-        // Lebar kolom vertikal = 340px (1 jalur), melebar proporsional hanya bila ada cabang paralel di baris yang sama.
+        // Jangan mewarisi `l.width` dari orientasi horizontal.
+        // Lebar kolom vertikal = 560px (1 jalur), melebar proporsional hanya bila ada cabang paralel di baris yang sama.
         const calculatedLaneWidth =
           maxParallel > 1
-            ? maxParallel * (STEP_WIDTH + 20) + 36
+            ? maxParallel * (STEP_WIDTH + 28) + 52
             : LANE_V_WIDTH;
 
         laneGeom.set(l.id, { x: offsetX, y: 0, width: calculatedLaneWidth, height: totalLength });
@@ -530,11 +545,11 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
 
           let xPos: number;
           if (slotsInRank > 1) {
-            const groupW = slotsInRank * STEP_WIDTH + (slotsInRank - 1) * 20;
-            const startX = Math.max(18, Math.round((calculatedLaneWidth - groupW) / 2));
-            xPos = startX + slot * (STEP_WIDTH + 20) + Math.round((STEP_WIDTH - it.w) / 2);
+            const groupW = slotsInRank * STEP_WIDTH + (slotsInRank - 1) * 28;
+            const startX = Math.max(24, Math.round((calculatedLaneWidth - groupW) / 2));
+            xPos = startX + slot * (STEP_WIDTH + 28) + Math.round((STEP_WIDTH - it.w) / 2);
           } else {
-            xPos = Math.max(16, Math.round((calculatedLaneWidth - it.w) / 2));
+            xPos = Math.max(20, Math.round((calculatedLaneWidth - it.w) / 2));
           }
 
           newPos.set(it.node.id, {
@@ -553,46 +568,52 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
         }
       });
 
-      const totalWidth = Math.max(LANE_DEFAULT_WIDTH, FIRST_COL_X + (maxRank + 1) * COL_GAP + 320);
+      const totalWidth = Math.max(LANE_DEFAULT_WIDTH, FIRST_COL_X + maxRank * COL_GAP + STEP_WIDTH + 140);
 
       let offsetY = 0;
       for (const l of lanes) {
         const laneItems = stepsInLane.get(l.id) ?? [];
-        // Cek berapa banyak node yang menempati kolom/rank yang sama di lane ini
+        // Hitung tinggi tumpukan aktual per kolom/rank di lane ini agar kartu tinggi maupun multi-node tidak terpotong
         const countByRank = new Map<number, number>();
-        let maxParallel = 1;
+        const stackHeightByRank = new Map<number, number>();
+        let maxStackHeight = 0;
         laneItems.forEach((it) => {
           const r = ranks.get(it.node.id) ?? 0;
-          const nextCount = (countByRank.get(r) ?? 0) + 1;
-          countByRank.set(r, nextCount);
-          if (nextCount > maxParallel) maxParallel = nextCount;
+          const prevCount = countByRank.get(r) ?? 0;
+          const prevH = stackHeightByRank.get(r) ?? 0;
+          const nextH = prevCount > 0 ? prevH + 24 + it.h : it.h;
+          countByRank.set(r, prevCount + 1);
+          stackHeightByRank.set(r, nextH);
+          if (nextH > maxStackHeight) maxStackHeight = nextH;
         });
-        // Lebarkan lane bila ada multi-node bertingkat
-        const calculatedLaneHeight = Math.max(
-          LANE_DEFAULT_HEIGHT,
-          maxParallel * (STEP_EST_HEIGHT + 24) + 48,
-        );
+
+        const calculatedLaneHeight = Math.max(LANE_DEFAULT_HEIGHT, maxStackHeight + 56);
 
         laneGeom.set(l.id, { x: 0, y: offsetY, width: totalWidth, height: calculatedLaneHeight });
         offsetY += calculatedLaneHeight;
 
         // Distribusikan slot node yang berbagi rank di lane yang sama
-        const rankSlotCounters = new Map<number, number>();
         laneItems.sort((a, b) => {
           const ra = ranks.get(a.node.id) ?? 0;
           const rb = ranks.get(b.node.id) ?? 0;
           return ra !== rb ? ra - rb : a.cy - b.cy;
         });
 
+        const yCursorByRank = new Map<number, number>();
         for (const it of laneItems) {
           const r = ranks.get(it.node.id) ?? 0;
-          const slot = rankSlotCounters.get(r) ?? 0;
-          rankSlotCounters.set(r, slot + 1);
           const slotsInRank = countByRank.get(r) ?? 1;
+          const totalStackH = stackHeightByRank.get(r) ?? it.h;
 
-          const yPos = slotsInRank > 1
-            ? 24 + slot * (it.h + 20)
-            : Math.max(16, Math.round((calculatedLaneHeight - it.h) / 2));
+          let yPos: number;
+          if (slotsInRank > 1) {
+            const startY = Math.max(24, Math.round((calculatedLaneHeight - totalStackH) / 2));
+            const curY = yCursorByRank.get(r) ?? startY;
+            yPos = curY;
+            yCursorByRank.set(r, curY + it.h + 24);
+          } else {
+            yPos = Math.max(20, Math.round((calculatedLaneHeight - it.h) / 2));
+          }
 
           newPos.set(it.node.id, {
             x: FIRST_COL_X + r * COL_GAP + Math.round((STEP_WIDTH - it.w) / 2),

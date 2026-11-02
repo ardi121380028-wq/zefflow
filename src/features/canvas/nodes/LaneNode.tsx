@@ -28,14 +28,14 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
   const headerContent = (
     <>
       <div className="min-w-0">
-        <div className="flex items-center gap-2.5">
-          <span className={cn("h-3 w-3 shrink-0 rounded-full", style.dot)} />
-          <p className="truncate font-display text-[17px] font-bold leading-tight tracking-tight text-foreground">
+        <div className="flex items-start gap-3">
+          <span className={cn("mt-2.5 h-5 w-5 shrink-0 rounded-full", style.dot)} />
+          <p className="line-clamp-2 break-words font-display text-[36px] font-extrabold leading-[41px] tracking-tight text-foreground">
             {data.title || "Tanpa nama"}
           </p>
         </div>
         {data.division && (
-          <p className="mt-1.5 line-clamp-2 font-mono text-[12px] font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="mt-2.5 line-clamp-2 font-mono text-[21px] leading-[27px] font-bold uppercase tracking-wider text-muted-foreground">
             {data.division}
           </p>
         )}
@@ -56,31 +56,31 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
           onClick={() => select(id)}
           onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && select(id)}
           className={cn(
-            "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-center overflow-hidden px-5 pb-3 pt-5 outline-none transition-colors duration-150",
+            "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-center overflow-hidden px-7 pb-4 pt-6 outline-none transition-colors duration-150",
             selected && "bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary))]",
             style.headerV,
           )}
           style={{ height: LANE_V_HEADER_HEIGHT }}
         >
           {/* Aksen warna solid di sisi atas */}
-          <div className={cn("absolute left-0 right-0 top-0 h-1.5", style.accentBar)} />
+          <div className={cn("absolute left-0 right-0 top-0 h-2.5", style.accentBar)} />
           {headerContent}
 
           {!readOnly && (
             <div
               className={cn(
-                "nodrag nopan absolute right-2 top-3.5 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100",
+                "nodrag nopan absolute right-3 top-4 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100",
                 selected && "opacity-100",
               )}
             >
               <LaneBtn label="Geser lane ke kiri" onClick={() => moveLane(id, -1)}>
-                <ChevronLeft className="h-3.5 w-3.5" />
+                <ChevronLeft className="h-4 w-4" />
               </LaneBtn>
               <LaneBtn label="Geser lane ke kanan" onClick={() => moveLane(id, 1)}>
-                <ChevronRight className="h-3.5 w-3.5" />
+                <ChevronRight className="h-4 w-4" />
               </LaneBtn>
               <LaneBtn label="Hapus lane" onClick={confirmRemove} danger>
-                <Trash2 className="h-3.5 w-3.5" />
+                <Trash2 className="h-4 w-4" />
               </LaneBtn>
             </div>
           )}
@@ -95,8 +95,8 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
             onResizeEnd={(_, p) => resizeLane(id, p.width)}
             className="pointer-events-auto !border-0 !bg-transparent"
           >
-            <div className="absolute left-0 top-[56px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full border border-border bg-card px-0.5 py-2 shadow-lg">
-              <GripVertical className="h-3.5 w-3.5 text-muted-foreground" />
+            <div className="absolute left-0 top-[88px] -translate-x-1/2 -translate-y-1/2 cursor-ew-resize rounded-full border border-border bg-card px-1 py-2.5 shadow-lg">
+              <GripVertical className="h-4 w-4 text-muted-foreground" />
             </div>
           </NodeResizeControl>
         )}
@@ -116,26 +116,26 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
         onClick={() => select(id)}
         onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && select(id)}
         className={cn(
-          "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-between overflow-hidden py-4 pl-5 pr-4 outline-none transition-colors duration-150",
+          "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-between overflow-hidden py-6 pl-7 pr-5 outline-none transition-colors duration-150",
           selected && "bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary))]",
           style.header,
         )}
         style={{ width: LANE_HEADER_WIDTH }}
       >
         {/* Aksen warna solid di sisi kiri */}
-        <div className={cn("absolute bottom-0 left-0 top-0 w-1.5", style.accentBar)} />
+        <div className={cn("absolute bottom-0 left-0 top-0 w-2.5", style.accentBar)} />
         {headerContent}
 
         {!readOnly && (
-          <div className={cn("nodrag nopan flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100", selected && "opacity-100")}>
+          <div className={cn("nodrag nopan flex items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100", selected && "opacity-100")}>
             <LaneBtn label="Naikkan lane" onClick={() => moveLane(id, -1)}>
-              <ChevronUp className="h-3.5 w-3.5" />
+              <ChevronUp className="h-4 w-4" />
             </LaneBtn>
             <LaneBtn label="Turunkan lane" onClick={() => moveLane(id, 1)}>
-              <ChevronDown className="h-3.5 w-3.5" />
+              <ChevronDown className="h-4 w-4" />
             </LaneBtn>
             <LaneBtn label="Hapus lane" onClick={confirmRemove} danger>
-              <Trash2 className="h-3.5 w-3.5" />
+              <Trash2 className="h-4 w-4" />
             </LaneBtn>
           </div>
         )}
@@ -150,8 +150,8 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
           onResizeEnd={(_, p) => resizeLane(id, p.height)}
           className="pointer-events-auto !border-0 !bg-transparent"
         >
-          <div className="absolute left-[92px] top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize rounded-full border border-border bg-card px-2 py-0.5 shadow-lg">
-            <GripHorizontal className="h-3.5 w-3.5 text-muted-foreground" />
+          <div className="absolute left-[170px] top-0 -translate-x-1/2 -translate-y-1/2 cursor-ns-resize rounded-full border border-border bg-card px-2.5 py-1 shadow-lg">
+            <GripHorizontal className="h-4 w-4 text-muted-foreground" />
           </div>
         </NodeResizeControl>
       )}
@@ -170,7 +170,7 @@ function LaneBtn({ children, label, onClick, danger }: { children: React.ReactNo
         onClick();
       }}
       className={cn(
-        "grid h-6 w-6 place-items-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
+        "grid h-8 w-8 place-items-center rounded-xl text-muted-foreground transition-colors hover:bg-muted hover:text-foreground",
         danger && "hover:bg-rose-500/10 hover:text-rose-500",
       )}
     >

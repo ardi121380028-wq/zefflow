@@ -5,11 +5,9 @@ import { memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import {
   ArrowRightFromLine,
-  Clock,
   Database,
   FileOutput,
   GitBranch,
-  Key,
   Square,
   User2,
   X,
@@ -146,10 +144,6 @@ function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: bool
   );
 }
 
-function formatDuration(v: number | null, unit: string) {
-  return v == null || v === 0 ? null : `${v} ${unit}`;
-}
-
 function parseErdColumns(desc: string) {
   if (!desc) return [];
   return desc.split("\n").filter(Boolean).map((line) => {
@@ -183,36 +177,36 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
     return (
       <div
         className={cn(
-          "group/node relative rounded-2xl border bg-card dark:bg-[#0C0E17] shadow-md transition-[border-color,box-shadow] duration-150 overflow-hidden",
+          "group/node relative rounded-3xl border-[1.5px] bg-card dark:bg-[#0C0E17] shadow-md transition-[border-color,box-shadow] duration-150 overflow-hidden",
           selected
-            ? "border-sky-500 ring-2 ring-sky-500/80 shadow-[0_0_24px_rgba(14,165,233,0.35)]"
+            ? "border-sky-500 ring-2 ring-sky-500/80 shadow-[0_0_28px_rgba(14,165,233,0.35)]"
             : "border-sky-500/30 hover:border-sky-500/60 hover:shadow-lg",
         )}
         style={{ width: STEP_WIDTH }}
       >
         <NodeHandles nodeId={id} />
         {/* Table Title Bar */}
-        <div className="flex items-center justify-between border-b border-border dark:border-white/[0.08] bg-sky-500/10 px-3.5 py-2.5">
-          <div className="flex items-center gap-2 min-w-0">
-            <Database className="h-4 w-4 text-sky-500 shrink-0" />
-            <span className="font-mono text-xs font-bold text-foreground dark:text-sky-200 tracking-tight truncate">
+        <div className="flex items-center justify-between border-b border-border dark:border-white/[0.08] bg-sky-500/10 px-5 py-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Database className="h-6 w-6 text-sky-500 shrink-0" />
+            <span className="font-mono text-[24px] leading-[30px] font-bold text-foreground dark:text-sky-200 tracking-tight truncate">
               {data.title || "tabel_baru"}
             </span>
           </div>
-          <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[9px] font-mono font-bold text-sky-600 dark:text-sky-400">
+          <span className="rounded-md bg-sky-500/20 px-2.5 py-1 text-[16px] font-mono font-bold text-sky-600 dark:text-sky-400">
             TABLE
           </span>
         </div>
 
         {/* Columns Listing */}
-        <div className="divide-y divide-border/40 p-1 font-mono text-xs">
+        <div className="divide-y divide-border/40 p-2 font-mono text-[21px] leading-[28px]">
           {columns.length > 0 ? (
             columns.map((col, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between px-2.5 py-1.5 hover:bg-muted/40 transition-colors rounded-lg"
+                className="flex items-center justify-between px-3.5 py-2 hover:bg-muted/40 transition-colors rounded-xl"
               >
-                <div className="flex items-center gap-1.5 min-w-0">
+                <div className="flex items-center gap-2 min-w-0">
                   <span
                     className={cn(
                       "truncate",
@@ -226,15 +220,15 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
                     {col.name}
                   </span>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <span className="text-[10px] text-muted-foreground">{col.type}</span>
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[17px] text-muted-foreground">{col.type}</span>
                   {col.isPk && (
-                    <span className="rounded bg-amber-500/20 px-1 text-[8px] font-bold text-amber-600 dark:text-amber-400">
+                    <span className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[14px] font-bold text-amber-600 dark:text-amber-400">
                       PK
                     </span>
                   )}
                   {col.isFk && (
-                    <span className="rounded bg-sky-500/20 px-1 text-[8px] font-bold text-sky-600 dark:text-sky-400">
+                    <span className="rounded bg-sky-500/20 px-1.5 py-0.5 text-[14px] font-bold text-sky-600 dark:text-sky-400">
                       FK
                     </span>
                   )}
@@ -242,7 +236,7 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
               </div>
             ))
           ) : (
-            <p className="px-3 py-2 text-[11px] text-muted-foreground italic">
+            <p className="px-4 py-3 text-[19px] text-muted-foreground italic">
               Klik untuk menambah kolom skema
             </p>
           )}
@@ -250,7 +244,7 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
 
         {/* Output indicator if exists */}
         {data.output && data.output !== "Database Table" && (
-          <div className="border-t border-border/40 px-3 py-1.5 bg-muted/20 text-[10px] text-muted-foreground font-sans truncate">
+          <div className="border-t border-border/40 px-5 py-2.5 bg-muted/20 text-[18px] text-muted-foreground font-sans truncate">
             {data.output}
           </div>
         )}
@@ -258,29 +252,27 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
     );
   }
 
-  const duration = formatDuration(data.durationValue, data.durationUnit);
   return (
     <div
       className={cn(
-        "group/node relative rounded-2xl border border-border dark:border-white/[0.09] bg-white dark:bg-[#0E1018] p-4 shadow-sm hover:shadow-md transition-[border-color,box-shadow] duration-150 hover:border-primary/40 dark:hover:border-violet-500/50",
-        selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_20px_rgba(139,92,246,0.25)]",
+        "group/node relative rounded-3xl border-[1.5px] border-border dark:border-white/[0.1] bg-white dark:bg-[#0E1018] p-6 shadow-sm hover:shadow-md transition-[border-color,box-shadow] duration-150 hover:border-primary/40 dark:hover:border-violet-500/50",
+        selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_24px_rgba(139,92,246,0.28)]",
       )}
       style={{ width: STEP_WIDTH }}
     >
       <NodeHandles nodeId={id} />
-      <p className="font-display text-[17px] font-bold tracking-tight text-foreground dark:text-white leading-[24px]">
+      <p className="font-display text-[38px] font-extrabold tracking-tight text-foreground dark:text-white leading-[45px]">
         {data.title || "Tanpa judul"}
       </p>
       {data.description && (
-        <p className="mt-2 line-clamp-3 text-[14px] leading-[21px] text-muted-foreground dark:text-zinc-300 font-normal">
+        <p className="mt-2.5 line-clamp-3 text-[26px] leading-[36px] text-muted-foreground dark:text-zinc-300 font-medium">
           {data.description}
         </p>
       )}
-      {(duration || data.owner || data.output) && (
-        <div className="mt-3 flex flex-wrap gap-1.5">
-          {duration && <Chip icon={<Clock className="h-4 w-4 text-violet-500 shrink-0" />}>{duration}</Chip>}
-          {data.owner && <Chip icon={<User2 className="h-4 w-4 text-sky-500 shrink-0" />}>{data.owner}</Chip>}
-          {data.output && <Chip icon={<FileOutput className="h-4 w-4 text-emerald-500 shrink-0" />}>{data.output}</Chip>}
+      {(data.owner || data.output) && (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {data.owner && <Chip icon={<User2 className="h-6 w-6 text-sky-500 shrink-0" />}>{data.owner}</Chip>}
+          {data.output && <Chip icon={<FileOutput className="h-6 w-6 text-emerald-500 shrink-0" />}>{data.output}</Chip>}
         </div>
       )}
     </div>
@@ -301,7 +293,7 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
       <svg
         className={cn(
           "absolute inset-0 h-full w-full overflow-visible",
-          selected && "drop-shadow-[0_0_20px_rgba(251,191,36,0.55)]",
+          selected && "drop-shadow-[0_0_24px_rgba(251,191,36,0.55)]",
         )}
         viewBox={`0 0 ${DECISION_W} ${DECISION_H}`}
         fill="none"
@@ -315,21 +307,21 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
         </defs>
         {/* Vector drop shadow ringan (0 offscreen GPU blur surface) */}
         <polygon
-          points={`${DECISION_W / 2},8 ${DECISION_W - 4},${DECISION_H / 2 + 4} ${DECISION_W / 2},${DECISION_H} 4,${DECISION_H / 2 + 4}`}
+          points={`${DECISION_W / 2},10 ${DECISION_W - 6},${DECISION_H / 2 + 6} ${DECISION_W / 2},${DECISION_H} 6,${DECISION_H / 2 + 6}`}
           fill="rgba(0,0,0,0.16)"
         />
         <polygon
-          points={`${DECISION_W / 2},4 ${DECISION_W - 4},${DECISION_H / 2} ${DECISION_W / 2},${DECISION_H - 4} 4,${DECISION_H / 2}`}
+          points={`${DECISION_W / 2},5 ${DECISION_W - 6},${DECISION_H / 2} ${DECISION_W / 2},${DECISION_H - 5} 6,${DECISION_H / 2}`}
           fill={`url(#diamondGrad-${id})`}
           stroke="var(--diamond-stroke)"
-          strokeWidth={selected ? "2.75" : "2.25"}
+          strokeWidth={selected ? "3.5" : "2.75"}
         />
         {/* Hairline inner ambient highlight */}
         <polyline
-          points={`30,${DECISION_H / 2} ${DECISION_W / 2},18 ${DECISION_W - 30},${DECISION_H / 2}`}
+          points={`44,${DECISION_H / 2} ${DECISION_W / 2},24 ${DECISION_W - 44},${DECISION_H / 2}`}
           stroke="var(--diamond-stroke)"
           strokeOpacity="0.25"
-          strokeWidth="1.2"
+          strokeWidth="1.6"
           fill="none"
         />
       </svg>
@@ -337,11 +329,11 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
       <NodeHandles nodeId={id} isDecision />
 
       {/* Konten teks di tengah belah ketupat */}
-      <div className="relative z-10 flex max-w-[150px] flex-col items-center justify-center px-1 text-center pointer-events-none">
-        <span className="mb-1.5 grid h-6 w-6 place-items-center rounded-md border border-amber-500/40 bg-gradient-to-b from-amber-400/25 to-amber-600/15 text-amber-600 dark:text-amber-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_0_12px_rgba(245,158,11,0.25)]">
-          <GitBranch className="h-3.5 w-3.5" />
+      <div className="relative z-10 flex max-w-[268px] flex-col items-center justify-center px-2 text-center pointer-events-none">
+        <span className="mb-2.5 grid h-10 w-10 place-items-center rounded-xl border border-amber-500/40 bg-gradient-to-b from-amber-400/25 to-amber-600/15 text-amber-600 dark:text-amber-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_0_14px_rgba(245,158,11,0.25)]">
+          <GitBranch className="h-5 w-5" />
         </span>
-        <p className="font-display text-[14.5px] font-bold tracking-tight text-[var(--diamond-text)] leading-[19px]">
+        <p className="font-display text-[29px] font-extrabold tracking-tight text-[var(--diamond-text)] leading-[36px]">
           {data.title || "Keputusan?"}
         </p>
       </div>
@@ -354,21 +346,21 @@ function TerminalNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
-        "group/node flex items-center justify-center gap-2.5 rounded-full border border-border dark:border-white/[0.12] bg-white dark:bg-[#121420] px-6 py-2.5 text-foreground dark:text-white shadow-sm dark:shadow-[0_4px_16px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow,transform] duration-150 hover:border-violet-500 hover:scale-105",
-        selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_24px_rgba(139,92,246,0.35)]",
+        "group/node flex items-center justify-center gap-3.5 rounded-full border-[1.5px] border-border dark:border-white/[0.14] bg-white dark:bg-[#121420] px-9 py-4 text-foreground dark:text-white shadow-sm dark:shadow-[0_6px_20px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow,transform] duration-150 hover:border-violet-500 hover:scale-105",
+        selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_28px_rgba(139,92,246,0.35)]",
       )}
       style={{ minWidth: TERMINAL_MIN_W }}
     >
       <NodeHandles nodeId={id} />
-      <span className="h-3 w-3 rounded-full bg-violet-500 shadow-[0_0_10px_#a78bfa] shrink-0" />
-      <p className="text-[15.5px] font-bold tracking-tight">{data.title || "Mulai / Selesai"}</p>
+      <span className="h-5 w-5 rounded-full bg-violet-500 shadow-[0_0_12px_#a78bfa] shrink-0" />
+      <p className="text-[31px] leading-[38px] font-extrabold tracking-tight">{data.title || "Mulai / Selesai"}</p>
     </div>
   );
 }
 
 function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-1.5 rounded-lg border border-slate-200 dark:border-white/[0.1] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-200 px-2.5 py-1 text-[12.5px] font-medium leading-[18px] shadow-sm transition-all hover:border-primary/40 dark:hover:border-violet-500/40">
+    <span className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 dark:border-white/[0.1] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-200 px-4 py-2 text-[23px] font-semibold leading-[30px] shadow-sm transition-all hover:border-primary/40 dark:hover:border-violet-500/40">
       {icon}
       <span className="truncate">{children}</span>
     </span>

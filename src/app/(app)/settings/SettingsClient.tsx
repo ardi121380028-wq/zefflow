@@ -44,7 +44,6 @@ export function SettingsClient({
   // Form states hydrated instantly from Server Component (0ms client fetch)
   const [name, setName] = React.useState(initialName);
   const [orgName, setOrgName] = React.useState(initialWorkspaceName);
-  const [defaultDurationUnit, setDefaultDurationUnit] = React.useState("menit");
   const [gridSnap, setGridSnap] = React.useState("8");
   const [autoSaveDelay, setAutoSaveDelay] = React.useState("1200");
   const [exportQuality, setExportQuality] = React.useState("4k");
@@ -258,19 +257,6 @@ export function SettingsClient({
                   <p className="mt-1 text-[11px] text-muted-foreground">
                     Waktu tunda sebelum perubahan disimpan ke cloud secara otomatis.
                   </p>
-                </div>
-
-                <div>
-                  <Label>Default Satuan Durasi Waktu</Label>
-                  <select
-                    value={defaultDurationUnit}
-                    onChange={(e) => setDefaultDurationUnit(e.target.value)}
-                    className="h-9 w-full rounded-xl border border-input dark:border-white/[0.08] bg-surface-raised/70 dark:bg-zinc-900/90 px-3.5 text-xs text-foreground dark:text-zinc-100 shadow-sm"
-                  >
-                    <option value="menit">Menit (Prosedur Operasional Cepat)</option>
-                    <option value="jam">Jam (Tugas Harian)</option>
-                    <option value="hari">Hari (Siklus Project / SLA)</option>
-                  </select>
                 </div>
 
                 <div>

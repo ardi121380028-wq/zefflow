@@ -29,18 +29,18 @@ function CustomEdgeImpl({
     targetX,
     targetY,
     targetPosition,
-    borderRadius: 18,
-    offset: 28,
+    borderRadius: 24,
+    offset: 36,
   });
 
   const isExporting = useCanvasStore((s) => s.isExporting);
-  const hideBadgeAtFarZoom = useStore((s) => s.transform[2] < 0.35);
+  const hideBadgeAtFarZoom = useStore((s) => s.transform[2] < 0.08);
   const labelText = typeof label === "string" ? label.trim() : "";
   const showLabel = Boolean(labelText) && (isExporting || selected || !hideBadgeAtFarZoom);
   const labelLength = labelText.length;
-  // Dynamic badge pill geometry — lebih besar, modern, dan terbaca jelas
-  const badgeWidth = Math.max(52, labelLength * 10.5 + 28);
-  const badgeHeight = 30;
+  // Skala badge pill 2x — jelas terbaca dari kejauhan maupun hasil ekspor
+  const badgeWidth = Math.max(92, labelLength * 18 + 44);
+  const badgeHeight = 50;
   const rx = badgeHeight / 2;
 
   return (
@@ -50,7 +50,7 @@ function CustomEdgeImpl({
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          strokeWidth: selected ? 3 : 2.25,
+          strokeWidth: selected ? 4.25 : 3,
           stroke: selected ? "hsl(var(--primary))" : "hsl(var(--edge-stroke))",
           ...style,
         }}
@@ -70,18 +70,18 @@ function CustomEdgeImpl({
             ry={rx}
             fill="hsl(var(--card))"
             stroke="hsl(var(--border))"
-            strokeWidth="1.25"
+            strokeWidth="1.75"
             className="fill-card stroke-border"
           />
 
           {/* Label Text — Explicit fill for guaranteed export rendering */}
           <text
             x={0}
-            y={1}
+            y={1.5}
             textAnchor="middle"
             dominantBaseline="middle"
             fill="hsl(var(--foreground))"
-            className="font-sans text-[13px] font-bold tracking-wide uppercase select-none fill-foreground"
+            className="font-sans text-[25px] font-extrabold tracking-wide uppercase select-none fill-foreground"
           >
             {labelText}
           </text>
