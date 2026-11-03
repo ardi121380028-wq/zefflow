@@ -55,12 +55,12 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
       <div className="min-w-0">
         <div className="flex items-start gap-3">
           <span className={cn("mt-2.5 h-5 w-5 shrink-0 rounded-full", isSolidZitline ? "bg-white shadow-sm" : style.dot)} />
-          <p className={cn("line-clamp-2 break-words font-display text-[36px] font-extrabold leading-[41px] tracking-tight", isSolidZitline ? "text-white uppercase tracking-wider font-black drop-shadow-sm" : "text-foreground")}>
+          <p className={cn("line-clamp-2 break-words font-sans text-[31px] font-bold leading-[37px] tracking-tight", isSolidZitline ? "text-white uppercase tracking-wide" : "text-foreground")}>
             {displayTitle}
           </p>
         </div>
         {data.division && (
-          <p className={cn("mt-2.5 line-clamp-2 font-mono text-[21px] leading-[27px] font-bold uppercase tracking-wider", isSolidZitline ? "text-white/90 font-extrabold" : "text-muted-foreground")}>
+          <p className={cn("mt-2 line-clamp-2 font-mono text-[19px] leading-[25px] font-medium uppercase tracking-wider", isSolidZitline ? "text-white/85" : "text-muted-foreground")}>
             {data.division}
           </p>
         )}

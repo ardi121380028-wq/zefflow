@@ -305,6 +305,7 @@ export function pickHandles(src: Rect, tgt: Rect, srcIsDecision: boolean, orient
   if (dx > 32) {
     if (sameLane) return ["r", "l"];
     if (srcIsDecision) return [dy > 0 ? "b" : "t", "l"];
+    if (dy < -70) return ["t", "l"]; // Target di lane atas: alur natural keluar dari atas (t -> l)
     return ["r", "l"];
   }
   if (dx < -32) {
@@ -360,6 +361,16 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
 
   const infoById = new Map(infos.map((it) => [it.node.id, it]));
 
+  // Catat atau pertahankan kolom logis untuk orientasi horizontal
+  for (const it of infos) {
+    const d = it.node.data as any;
+    if (from === "horizontal") {
+      if (typeof d?.col !== "number") {
+        d.col = Math.max(0, Math.round((it.node.position.x - FIRST_COL_X) / COL_GAP));
+      }
+    }
+  }
+
   // Bangun graph directed untuk topological layering dengan deteksi loop-back (back-edge)
   const inDegree = new Map<string, number>();
   const forwardAdj = new Map<string, string[]>();
@@ -386,9 +397,24 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
   const queue: string[] = [];
   const inQueue = new Set<string>();
 
+  // Jika tujuan adalah horizontal dan node sudah memiliki metadata 'col', prioritaskan kolom tersebut
+  const hasExplicitCols =
+    to === "horizontal" &&
+    lanes.length > 0 &&
+    infos.some((it) => typeof (it.node.data as any)?.col === "number");
+
+  if (hasExplicitCols) {
+    for (const it of infos) {
+      const d = it.node.data as any;
+      if (typeof d?.col === "number") {
+        ranks.set(it.node.id, d.col);
+      }
+    }
+  }
+
   for (const [id, deg] of inDegree.entries()) {
     if (deg === 0) {
-      ranks.set(id, 0);
+      if (!ranks.has(id)) ranks.set(id, 0);
       queue.push(id);
       inQueue.add(id);
     }
@@ -397,7 +423,7 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
   // Jika semua node memiliki loop / siklus, mulai dari node paling awal
   if (queue.length === 0 && infos.length > 0) {
     const first = [...infos].sort((a, b) => (from === "vertical" ? a.cy - b.cy : a.cx - b.cx))[0]!;
-    ranks.set(first.node.id, 0);
+    if (!ranks.has(first.node.id)) ranks.set(first.node.id, 0);
     queue.push(first.node.id);
     inQueue.add(first.node.id);
   }
@@ -435,12 +461,19 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
         }
       }
 
-      const newRank = Math.max(existingRank ?? 0, currRank + stepIncrement);
-      if (existingRank === undefined || newRank > existingRank) {
-        ranks.set(nextId, newRank);
-        if (!inQueue.has(nextId)) {
-          queue.push(nextId);
-          inQueue.add(nextId);
+      // Jika target sudah punya rank eksplisit dari metadata 'col', jangan timpa kecuali jika belum ada
+      if (hasExplicitCols && typeof (infoNext?.node.data as any)?.col === "number") {
+        if (!ranks.has(nextId)) {
+          ranks.set(nextId, (infoNext?.node.data as any).col);
+        }
+      } else {
+        const newRank = Math.max(existingRank ?? 0, currRank + stepIncrement);
+        if (existingRank === undefined || newRank > existingRank) {
+          ranks.set(nextId, newRank);
+          if (!inQueue.has(nextId)) {
+            queue.push(nextId);
+            inQueue.add(nextId);
+          }
         }
       }
     }
@@ -710,7 +743,13 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
       } as N;
     }
     const p = newPos.get(n.id);
-    return (p ? { ...n, position: p } : n) as N;
+    const it = infoById.get(n.id);
+    const currentData = (it?.node.data ?? n.data) as any;
+    return {
+      ...n,
+      ...(p ? { position: p } : {}),
+      data: currentData,
+    } as N;
   });
 
   const nextEdges = edges.map((e) => {

@@ -32,6 +32,8 @@ export const stepDataSchema = z.object({
   output: z.string().max(500).default(""),
   /** PIC / jabatan penanggung jawab */
   owner: z.string().max(80).default(""),
+  /** Kolom horizontal logis untuk menjaga konsistensi alur multi-fase */
+  col: z.number().int().min(0).max(100).optional(),
 });
 
 const laneNode = z.object({

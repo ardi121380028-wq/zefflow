@@ -455,7 +455,10 @@ function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vert
         x: FIRST_COL_X + s.col * COL_GAP + Math.round((STEP_WIDTH - w) / 2),
         y: Math.max(20, Math.round((laneH - h) / 2)),
       },
-      data,
+      data: {
+        ...data,
+        col: s.col,
+      },
     };
   });
 

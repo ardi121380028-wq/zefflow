@@ -22,16 +22,53 @@ function CustomEdgeImpl({
   label,
   selected,
 }: EdgeProps) {
-  const [edgePath, labelX, labelY] = getSmoothStepPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-    borderRadius: 24,
-    offset: 36,
-  });
+  // 1. Deteksi aliran horizontal dan vertikal
+  const isHorizontalFlow =
+    (sourcePosition === "right" && targetPosition === "left") ||
+    (sourcePosition === "left" && targetPosition === "right");
+  const isVerticalFlow =
+    (sourcePosition === "bottom" && targetPosition === "top") ||
+    (sourcePosition === "top" && targetPosition === "bottom");
+
+  let edgePath = "";
+  let labelX = (sourceX + targetX) / 2;
+  let labelY = (sourceY + targetY) / 2;
+
+  // Garis lurus horizontal murni bila selisih Y kecil (< 20px) — mencegah S-kink/lekukan nyangkut
+  if (isHorizontalFlow && Math.abs(sourceY - targetY) < 20) {
+    const snapY = Math.round((sourceY + targetY) / 2);
+    edgePath = `M ${sourceX} ${snapY} L ${targetX} ${snapY}`;
+    labelX = (sourceX + targetX) / 2;
+    labelY = snapY;
+  }
+  // Garis lurus vertikal murni bila selisih X kecil (< 20px) — lurus sempurna tanpa jog
+  else if (isVerticalFlow && Math.abs(sourceX - targetX) < 20) {
+    const snapX = Math.round((sourceX + targetX) / 2);
+    edgePath = `M ${snapX} ${sourceY} L ${snapX} ${targetY}`;
+    labelX = snapX;
+    labelY = (sourceY + targetY) / 2;
+  }
+  // Belokan bertingkat antar-lane: radius dan offset adaptif proporsional jarak aktual
+  else {
+    const dx = Math.abs(targetX - sourceX);
+    const dy = Math.abs(targetY - sourceY);
+    const dynamicRadius = Math.max(4, Math.min(16, Math.floor(dx / 3), Math.floor(dy / 3)));
+    const dynamicOffset = Math.max(8, Math.min(24, Math.floor(dx / 3), Math.floor(dy / 3)));
+
+    const [computedPath, lx, ly] = getSmoothStepPath({
+      sourceX,
+      sourceY,
+      sourcePosition,
+      targetX,
+      targetY,
+      targetPosition,
+      borderRadius: dynamicRadius,
+      offset: dynamicOffset,
+    });
+    edgePath = computedPath;
+    labelX = lx;
+    labelY = ly;
+  }
 
   const isExporting = useCanvasStore((s) => s.isExporting);
   const wallpaper = useCanvasStore((s) => s.wallpaper);
