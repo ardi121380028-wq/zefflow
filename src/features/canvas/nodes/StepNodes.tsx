@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { StepNodeType } from "../types";
-import { DECISION_H, DECISION_W, STEP_WIDTH, TERMINAL_MIN_W } from "../lib/layout";
+import { DECISION_H, DECISION_W, STEP_WIDTH, TERMINAL_H, TERMINAL_MIN_W } from "../lib/layout";
 import { useCanvasStore } from "../store/canvas-store";
 
 /**
@@ -64,7 +64,7 @@ function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: bool
         position={Position.Left}
         onPointerDown={handlePointerDown}
         onPointerUp={(e) => handlePointerUp("l", e)}
-        className={cn(common, isDecision ? "!-left-2.5 !top-1/2 -translate-y-1/2 react-flow__handle-decision" : "!-left-2.5 sm:!-left-3")}
+        className={cn(common, "!-left-2.5 sm:!-left-3 !top-1/2 -translate-y-1/2", isDecision && "react-flow__handle-decision")}
       />
       <Handle
         id="r"
@@ -72,7 +72,7 @@ function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: bool
         position={Position.Right}
         onPointerDown={handlePointerDown}
         onPointerUp={(e) => handlePointerUp("r", e)}
-        className={cn(common, isDecision ? "!-right-2.5 !top-1/2 -translate-y-1/2 react-flow__handle-decision" : "!-right-2.5 sm:!-right-3")}
+        className={cn(common, "!-right-2.5 sm:!-right-3 !top-1/2 -translate-y-1/2", isDecision && "react-flow__handle-decision")}
       />
       <Handle
         id="t"
@@ -80,7 +80,7 @@ function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: bool
         position={Position.Top}
         onPointerDown={handlePointerDown}
         onPointerUp={(e) => handlePointerUp("t", e)}
-        className={cn(common, isDecision ? "!-top-3 !left-1/2 -translate-x-1/2 react-flow__handle-decision" : "!-top-2.5 sm:!-top-3")}
+        className={cn(common, "!-top-2.5 sm:!-top-3 !left-1/2 -translate-x-1/2", isDecision && "react-flow__handle-decision")}
       />
       <Handle
         id="b"
@@ -88,7 +88,7 @@ function NodeHandles({ nodeId, isDecision }: { nodeId: string; isDecision?: bool
         position={Position.Bottom}
         onPointerDown={handlePointerDown}
         onPointerUp={(e) => handlePointerUp("b", e)}
-        className={cn(common, isDecision ? "!-bottom-3 !left-1/2 -translate-x-1/2 react-flow__handle-decision" : "!-bottom-2.5 sm:!-bottom-3")}
+        className={cn(common, "!-bottom-2.5 sm:!-bottom-3 !left-1/2 -translate-x-1/2", isDecision && "react-flow__handle-decision")}
       />
 
       {/* Floating Quick-Add Popup Menu */}
@@ -425,15 +425,15 @@ function TerminalNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
     <div
       className={cn(
         isSolidZitline
-          ? "group/node flex items-center justify-center gap-3.5 rounded-full px-8 py-3.5 text-white shadow-xl transition-all duration-150 bg-gradient-to-r from-red-600 via-rose-600 to-red-600 border-2 border-white/90"
-          : "group/node flex items-center justify-center gap-3.5 rounded-full border-[1.5px] border-border dark:border-white/[0.14] bg-white dark:bg-[#121420] px-8 py-3.5 text-foreground dark:text-white shadow-sm dark:shadow-[0_6px_20px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow,transform] duration-150 hover:border-violet-500 hover:scale-105",
+          ? "group/node flex items-center justify-center gap-4 rounded-full px-10 py-5 text-white shadow-xl transition-all duration-150 bg-gradient-to-r from-red-600 via-rose-600 to-red-600 border-2 border-white/90"
+          : "group/node flex items-center justify-center gap-4 rounded-full border-[2px] border-border dark:border-white/[0.18] bg-white dark:bg-[#121420] px-10 py-5 text-foreground dark:text-white shadow-md dark:shadow-[0_8px_24px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow,transform] duration-150 hover:border-violet-500 hover:scale-105",
         selected && (isSolidZitline ? "ring-4 ring-red-400 shadow-2xl" : "selected ring-2 ring-violet-500/80 shadow-[0_0_28px_rgba(139,92,246,0.35)]"),
       )}
-      style={{ minWidth: TERMINAL_MIN_W }}
+      style={{ minWidth: TERMINAL_MIN_W, minHeight: TERMINAL_H }}
     >
       <NodeHandles nodeId={id} />
-      <span className={cn("h-4 w-4 rounded-full shrink-0", isSolidZitline ? "bg-white shadow-[0_0_10px_rgba(255,255,255,0.8)]" : "bg-violet-500 shadow-[0_0_12px_#a78bfa]")} />
-      <p className="text-[27px] leading-[34px] font-bold tracking-tight">{data.title || "Mulai / Selesai"}</p>
+      <span className={cn("h-5 w-5 rounded-full shrink-0", isSolidZitline ? "bg-white shadow-[0_0_12px_rgba(255,255,255,0.9)]" : "bg-violet-500 shadow-[0_0_14px_#a78bfa]")} />
+      <p className="text-[29px] leading-[36px] font-bold tracking-tight text-center">{data.title || "Mulai / Selesai"}</p>
     </div>
   );
 }

@@ -85,7 +85,7 @@ export const TEMPLATES: FlowTemplate[] = [
       { title: "Finance", division: "Keuangan & Billing", color: "slate" },
     ],
     steps: [
-      { id: "r1", lane: 0, col: 0, type: "step", title: "Registrasi Pelanggan Baru", description: "Pelanggan mengajukan pendaftaran pasang baru dan melengkapi data KTP serta share location rumah.", output: "Formulir Registrasi & KTP", owner: "Pelanggan" },
+      { id: "r1", lane: 0, col: 0, type: "terminal", title: "Registrasi Pelanggan Baru", description: "Pelanggan mengajukan pendaftaran pasang baru dan melengkapi data KTP serta share location rumah.", output: "Formulir Registrasi & KTP", owner: "Pelanggan" },
       { id: "r2", lane: 1, col: 0, type: "step", title: "Input Waiting List CRM", description: "Sales memvalidasi jangkauan ODP dan mencatat data pelanggan ke sistem CRM serta antrean instalasi.", output: "Tiket Waiting List CRM", owner: "Sales Officer" },
       { id: "r3", lane: 3, col: 0, type: "step", title: "Penjadwalan Kunjungan", description: "Technical Support mengonfirmasi kesediaan waktu pelanggan dan mengatur jadwal teknisi lapangan.", output: "Jadwal Kunjungan Teknisi", owner: "Technical Support" },
       { id: "r4", lane: 3, col: 1, type: "step", title: "Instalasi Drop Core & ONT", description: "Teknisi lapangan menarik kabel fiber optik drop core dari ODP ke rumah dan memasang perangkat ONT/modem.", output: "Kabel Drop Core & ONT Terpasang", owner: "Teknisi Lapangan" },

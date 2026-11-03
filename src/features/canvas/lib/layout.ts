@@ -30,8 +30,8 @@ export const STEP_WIDTH = 480;
 export const STEP_EST_HEIGHT = 220;
 export const DECISION_W = 420;
 export const DECISION_H = 280;
-export const TERMINAL_MIN_W = 320;
-export const TERMINAL_H = 88;
+export const TERMINAL_MIN_W = 380;
+export const TERMINAL_H = 104;
 
 export const LANE_PALETTE: LaneColor[] = ["violet", "sky", "emerald", "amber", "rose", "slate"];
 
@@ -132,7 +132,7 @@ export function estimateNodeSize(
   if (type === "decision") return { w: DECISION_W, h: DECISION_H };
   const d = (data ?? {}) as Partial<StepData>;
   if (type === "terminal") {
-    const w = Math.min(STEP_WIDTH, Math.max(TERMINAL_MIN_W, 136 + (d.title?.length ?? 8) * 18));
+    const w = Math.min(STEP_WIDTH, Math.max(TERMINAL_MIN_W, 160 + (d.title?.length ?? 8) * 20));
     return { w, h: TERMINAL_H };
   }
 

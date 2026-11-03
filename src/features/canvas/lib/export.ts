@@ -19,23 +19,29 @@ export interface BrandingInfo {
 interface DiagramBounds {
   width: number;
   height: number;
+  minX: number;
+  minY: number;
 }
 
 /**
  * Menghitung area diagram dari seluruh lane + langkah (koordinat absolut).
- * - horizontal: lebar dipangkas sampai langkah terjauh (+ margin) agar tidak ada ruang kosong panjang.
- * - vertical  : tinggi dipangkas sampai langkah terbawah (+ margin).
+ * - horizontal: mencakup seluruh panjang lane dan kartu agar margin kiri & kanan seimbang simetris.
+ * - vertical  : mencakup seluruh panjang lane dan kartu agar margin atas & bawah seimbang simetris.
  */
 function computeDiagramBounds(nodes: AppNode[], orientation: Orientation): DiagramBounds {
   const lanes = nodes.filter((n) => n.type === "lane");
   const laneById = new Map<string, AppNode>(lanes.map((l) => [l.id, l]));
   const steps = nodes.filter((n) => n.type !== "lane");
 
+  let minX = Infinity;
+  let minY = Infinity;
   let lanesRight = 0;
   let lanesBottom = 0;
   for (const l of lanes) {
     const w = l.width ?? (orientation === "vertical" ? LANE_V_WIDTH : LANE_DEFAULT_WIDTH);
     const h = l.height ?? (orientation === "vertical" ? LANE_V_DEFAULT_LENGTH : LANE_DEFAULT_HEIGHT);
+    minX = Math.min(minX, l.position.x);
+    minY = Math.min(minY, l.position.y);
     lanesRight = Math.max(lanesRight, l.position.x + w);
     lanesBottom = Math.max(lanesBottom, l.position.y + h);
   }
@@ -44,16 +50,22 @@ function computeDiagramBounds(nodes: AppNode[], orientation: Orientation): Diagr
   let contentBottom = 0;
   for (const s of steps) {
     const r = absRect(s, laneById);
+    minX = Math.min(minX, r.x);
+    minY = Math.min(minY, r.y);
     contentRight = Math.max(contentRight, r.x + r.w);
     contentBottom = Math.max(contentBottom, r.y + r.h);
   }
 
-  if (orientation === "vertical") {
-    const h = contentBottom > 0 ? Math.min(lanesBottom, contentBottom + 64) : lanesBottom;
-    return { width: Math.ceil(lanesRight), height: Math.ceil(Math.max(h, 320)) };
-  }
-  const w = contentRight > 0 ? Math.min(lanesRight, contentRight + 96) : lanesRight;
-  return { width: Math.ceil(Math.max(w, 640)), height: Math.ceil(lanesBottom) };
+  if (minX === Infinity) minX = 0;
+  if (minY === Infinity) minY = 0;
+
+  // Lebar dan tinggi diagram menyertakan seluruh batas lane & konten sehingga margin seimbang sempurna
+  const totalW = Math.max(lanesRight, contentRight);
+  const totalH = Math.max(lanesBottom, contentBottom);
+  const width = Math.ceil(Math.max(totalW - minX, 640));
+  const height = Math.ceil(Math.max(totalH - minY, 320));
+
+  return { width, height, minX, minY };
 }
 
 interface Rendered {
@@ -98,7 +110,7 @@ async function render(
     style: {
       width: `${width}px`,
       height: `${height}px`,
-      transform: `translate(${PADDING}px, ${PADDING}px) scale(1)`,
+      transform: `translate(${PADDING - bounds.minX}px, ${PADDING - bounds.minY}px) scale(1)`,
     },
     filter: (el) => {
       if (!(el instanceof HTMLElement)) return true;
@@ -120,7 +132,7 @@ async function render(
   });
 
   // Banner judul beresolusi proporsional (skala 3x lebih besar untuk presentasi & cetak eksekutif).
-  const bannerH = Math.max(300, Math.round(Math.min(width, 5000) * 0.08));
+  const bannerH = Math.max(340, Math.round(Math.min(width, 7000) * 0.088));
   const totalH = height + bannerH;
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(width * pixelRatio);
@@ -133,14 +145,15 @@ async function render(
   ctx.fillRect(0, 0, width, totalH);
 
   const family = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
-  // Judul 3x lipat lebih besar (~100px - 115px) & deskripsi bawah 3x lipat (~44px - 48px)
-  const titleSize = Math.max(90, Math.round(bannerH * 0.33));
+  // Judul 3x lipat lebih besar (~95px - 115px) & deskripsi bawah 3x lipat (~42px - 48px)
+  const titleSize = Math.max(90, Math.round(bannerH * 0.32));
   const subSize = Math.max(38, Math.round(titleSize * 0.42));
 
   // Tentukan alokasi lebar logo kanan agar teks judul tidak menabrak
-  const maxLogoH = Math.min(160, Math.round(bannerH * 0.56));
-  const maxLogoW = Math.round(bannerH * 1.8);
-  const reservedLogoRight = Math.max(360, maxLogoW + 40);
+  // Skala logo 3x lipat lebih besar: tinggi hingga 250px (proporsi natural), lebar hingga 850px
+  const maxLogoH = Math.min(250, Math.round(bannerH * 0.72));
+  const maxLogoW = Math.round(bannerH * 3.2);
+  const reservedLogoRight = Math.max(650, maxLogoW + 60);
 
   ctx.textBaseline = "middle";
   ctx.fillStyle = fg;
@@ -172,7 +185,7 @@ async function render(
         const logoW = Math.round(logoImg.naturalWidth * ratio);
         const logoH = Math.round(logoImg.naturalHeight * ratio);
         const logoX = width - PADDING - logoW;
-        const logoY = Math.round((bannerH - logoH) / 2) - 6;
+        const logoY = Math.round((bannerH - logoH) / 2);
         ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
 
         if (branding.companyName || branding.docCode) {

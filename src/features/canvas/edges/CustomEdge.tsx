@@ -34,15 +34,15 @@ function CustomEdgeImpl({
   let labelX = (sourceX + targetX) / 2;
   let labelY = (sourceY + targetY) / 2;
 
-  // Garis lurus horizontal murni bila selisih Y kecil (< 20px) — mencegah S-kink/lekukan nyangkut
-  if (isHorizontalFlow && Math.abs(sourceY - targetY) < 20) {
+  // Garis lurus horizontal murni bila selisih Y wajar (< 48px) — mencegah S-kink/lekukan mikro antar-kartu
+  if (isHorizontalFlow && Math.abs(sourceY - targetY) < 48) {
     const snapY = Math.round((sourceY + targetY) / 2);
     edgePath = `M ${sourceX} ${snapY} L ${targetX} ${snapY}`;
     labelX = (sourceX + targetX) / 2;
     labelY = snapY;
   }
-  // Garis lurus vertikal murni bila selisih X kecil (< 20px) — lurus sempurna tanpa jog
-  else if (isVerticalFlow && Math.abs(sourceX - targetX) < 20) {
+  // Garis lurus vertikal murni bila selisih X wajar (< 48px) — lurus sempurna tanpa jog
+  else if (isVerticalFlow && Math.abs(sourceX - targetX) < 48) {
     const snapX = Math.round((sourceX + targetX) / 2);
     edgePath = `M ${snapX} ${sourceY} L ${snapX} ${targetY}`;
     labelX = snapX;
@@ -68,6 +68,13 @@ function CustomEdgeImpl({
     edgePath = computedPath;
     labelX = lx;
     labelY = ly;
+
+    // Jika cabang keluar dari bawah/atas lalu belok horizontal masuk ke sisi target (mis. 3 cabang decision),
+    // letakkan label di lengan horizontal cabang menuju target agar tidak memotong / menumpuk garis batang utama vertikal
+    if ((sourcePosition === "bottom" || sourcePosition === "top") && (targetPosition === "left" || targetPosition === "right")) {
+      labelX = (sourceX + targetX) / 2;
+      labelY = targetY;
+    }
   }
 
   const isExporting = useCanvasStore((s) => s.isExporting);
