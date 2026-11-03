@@ -15,7 +15,7 @@ export interface FlowTemplate {
   docCode?: string;
   companyLogo?: string;
   wallpaper?: string;
-  lanes: { title: string; division: string; color: LaneColor }[];
+  lanes: { title: string; division: string; color: LaneColor; icon?: string }[];
   steps: StepSpec[];
   links: LinkSpec[];
 }
@@ -971,7 +971,7 @@ function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vert
       position: { x: 0, y: currentLaneY },
       width: calculatedWidth,
       height: laneH,
-      data: { title: l.title, division: l.division, color: l.color },
+      data: { title: l.title, division: l.division, color: l.color, icon: l.icon },
     };
     currentLaneY += laneH;
     return node;

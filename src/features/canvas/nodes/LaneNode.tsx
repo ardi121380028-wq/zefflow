@@ -2,7 +2,34 @@
 
 import { memo } from "react";
 import { NodeResizeControl, type NodeProps } from "@xyflow/react";
-import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp, GripHorizontal, GripVertical, Trash2 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+import {
+  Boxes,
+  Building2,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  ChevronUp,
+  Database,
+  GitBranch,
+  GripHorizontal,
+  GripVertical,
+  Headphones,
+  HeartHandshake,
+  Radio,
+  Receipt,
+  Scale,
+  Server,
+  ShieldCheck,
+  Split,
+  Trash2,
+  TrendingUp,
+  User,
+  UserCog,
+  Users,
+  Workflow,
+  Wrench,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCanvasStore } from "../store/canvas-store";
 import { LANE_HEADER_WIDTH, LANE_MIN_HEIGHT, LANE_STYLES, LANE_V_HEADER_HEIGHT, LANE_V_MIN_WIDTH } from "../lib/layout";
@@ -16,6 +43,48 @@ export function normalizeLaneTitle(rawTitle: string): string {
   if (lower === "cs & finance" || lower === "cs & fin" || lower === "cs / finance" || lower === "cs/finance") return "Customer Service & Finance";
   if (lower === "cs") return "Customer Success";
   return rawTitle;
+}
+
+/** Resolusi otomatis icon modern berdasarkan nama lane, divisi, atau icon eksplisit */
+export function getLaneIcon(title?: string, division?: string, explicitIcon?: string): LucideIcon {
+  const t = `${title || ""} ${division || ""} ${explicitIcon || ""}`.toLowerCase();
+
+  // 1. Customer Service / Helpdesk
+  if (t.includes("customer service") || t.includes("helpdesk") || t.includes("cs ")) return Headphones;
+  // 2. Customer / Pelanggan
+  if (t.includes("customer") || t.includes("pelanggan") || t.includes("klien") || t.includes("client") || t.includes("residensial")) return Users;
+  // 3. Sales / Pemasaran / Penjualan
+  if (t.includes("sales") || t.includes("marketing") || t.includes("pemasaran") || t.includes("penjualan") || t.includes("account executive")) return TrendingUp;
+  // 4. Technical Support / Teknisi Lapangan
+  if (t.includes("technical support") || t.includes("teknisi") || t.includes("field engineer") || t.includes("support")) return Wrench;
+  // 5. NOC / Network Operations Center
+  if (t.includes("noc") || t.includes("network operations") || t.includes("monitoring")) return Radio;
+  // 6. Backbone / Splicer / Fiber Optic Cut
+  if (t.includes("backbone") || t.includes("splicer") || t.includes("fo cut") || t.includes("core")) return GitBranch;
+  // 7. Fishbone / Feeder / Last-Mile / LOS
+  if (t.includes("fishbone") || t.includes("feeder") || t.includes("distribusi") || t.includes("last-mile") || t.includes("los")) return Split;
+  // 8. Network Engineer / POP / Corporate Dedicated
+  if (t.includes("network engineer") || t.includes("pop") || t.includes("router") || t.includes("switch") || t.includes("bgp")) return Server;
+  // 9. Finance / Billing / Keuangan / Invoice
+  if (t.includes("finance") || t.includes("keuangan") || t.includes("billing") || t.includes("invoice") || t.includes("pembayaran")) return Receipt;
+  // 10. Management / Direksi / Eksekutif / Approval
+  if (t.includes("management") || t.includes("direksi") || t.includes("direktur") || t.includes("manajemen") || t.includes("commercial")) return Building2;
+  // 11. Warehouse / Logistik / Gudang / Perangkat
+  if (t.includes("warehouse") || t.includes("logistik") || t.includes("gudang") || t.includes("perangkat") || t.includes("pengadaan")) return Boxes;
+  // 12. SPV / Supervisor
+  if (t.includes("spv") || t.includes("supervisor") || t.includes("lead")) return UserCog;
+  // 13. HRD / Human Resources / SDM
+  if (t.includes("hrd") || t.includes("human resource") || t.includes("sdm") || t.includes("cuti") || t.includes("over shift")) return HeartHandshake;
+  // 14. Personal / Karyawan / Pemohon
+  if (t.includes("personal") || t.includes("karyawan") || t.includes("pemohon") || t.includes("pegawai")) return User;
+  // 15. Database / SQL / ERD
+  if (t.includes("database") || t.includes("data") || t.includes("sql") || t.includes("table")) return Database;
+  // 16. Security / Keamanan
+  if (t.includes("security") || t.includes("keamanan") || t.includes("audit")) return ShieldCheck;
+  // 17. Legal / Hukum / Kontrak
+  if (t.includes("legal") || t.includes("hukum") || t.includes("kontrak") || t.includes("mou")) return Scale;
+
+  return Workflow;
 }
 
 const SOLID_HEADERS: Record<string, { bg: string; dot: string; text: string }> = {
@@ -123,22 +192,43 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
     if (window.confirm(`Hapus lane "${displayTitle}" beserta semua langkah di dalamnya?`)) removeLane(id);
   };
 
+  const LaneIcon = getLaneIcon(data.title, data.division, data.icon);
+
   const headerContent = (
-    <>
-      <div className="min-w-0">
-        <div className="flex items-start gap-3">
-          <span className={cn("mt-2.5 h-5 w-5 shrink-0 rounded-full", isSolidZitline ? "bg-white shadow-sm" : glass.dot)} />
-          <p className={cn("line-clamp-2 break-words font-sans text-[31px] font-bold leading-[37px] tracking-tight", isSolidZitline ? "text-white uppercase tracking-wide" : glass.text)}>
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-3.5">
+        <div
+          className={cn(
+            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
+            isSolidZitline
+              ? "bg-white/20 text-white shadow-sm border border-white/30 backdrop-blur-md"
+              : "bg-white/85 dark:bg-zinc-800/85 text-foreground shadow-sm border border-border/50 backdrop-blur-md",
+          )}
+        >
+          <LaneIcon className={cn("h-6 w-6 stroke-[2.2]", isSolidZitline ? "text-white" : glass.text)} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p
+            className={cn(
+              "line-clamp-2 break-words font-sans text-[28px] font-bold leading-[34px] tracking-tight",
+              isSolidZitline ? "text-white uppercase tracking-wide" : glass.text,
+            )}
+          >
             {displayTitle}
           </p>
         </div>
-        {data.division && (
-          <p className={cn("mt-2 line-clamp-2 font-mono text-[19px] leading-[25px] font-medium uppercase tracking-wider", isSolidZitline ? "text-white/85" : glass.division)}>
-            {data.division}
-          </p>
-        )}
       </div>
-    </>
+      {data.division && (
+        <p
+          className={cn(
+            "mt-2 line-clamp-2 pl-[58px] font-mono text-[16px] leading-[22px] font-medium uppercase tracking-wider",
+            isSolidZitline ? "text-white/85" : glass.division,
+          )}
+        >
+          {data.division}
+        </p>
+      )}
+    </div>
   );
 
   if (vertical) {

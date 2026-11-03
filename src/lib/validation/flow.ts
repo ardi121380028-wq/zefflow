@@ -21,6 +21,8 @@ export const laneDataSchema = z.object({
   /** Divisi / departemen yang direpresentasikan lane ini */
   division: z.string().trim().max(80).default(""),
   color: z.enum(LANE_COLORS).default("violet"),
+  /** Nama icon Lucide atau URL icon kustom */
+  icon: z.string().trim().max(80).optional(),
 });
 
 export const stepDataSchema = z.object({

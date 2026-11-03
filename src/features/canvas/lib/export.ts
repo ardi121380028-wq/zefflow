@@ -6,7 +6,7 @@ import { LANE_DEFAULT_HEIGHT, LANE_DEFAULT_WIDTH, LANE_V_DEFAULT_LENGTH, LANE_V_
 
 export type ExportFormat = "png" | "pdf";
 
-const PADDING = 36;
+const PADDING = 64;
 const MAX_SIDE = 16000;
 const MAX_PIXELS = 48_000_000;
 
@@ -146,31 +146,40 @@ async function render(
 
   const family =
     "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-  // Judul modern proporsional (~90px - 110px), font weight 650 (modern semi-bold, tidak terlalu bold tebal), letter-spacing -1.5px rapat
-  const titleSize = Math.max(88, Math.round(bannerH * 0.30));
-  const subSize = Math.max(36, Math.round(titleSize * 0.40));
 
   // Tentukan alokasi lebar logo kanan agar teks judul tidak menabrak
-  // Skala logo Zitline diperbesar ekstra (~280px tinggi, ~920px lebar) agar tampil gagah dan terbaca jelas
-  const maxLogoH = Math.min(285, Math.round(bannerH * 0.78));
-  const maxLogoW = Math.round(bannerH * 3.6);
-  const reservedLogoRight = Math.max(780, maxLogoW + 60);
+  // Skala logo Zitline proporsional (~270px tinggi) agar tampil gagah dan terbaca jelas
+  const maxLogoH = Math.min(270, Math.round(bannerH * 0.75));
+  const maxLogoW = Math.round(bannerH * 3.4);
+  const reservedLogoRight = Math.max(760, maxLogoW + 60);
+  const maxTitleWidth = Math.max(300, width - PADDING * 2 - reservedLogoRight);
+
+  // Judul tebal & modern proporsional seperti referensi, font size adaptif tanpa menggepengkan teks (no horizontal squishing)
+  let titleSize = Math.max(86, Math.round(bannerH * 0.31));
+  ctx.font = `700 ${titleSize}px ${family}`;
+  const measured = ctx.measureText(title || "Diagram SOP").width;
+  if (measured > maxTitleWidth) {
+    const scale = maxTitleWidth / measured;
+    titleSize = Math.max(50, Math.floor(titleSize * scale));
+  }
+  const subSize = Math.max(34, Math.round(titleSize * 0.42));
 
   ctx.textBaseline = "middle";
   ctx.fillStyle = fg;
   if ("letterSpacing" in ctx) {
-    (ctx as unknown as { letterSpacing: string }).letterSpacing = "-1.5px";
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "-1.2px";
   }
-  ctx.font = `650 ${titleSize}px ${family}`;
-  ctx.fillText(title || "Diagram SOP", PADDING, bannerH * 0.38, width - PADDING * 2 - reservedLogoRight);
+  ctx.font = `700 ${titleSize}px ${family}`;
+  // Jangan gunakan parameter maxWidth pada fillText agar canvas tidak menggepengkan/memipihkan huruf
+  ctx.fillText(title || "Diagram SOP", PADDING, bannerH * 0.38);
 
   ctx.fillStyle = muted;
   if ("letterSpacing" in ctx) {
-    (ctx as unknown as { letterSpacing: string }).letterSpacing = "-0.5px";
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "-0.4px";
   }
   ctx.font = `500 ${subSize}px ${family}`;
   const date = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
-  ctx.fillText(`Dibuat dengan Zefflow  ·  ${date}`, PADDING, bannerH * 0.74, width - PADDING * 2 - reservedLogoRight);
+  ctx.fillText(`Dibuat dengan Zefflow  ·  ${date}`, PADDING, bannerH * 0.74);
 
   // Reset letter spacing untuk rendering berikutnya
   if ("letterSpacing" in ctx) {
