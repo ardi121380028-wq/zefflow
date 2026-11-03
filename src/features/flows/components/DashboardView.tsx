@@ -15,6 +15,9 @@ import {
   Plus,
   Search,
   Sparkles,
+  CheckSquare,
+  Rows3,
+  Trash2,
   Workflow,
   X,
   Zap,
@@ -22,7 +25,7 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { createFlowAction } from "../actions";
+import { bulkDeleteFlowsAction, createFlowAction } from "../actions";
 import type { FlowCardData } from "../queries";
 import { TEMPLATES, type FlowTemplate } from "../templates";
 import { CreateFlowDialog } from "./CreateFlowDialog";
@@ -43,6 +46,21 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
   const initialTab = tabParam || "overview";
 
   const [activeTab, setActiveTab] = React.useState<string>(initialTab);
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
+  const [isBulkDeleting, setIsBulkDeleting] = React.useState(false);
+  const [templateFilter, setTemplateFilter] = React.useState<"all" | "sop" | "architect">("all");
+
+  const handleToggleSelect = React.useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }, []);
+
+
+
   const [searchQuery, setSearchQuery] = React.useState("");
   const deferredSearch = React.useDeferredValue(searchQuery);
   const [visibleCount, setVisibleCount] = React.useState(DASHBOARD_BATCH_SIZE);
@@ -145,6 +163,35 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
 
     return list;
   }, [flows, deferredSearch, activeTab]);
+
+  const handleSelectAll = React.useCallback(() => {
+    setSelectedIds((prev) => {
+      if (prev.size === filteredFlows.length) return new Set();
+      return new Set(filteredFlows.map((f) => f.id));
+    });
+  }, [filteredFlows]);
+
+  const handleBulkDelete = React.useCallback(async () => {
+    if (selectedIds.size === 0) return;
+    const count = selectedIds.size;
+    if (!window.confirm(`Hapus ${count} diagram yang dipilih secara permanen?`)) return;
+
+    setIsBulkDeleting(true);
+    try {
+      const res = await bulkDeleteFlowsAction(Array.from(selectedIds));
+      if (res.ok) {
+        toast.success(`${res.data.count} diagram berhasil dihapus.`);
+        setSelectedIds(new Set());
+        router.refresh();
+      } else {
+        toast.error(res.error.message);
+      }
+    } catch {
+      toast.error("Gagal menghapus diagram.");
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  }, [selectedIds, router]);
 
   // Reset jumlah kartu terlihat saat tab atau kata kunci berubah
   React.useEffect(() => {
@@ -271,6 +318,21 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
             <span>+ Studio 2: Architect</span>
           </Button>
 
+          {!isTemplatesTab && filteredFlows.length > 0 && (
+            <Button
+              variant={selectedIds.size > 0 ? "secondary" : "ghost"}
+              size="sm"
+              onClick={handleSelectAll}
+              className="gap-1.5 text-xs h-9 px-3 text-muted-foreground hover:text-foreground"
+              title="Pilih banyak file untuk aksi massal"
+            >
+              <CheckSquare className="h-3.5 w-3.5 text-violet-500" />
+              <span className="hidden sm:inline">
+                {selectedIds.size > 0 ? "Batal Pilih" : "Pilih Massal"}
+              </span>
+            </Button>
+          )}
+
           {!isTemplatesTab && (
             <Button
               variant="secondary"
@@ -286,93 +348,191 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
         </div>
       </div>
 
-      {/* FULL TEMPLATE LIBRARY VIEW (Jika tab template aktif) */}
+      {/* FULL TEMPLATE LIBRARY VIEW (Dipisah Rapi: Swimlane SOP vs Studio Architect) */}
       {isTemplatesTab ? (
-        <section className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Pilih template di bawah untuk langsung menduplikasikannya ke workspace Anda dan mulai mengedit.
-            </p>
+        <section className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <p className="text-xs text-muted-foreground">
+                Pilih template siap pakai di bawah untuk langsung menduplikasikannya ke workspace Anda dan mulai mengedit.
+              </p>
+              {/* Category Filter Pills */}
+              <div className="flex items-center gap-2 mt-3">
+                <button
+                  type="button"
+                  onClick={() => setTemplateFilter("all")}
+                  className={cn(
+                    "rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                    templateFilter === "all"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Semua ({TEMPLATES.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTemplateFilter("sop")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                    templateFilter === "sop"
+                      ? "bg-violet-600 text-white shadow-sm"
+                      : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Rows3 className="h-3.5 w-3.5" />
+                  <span>Swimlane SOP ({TEMPLATES.filter((t) => t.kind !== "architect").length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTemplateFilter("architect")}
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all",
+                    templateFilter === "architect"
+                      ? "bg-sky-600 text-white shadow-sm"
+                      : "bg-muted/60 text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <Database className="h-3.5 w-3.5" />
+                  <span>Studio Architect ({TEMPLATES.filter((t) => t.kind === "architect").length})</span>
+                </button>
+              </div>
+            </div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => handleTabChange("overview")}
-              className="text-xs text-primary font-semibold"
+              className="text-xs text-primary font-semibold self-start sm:self-auto"
             >
               ← Kembali ke File Saya
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            {TEMPLATES.map((tmpl) => (
-              <div
-                key={tmpl.id}
-                className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md"
-              >
+          {/* Section 1: Swimlane SOP */}
+          {(templateFilter === "all" || templateFilter === "sop") && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 border-b border-border/80 pb-2">
+                <span className="rounded-lg bg-violet-500/10 p-1.5 text-violet-500">
+                  <Workflow className="h-4 w-4" />
+                </span>
                 <div>
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={cn(
-                        "rounded-md border px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider",
-                        tmpl.kind === "architect"
-                          ? "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400"
-                          : tmpl.kind === "journey"
-                          ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                          : "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-400",
-                      )}
-                    >
-                      {tmpl.kind === "architect"
-                        ? "STUDIO 2: ARCHITECT"
-                        : tmpl.kind === "journey"
-                        ? "CUSTOMER JOURNEY"
-                        : "SOP STANDAR"}
-                    </span>
-                    <span className="font-mono text-[10px] text-muted-foreground">
-                      {tmpl.lanes.length > 0 ? `${tmpl.lanes.length} Divisi` : "Freeform ERD"}
-                    </span>
-                  </div>
-
-                  <h3 className="mt-2.5 font-display text-xs font-semibold text-foreground tracking-tight group-hover:text-primary transition-colors">
-                    {tmpl.title}
+                  <h3 className="font-display text-sm font-bold text-foreground">
+                    Template Swimlane &amp; SOP Bisnis
                   </h3>
-                  <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground leading-relaxed">
-                    {tmpl.description}
+                  <p className="text-[11px] text-muted-foreground">
+                    Diagram operasional multi-divisi (Retail Zitline, Corporate B2B, Penanganan Gangguan, Onboarding, dan Pengadaan).
                   </p>
-
-                  {tmpl.lanes.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {tmpl.lanes.slice(0, 3).map((l, idx) => (
-                        <span
-                          key={idx}
-                          className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground"
-                        >
-                          {l.title}
-                        </span>
-                      ))}
-                      {tmpl.lanes.length > 3 && (
-                        <span className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
-                          +{tmpl.lanes.length - 3}
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-border/60">
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    loading={isCloning === tmpl.id}
-                    onClick={() => handleUseTemplate(tmpl)}
-                    className="w-full justify-between text-xs font-semibold"
-                  >
-                    <span>Gunakan Template</span>
-                    <Sparkles className="h-3.5 w-3.5 text-primary" />
-                  </Button>
                 </div>
               </div>
-            ))}
-          </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {TEMPLATES.filter((t) => t.kind !== "architect").map((tmpl) => (
+                  <div
+                    key={tmpl.id}
+                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-violet-500/20 bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-violet-500/50 hover:shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="rounded-md border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                          {tmpl.kind === "journey" ? "CUSTOMER JOURNEY" : "SWIMLANE SOP"}
+                        </span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          {tmpl.lanes.length} Divisi
+                        </span>
+                      </div>
+                      <h3 className="mt-2.5 font-display text-xs font-semibold text-foreground tracking-tight group-hover:text-primary transition-colors">
+                        {tmpl.title}
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground leading-relaxed">
+                        {tmpl.description}
+                      </p>
+                      {tmpl.lanes.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          {tmpl.lanes.slice(0, 3).map((l, idx) => (
+                            <span key={idx} className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
+                              {l.title}
+                            </span>
+                          ))}
+                          {tmpl.lanes.length > 3 && (
+                            <span className="rounded-md bg-muted px-1.5 py-0.5 text-[9px] text-muted-foreground">
+                              +{tmpl.lanes.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-border/60">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        loading={isCloning === tmpl.id}
+                        onClick={() => handleUseTemplate(tmpl)}
+                        className="w-full justify-between text-xs font-semibold"
+                      >
+                        <span>Gunakan Template</span>
+                        <Sparkles className="h-3.5 w-3.5 text-primary" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Section 2: Studio Architect */}
+          {(templateFilter === "all" || templateFilter === "architect") && (
+            <div className="space-y-3 pt-3">
+              <div className="flex items-center gap-2 border-b border-border/80 pb-2">
+                <span className="rounded-lg bg-sky-500/10 p-1.5 text-sky-500">
+                  <Database className="h-4 w-4" />
+                </span>
+                <div>
+                  <h3 className="font-display text-sm font-bold text-foreground">
+                    Template Studio Architect &amp; Database ERD
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Skema database relasional multi-tenant PostgreSQL, sistem subscription &amp; billing SaaS, serta arsitektur microservices.
+                  </p>
+                </div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                {TEMPLATES.filter((t) => t.kind === "architect").map((tmpl) => (
+                  <div
+                    key={tmpl.id}
+                    className="group relative flex flex-col justify-between overflow-hidden rounded-2xl border border-sky-500/20 bg-card p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-sky-500/50 hover:shadow-md"
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span className="rounded-md border border-sky-500/30 bg-sky-500/10 px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-sky-600 dark:text-sky-400">
+                          STUDIO 2: ARCHITECT
+                        </span>
+                        <span className="font-mono text-[10px] text-muted-foreground">
+                          Freeform ERD
+                        </span>
+                      </div>
+                      <h3 className="mt-2.5 font-display text-xs font-semibold text-foreground tracking-tight group-hover:text-primary transition-colors">
+                        {tmpl.title}
+                      </h3>
+                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground leading-relaxed">
+                        {tmpl.description}
+                      </p>
+                    </div>
+                    <div className="mt-4 pt-3 border-t border-border/60">
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        loading={isCloning === tmpl.id}
+                        onClick={() => handleUseTemplate(tmpl)}
+                        className="w-full justify-between text-xs font-semibold"
+                      >
+                        <span>Gunakan Template</span>
+                        <Sparkles className="h-3.5 w-3.5 text-sky-500" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
       ) : (
         /* FIGMA-STYLE SPLIT LAYOUT: TENGAH PROJEK (4 KOLOM), KANAN QUICK START */
@@ -421,6 +581,41 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
               />
             </div>
 
+            {/* Bulk Action Bar saat ada file yang dipilih */}
+            {selectedIds.size > 0 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/10 dark:bg-primary/20 px-4 py-3 shadow-md animate-fade-in">
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === filteredFlows.length && filteredFlows.length > 0}
+                    onChange={handleSelectAll}
+                    id="bulk-check-header"
+                    className="h-4 w-4 rounded accent-primary cursor-pointer"
+                  />
+                  <label htmlFor="bulk-check-header" className="text-xs font-bold text-foreground cursor-pointer">
+                    {selectedIds.size} dari {filteredFlows.length} diagram dipilih
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedIds(new Set())}
+                    className="text-xs text-muted-foreground hover:text-foreground underline ml-2"
+                  >
+                    Batal Pilih
+                  </button>
+                </div>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  loading={isBulkDeleting}
+                  onClick={handleBulkDelete}
+                  className="gap-2 text-xs font-bold h-8 px-4 shadow-sm"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  <span>Hapus ({selectedIds.size})</span>
+                </Button>
+              </div>
+            )}
+
             {/* Grid Kartu Projek: Mampu Menampilkan 4 Kolom Ke Samping (Windowed untuk ribuan file) */}
             {filteredFlows.length > 0 ? (
               <>
@@ -430,6 +625,9 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
                       key={flow.id}
                       flow={flow}
                       onShareClick={handleShareClick}
+                      selected={selectedIds.has(flow.id)}
+                      onToggleSelect={handleToggleSelect}
+                      selectionMode={selectedIds.size > 0}
                     />
                   ))}
                 </div>

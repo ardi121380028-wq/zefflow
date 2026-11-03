@@ -31,9 +31,12 @@ import type { FlowCardData } from "../queries";
 interface FlowCardProps {
   flow: FlowCardData;
   onShareClick?: (flow: FlowCardData) => void;
+  selected?: boolean;
+  onToggleSelect?: (id: string, selected: boolean) => void;
+  selectionMode?: boolean;
 }
 
-function FlowCardImpl({ flow, onShareClick }: FlowCardProps) {
+function FlowCardImpl({ flow, onShareClick, selected, onToggleSelect, selectionMode }: FlowCardProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = React.useState(false);
 
@@ -61,11 +64,33 @@ function FlowCardImpl({ flow, onShareClick }: FlowCardProps) {
   const isJourney = flow.kind === "journey";
 
   return (
-    <div className="card-premium group relative flex flex-col justify-between overflow-hidden rounded-xl border border-border/80 dark:border-white/[0.08] bg-card p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-lg dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]">
+    <div
+      className={cn(
+        "card-premium group relative flex flex-col justify-between overflow-hidden rounded-xl border p-3.5 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg dark:hover:shadow-[0_8px_30px_rgba(0,0,0,0.4)]",
+        selected
+          ? "border-primary bg-primary/[0.04] ring-2 ring-primary/40 shadow-md"
+          : "border-border/80 dark:border-white/[0.08] bg-card hover:border-primary/40",
+      )}
+    >
       <div>
         {/* Top Badges & Kind Indicator */}
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            {onToggleSelect && (
+              <input
+                type="checkbox"
+                checked={Boolean(selected)}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  onToggleSelect(flow.id, e.target.checked);
+                }}
+                className={cn(
+                  "h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer transition-opacity accent-primary",
+                  selectionMode || selected ? "opacity-100" : "opacity-0 group-hover:opacity-100",
+                )}
+                aria-label={`Pilih diagram ${flow.title}`}
+              />
+            )}
             <span
               className={cn(
                 "grid h-6 w-6 place-items-center rounded-lg border",

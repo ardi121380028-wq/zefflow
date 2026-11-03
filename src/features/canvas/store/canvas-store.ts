@@ -59,8 +59,8 @@ function computeNodeStats(nodes: AppNode[]): { stepCount: number; hasLanes: bool
   return { stepCount, hasLanes };
 }
 
-/** Panah koneksi diperbesar agar seimbang dengan skala tipografi & kartu 2x. */
-export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 28, height: 28 } as const;
+/** Panah koneksi terkalibrasi proporsional dengan skala strokeWidth. */
+export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 14, height: 14 } as const;
 
 export type SidebarTab = "layers" | "outline" | "branding" | "assets";
 

@@ -34,6 +34,7 @@ interface CreateFlowDialogProps {
 export function CreateFlowDialog({ open, onOpenChange, defaultKind = "sop" }: CreateFlowDialogProps) {
   const router = useRouter();
   const [tab, setTab] = React.useState<"blank" | "templates">("blank");
+  const [tmplCategory, setTmplCategory] = React.useState<"all" | "sop" | "architect">("all");
   const [title, setTitle] = React.useState("");
   const [kind, setKind] = React.useState<"sop" | "journey" | "architect">(defaultKind);
   const [isLoading, setIsLoading] = React.useState(false);
@@ -227,38 +228,108 @@ export function CreateFlowDialog({ open, onOpenChange, defaultKind = "sop" }: Cr
           </form>
         ) : (
           <div className="mt-5 space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Pilih template siap pakai untuk mempercepat penyusunan proses organisasi Anda:
-            </p>
-            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-              {TEMPLATES.map((tmpl) => (
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                Pilih template siap pakai (Swimlane SOP atau Studio Architect):
+              </p>
+              {/* Category Pills */}
+              <div className="flex items-center gap-1.5">
                 <button
-                  key={tmpl.id}
-                  disabled={isLoading}
-                  onClick={() => handleSelectTemplate(tmpl)}
-                  className="card-premium flex flex-col justify-between rounded-2xl border border-border dark:border-white/[0.08] bg-card dark:bg-[#12141F] p-4 text-left hover:border-violet-500/50 shadow-sm transition-all"
+                  type="button"
+                  onClick={() => setTmplCategory("all")}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all",
+                    tmplCategory === "all"
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  )}
                 >
-                  <div>
-                    <div className="flex items-center justify-between">
-                      <span className="rounded-md border border-violet-500/30 bg-violet-500/10 px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider text-violet-600 dark:text-violet-300">
-                        {tmpl.kind === "journey" ? "CUSTOMER JOURNEY" : "SOP STANDAR"}
-                      </span>
-                      <span className="text-[10px] text-muted-foreground">
-                        {tmpl.lanes.length} Divisi
-                      </span>
-                    </div>
-                    <h4 className="mt-2.5 font-display text-xs font-bold text-foreground">
-                      {tmpl.title}
-                    </h4>
-                    <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
-                      {tmpl.description}
-                    </p>
-                  </div>
-                  <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-violet-600 dark:text-violet-400">
-                    <Sparkles className="h-3 w-3" /> Gunakan template ini
-                  </div>
+                  Semua ({TEMPLATES.length})
                 </button>
-              ))}
+                <button
+                  type="button"
+                  onClick={() => setTmplCategory("sop")}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all",
+                    tmplCategory === "sop"
+                      ? "bg-violet-600 text-white shadow-sm"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Swimlane SOP ({TEMPLATES.filter((t) => t.kind !== "architect").length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTmplCategory("architect")}
+                  className={cn(
+                    "rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all",
+                    tmplCategory === "architect"
+                      ? "bg-sky-600 text-white shadow-sm"
+                      : "bg-muted text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  Architect ERD ({TEMPLATES.filter((t) => t.kind === "architect").length})
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 max-h-[380px] overflow-y-auto pr-1">
+              {TEMPLATES.filter((t) =>
+                tmplCategory === "all"
+                  ? true
+                  : tmplCategory === "sop"
+                  ? t.kind !== "architect"
+                  : t.kind === "architect"
+              ).map((tmpl) => {
+                const isArch = tmpl.kind === "architect";
+                return (
+                  <button
+                    key={tmpl.id}
+                    disabled={isLoading}
+                    onClick={() => handleSelectTemplate(tmpl)}
+                    className={cn(
+                      "card-premium flex flex-col justify-between rounded-2xl border p-4 text-left shadow-sm transition-all duration-150",
+                      isArch
+                        ? "border-sky-500/30 bg-card hover:border-sky-500/70"
+                        : "border-border dark:border-white/[0.08] bg-card hover:border-violet-500/50"
+                    )}
+                  >
+                    <div>
+                      <div className="flex items-center justify-between">
+                        <span
+                          className={cn(
+                            "rounded-md border px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider",
+                            isArch
+                              ? "border-sky-500/30 bg-sky-500/10 text-sky-600 dark:text-sky-400"
+                              : tmpl.kind === "journey"
+                              ? "border-amber-500/30 bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                              : "border-violet-500/30 bg-violet-500/10 text-violet-600 dark:text-violet-300"
+                          )}
+                        >
+                          {isArch ? "STUDIO 2: ARCHITECT" : tmpl.kind === "journey" ? "CUSTOMER JOURNEY" : "SWIMLANE SOP"}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground font-mono">
+                          {tmpl.lanes.length > 0 ? `${tmpl.lanes.length} Divisi` : "Freeform ERD"}
+                        </span>
+                      </div>
+                      <h4 className="mt-2.5 font-display text-xs font-bold text-foreground">
+                        {tmpl.title}
+                      </h4>
+                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground">
+                        {tmpl.description}
+                      </p>
+                    </div>
+                    <div
+                      className={cn(
+                        "mt-3 flex items-center gap-1.5 text-[11px] font-semibold",
+                        isArch ? "text-sky-600 dark:text-sky-400" : "text-violet-600 dark:text-violet-400"
+                      )}
+                    >
+                      <Sparkles className="h-3 w-3" /> Gunakan template ini
+                    </div>
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}

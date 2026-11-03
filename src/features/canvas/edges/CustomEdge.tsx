@@ -92,7 +92,7 @@ function CustomEdgeImpl({
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          strokeWidth: selected ? (isSolidZitline ? 6.25 : 5.75) : (isSolidZitline ? 5 : 4.5),
+          strokeWidth: selected ? 5.5 : (isSolidZitline ? 4.5 : 3.75),
           stroke: selected ? selectedEdgeStroke : defaultEdgeStroke,
           ...style,
         }}

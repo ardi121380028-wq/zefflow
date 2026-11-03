@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { and, desc, eq, ilike, or, sql } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { nanoid } from "nanoid";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
@@ -206,6 +206,29 @@ export async function deleteFlowAction(flowId: string) {
     invalidateSharedFlowCache(rows[0]?.shareToken);
     revalidatePath("/dashboard");
     return { id };
+  });
+}
+
+export async function bulkDeleteFlowsAction(flowIds: string[]) {
+  return safeAction(async () => {
+    const ids = z.array(flowIdSchema).min(1).parse(flowIds);
+    const user = await requireUser();
+    const rows = await withUser(user.id, (tx) =>
+      tx
+        .delete(flows)
+        .where(inArray(flows.id, ids))
+        .returning({ id: flows.id, workspaceId: flows.workspaceId, shareToken: flows.shareToken }),
+    );
+    for (const row of rows) {
+      evictPrimedFlow(row.id);
+      invalidateFlowDocCache(row.id);
+      if (row.shareToken) invalidateSharedFlowCache(row.shareToken);
+    }
+    if (rows[0]?.workspaceId) {
+      invalidateWorkspaceFlowsCache(rows[0].workspaceId);
+    }
+    revalidatePath("/dashboard");
+    return { count: rows.length, deletedIds: rows.map((r) => r.id) };
   });
 }
 

@@ -8,6 +8,7 @@ import {
   Code2,
   Copy,
   KeyRound,
+  Globe2,
   Save,
   Sliders,
   User,
@@ -16,9 +17,10 @@ import {
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/field";
+import { useLanguage } from "@/lib/i18n";
 import { updateProfileAction, updateWorkspaceNameAction } from "@/features/flows/actions";
 
-type SettingsTab = "profile" | "editor" | "standards" | "api";
+type SettingsTab = "profile" | "editor" | "standards" | "api" | "language";
 
 interface SettingsClientProps {
   initialName: string;
@@ -37,6 +39,7 @@ export function SettingsClient({
   plan,
   canRenameWorkspace,
 }: SettingsClientProps) {
+  const { lang, setLang, t } = useLanguage();
   const [activeTab, setActiveTab] = React.useState<SettingsTab>("profile");
   const [saving, setSaving] = React.useState(false);
   const [copiedKey, setCopiedKey] = React.useState(false);
@@ -359,6 +362,95 @@ export function SettingsClient({
                     Event yang dikirim: <code>flow.created</code>, <code>flow.updated</code>, <code>sop.published</code>.
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Tab Content: Language / Bilingual Support */}
+          {activeTab === "language" && (
+            <div className="space-y-6 rounded-2xl border border-border dark:border-white/[0.08] bg-card p-6 shadow-sm">
+              <div className="border-b border-border pb-4">
+                <div className="flex items-center gap-2">
+                  <Globe2 className="h-4 w-4 text-sky-500" />
+                  <h3 className="font-display text-sm font-bold text-foreground">
+                    {t.languageSection}
+                  </h3>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {t.languageDesc}
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                {/* Indonesian Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLang("id");
+                    toast.success("Bahasa antarmuka diubah ke Bahasa Indonesia");
+                  }}
+                  className={`flex flex-col items-start gap-2.5 rounded-2xl border p-4 text-left transition-all duration-150 ${
+                    lang === "id"
+                      ? "border-primary bg-primary/[0.06] shadow-sm ring-2 ring-primary/40"
+                      : "border-border dark:border-white/[0.08] bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm font-bold text-foreground">
+                      <span className="text-lg">🇮🇩</span>
+                      <span>Bahasa Indonesia</span>
+                    </span>
+                    {lang === "id" && (
+                      <span className="rounded-full bg-primary/20 p-1 text-primary">
+                        <Check className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Format penamaan SOP, istilah divisi Indonesia, durasi hari kerja, dan kop resmi.
+                  </p>
+                  <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-[9px] font-bold text-muted-foreground">
+                    STANDAR AKTIF
+                  </span>
+                </button>
+
+                {/* English Option */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLang("en");
+                    toast.success("Interface language changed to English");
+                  }}
+                  className={`flex flex-col items-start gap-2.5 rounded-2xl border p-4 text-left transition-all duration-150 ${
+                    lang === "en"
+                      ? "border-primary bg-primary/[0.06] shadow-sm ring-2 ring-primary/40"
+                      : "border-border dark:border-white/[0.08] bg-card hover:border-primary/40"
+                  }`}
+                >
+                  <div className="flex w-full items-center justify-between">
+                    <span className="flex items-center gap-2 text-sm font-bold text-foreground">
+                      <span className="text-lg">🇺🇸</span>
+                      <span>English (US)</span>
+                    </span>
+                    {lang === "en" && (
+                      <span className="rounded-full bg-primary/20 p-1 text-primary">
+                        <Check className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    International BPMN standard notations, English headers, and ISO compliance terms.
+                  </p>
+                  <span className="rounded-md bg-muted px-2 py-0.5 font-mono text-[9px] font-bold text-muted-foreground">
+                    BILINGUAL READY
+                  </span>
+                </button>
+              </div>
+
+              <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5 text-xs text-muted-foreground">
+                <p>
+                  💡 <strong>Catatan Bilingual:</strong> Pengaturan bahasa ini otomatis tersimpan secara lokal dan menyinkronkan kop diagram dokumen saat diekspor.
+                </p>
               </div>
             </div>
           )}

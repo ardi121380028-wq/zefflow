@@ -287,15 +287,12 @@
   box-shadow: none !important;
 }
 .react-flow__edge-path {
-  stroke: rgba(148, 163, 184, 0.45) !important;
-  stroke-width: 1.75px !important;
-}
-.dark .react-flow__edge-path {
-  stroke: rgba(255, 255, 255, 0.28) !important;
+  stroke: hsl(var(--edge-stroke));
+  stroke-width: 3.5px;
 }
 .react-flow__edge.selected .react-flow__edge-path {
-  stroke: hsl(var(--primary)) !important;
-  stroke-width: 2.25px !important;
+  stroke: hsl(var(--primary));
+  stroke-width: 4.5px;
 }
 .react-flow__edge-textbg {
   fill: hsl(var(--card)) !important;
@@ -461,10 +458,12 @@
 
 
 /* Warna garis koneksi diagram: kontras jelas di dark & light (terbaca saat diekspor) */
-:root,
-.dark {
-  --edge-stroke: 215 20% 72%;
+:root {
+  --edge-stroke: 215 35% 25%;
 }
 .light {
-  --edge-stroke: 215 25% 35%;
+  --edge-stroke: 215 35% 25%;
+}
+.dark {
+  --edge-stroke: 215 25% 75%;
 }
