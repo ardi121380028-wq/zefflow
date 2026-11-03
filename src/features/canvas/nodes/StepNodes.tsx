@@ -189,11 +189,14 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
     setLocalDescOpen(false);
   }, [showDescriptions]);
 
+  const hasLanes = useCanvasStore((s) => s.hasLanes);
+  const isSopSwimlane = storeKind === "sop" || hasLanes || Boolean(parentLane);
   const isErd =
-    storeKind === "architect" ||
-    data.output === "Database Table" ||
-    data.output?.toLowerCase().includes("table") ||
-    Boolean(data.description && (data.description.includes("PK") || data.description.includes("FK")));
+    !isSopSwimlane &&
+    (storeKind === "architect" ||
+      data.output === "Database Table" ||
+      data.output?.toLowerCase() === "table" ||
+      Boolean(data.description && /\b(PK|FK)\b/.test(data.description)));
 
   const columns = React.useMemo(
     () => (isErd ? parseErdColumns(data.description) : []),

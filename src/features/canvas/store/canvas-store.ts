@@ -60,7 +60,7 @@ function computeNodeStats(nodes: AppNode[]): { stepCount: number; hasLanes: bool
 }
 
 /** Panah koneksi diperbesar agar seimbang dengan skala tipografi & kartu 2x. */
-export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 24, height: 24 } as const;
+export const EDGE_MARKER = { type: MarkerType.ArrowClosed, width: 28, height: 28 } as const;
 
 export type SidebarTab = "layers" | "outline" | "branding" | "assets";
 

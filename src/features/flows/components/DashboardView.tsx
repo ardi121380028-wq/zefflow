@@ -199,9 +199,9 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
   const quickTemplates = React.useMemo(() => {
     return [
       TEMPLATES.find((t) => t.id === "isp-retail-flow") ?? TEMPLATES[0]!,
-      TEMPLATES.find((t) => t.id === "billing-subscription-erd") ?? TEMPLATES[1]!,
-      TEMPLATES.find((t) => t.id === "customer-onboarding") ?? TEMPLATES[2]!,
-      TEMPLATES.find((t) => t.id === "saas-database-erd") ?? TEMPLATES[3]!,
+      TEMPLATES.find((t) => t.id === "isp-corporate-flow") ?? TEMPLATES[1]!,
+      TEMPLATES.find((t) => t.id === "isp-trouble-ticket-flow") ?? TEMPLATES[2]!,
+      TEMPLATES.find((t) => t.id === "billing-subscription-erd") ?? TEMPLATES[3]!,
     ].filter(Boolean) as FlowTemplate[];
   }, []);
 

@@ -138,8 +138,8 @@ export function estimateNodeSize(
 
   const isErd =
     d.output === "Database Table" ||
-    Boolean(d.output?.toLowerCase().includes("table")) ||
-    Boolean(d.description && (d.description.includes("PK") || d.description.includes("FK")));
+    d.output?.toLowerCase() === "table" ||
+    Boolean(d.description && /\b(PK|FK)\b/.test(d.description));
 
   if (isErd) {
     const colCount = d.description ? Math.max(1, d.description.split("\n").filter(Boolean).length) : 1;
