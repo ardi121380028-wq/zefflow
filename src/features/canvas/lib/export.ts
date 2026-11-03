@@ -157,7 +157,11 @@ async function render(
       await new Promise<void>((resolve) => {
         logoImg.onload = () => resolve();
         logoImg.onerror = () => resolve();
-        logoImg.src = branding.companyLogo!;
+        let src = branding.companyLogo!;
+        if (!isLight && src === "/brand/zitline-logo.svg") {
+          src = "/brand/zitline-logo-dark.svg";
+        }
+        logoImg.src = src;
       });
       if (logoImg.naturalWidth > 0) {
         const ratio = Math.min(maxLogoH / logoImg.naturalHeight, maxLogoW / logoImg.naturalWidth);

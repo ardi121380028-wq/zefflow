@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 84" width="360" height="84">
+  <g transform="translate(8, 6)">
+    <!-- Stylized Red Z -->
+    <path d="M 0,0 L 52,0 L 46,12 L 0,12 Z" fill="#EF4444"/>
+    <path d="M 24,16 L 36,16 L 16,52 L 4,52 Z" fill="#EF4444"/>
+    <path d="M 39,16 L 51,16 L 31,52 L 19,52 Z" fill="#EF4444"/>
+    <path d="M 8,56 L 54,56 L 48,68 L 0,68 Z" fill="#EF4444"/>
+    <!-- Text ITLINE -->
+    <text x="62" y="50" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="800" font-size="46" fill="#F8FAFC" letter-spacing="-0.5">ITLINE</text>
+    <text x="230" y="22" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="600" font-size="10" fill="#F8FAFC">TM</text>
+    <!-- Subtitle -->
+    <text x="64" y="68" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-weight="500" font-size="13" fill="#94A3B8" letter-spacing="0.4">Internet Service Provider</text>
+  </g>
+</svg>
