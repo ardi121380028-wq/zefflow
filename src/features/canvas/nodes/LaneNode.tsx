@@ -13,7 +13,7 @@ export function normalizeLaneTitle(rawTitle: string): string {
   const lower = trimmed.toLowerCase();
   if (lower === "cust. service" || lower === "cust.service" || lower === "cust service") return "Customer Service";
   if (lower === "t. support" || lower === "t.support" || lower === "t support") return "Technical Support";
-  if (lower === "cs & finance" || lower === "cs & fin") return "Customer Service & Finance";
+  if (lower === "cs & finance" || lower === "cs & fin" || lower === "cs / finance" || lower === "cs/finance") return "Customer Service & Finance";
   if (lower === "cs") return "Customer Success";
   return rawTitle;
 }

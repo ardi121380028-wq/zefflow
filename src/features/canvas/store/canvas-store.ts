@@ -150,6 +150,8 @@ const LEGACY_LANE_TITLE_MAP: Record<string, string> = {
   "Cust. Service": "Customer Service",
   "T. Support": "Technical Support",
   "CS & Finance": "Customer Service & Finance",
+  "CS / Finance": "Customer Service & Finance",
+  "CS/Finance": "Customer Service & Finance",
 };
 
 /** Ubah dokumen tersimpan -> node/edge React Flow. */
