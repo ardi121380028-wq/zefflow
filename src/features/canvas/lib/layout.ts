@@ -9,10 +9,10 @@ import type { AppEdge, AppNode, LaneNodeType, StepNodeType } from "../types";
 
 // Horizontal
 export const LANE_HEADER_WIDTH = 380;
-export const LANE_DEFAULT_WIDTH = 3200;
-export const LANE_DEFAULT_HEIGHT = 360;
-export const LANE_MIN_HEIGHT = 280;
-export const COL_GAP = 568;
+export const LANE_DEFAULT_WIDTH = 3400;
+export const LANE_DEFAULT_HEIGHT = 400;
+export const LANE_MIN_HEIGHT = 320;
+export const COL_GAP = 680;
 export const FIRST_COL_X = LANE_HEADER_WIDTH + 64;
 
 // Vertical
@@ -304,8 +304,8 @@ export function pickHandles(src: Rect, tgt: Rect, srcIsDecision: boolean, orient
   const sameLane = Math.abs(dy) < 70;
   if (dx > 32) {
     if (sameLane) return ["r", "l"];
-    if (srcIsDecision) return [dy > 0 ? "b" : "t", "l"];
     if (dy < -70) return ["t", "l"]; // Target di lane atas: alur natural keluar dari atas (t -> l)
+    if (dy > 70) return ["b", "l"];  // Target di lane bawah: alur keluar dari bawah (b -> l)
     return ["r", "l"];
   }
   if (dx < -32) {
@@ -756,6 +756,10 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
     const s = rectOf.get(e.source);
     const t = rectOf.get(e.target);
     if (!s || !t) return e;
+    // Jika merapikan dalam orientasi yang sama dan edge sudah memiliki handle yang valid, pertahankan!
+    if (from === to && e.sourceHandle && e.targetHandle) {
+      return e;
+    }
     const [sourceHandle, targetHandle] = pickHandles(s.rect, t.rect, s.decision, to);
     return { ...e, sourceHandle, targetHandle } as E;
   });
