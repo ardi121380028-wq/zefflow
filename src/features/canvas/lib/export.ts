@@ -160,8 +160,10 @@ async function render(
         logoImg.onload = () => resolve();
         logoImg.onerror = () => resolve();
         let src = branding.companyLogo!;
-        if (!isLight && src === "/brand/zitline-logo.svg") {
-          src = "/brand/zitline-logo-dark.svg";
+        if (src === "/brand/zitline-logo.svg" || src === "/brand/zitline-logo.png") {
+          src = isLight ? "/brand/zitline-logo.png" : "/brand/zitline-logo-dark.png";
+        } else if (!isLight && src === "/brand/zitline-logo-dark.svg") {
+          src = "/brand/zitline-logo-dark.png";
         }
         logoImg.src = src;
       });
