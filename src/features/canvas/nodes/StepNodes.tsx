@@ -161,11 +161,28 @@ function parseErdColumns(desc: string) {
   });
 }
 
+const SOLID_CARD_STYLES: Record<string, string> = {
+  rose: "bg-gradient-to-r from-[#DC2626] to-[#1E40AF] text-white border-2 border-white/40 shadow-xl",
+  amber: "bg-gradient-to-r from-[#EA580C] to-[#DC2626] text-white border-2 border-white/40 shadow-xl",
+  violet: "bg-gradient-to-r from-[#1E40AF] to-[#DC2626] text-white border-2 border-white/40 shadow-xl",
+  emerald: "bg-[#2563EB] text-white border-2 border-white/40 shadow-xl",
+  sky: "bg-[#1E3A8A] text-white border-2 border-white/40 shadow-xl",
+  slate: "bg-[#0F172A] text-white border-2 border-white/40 shadow-xl",
+};
+
 /** Langkah kerja standar (SOP step) atau ERD Database Table di Architect mode */
 function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   const storeKind = useCanvasStore((s) => s.kind);
   const showDescriptions = useCanvasStore((s) => s.showDescriptions);
   const isExporting = useCanvasStore((s) => s.isExporting);
+  const wallpaper = useCanvasStore((s) => s.wallpaper);
+  const isSolidZitline = wallpaper === "solid-zitline";
+  const parentLane = useCanvasStore((s) => {
+    const me = s.nodes.find((n) => n.id === id);
+    return me?.parentId ? s.nodes.find((n) => n.id === me.parentId) : undefined;
+  });
+  const laneColor = (parentLane?.data as any)?.color || "emerald";
+  const solidCardStyle = SOLID_CARD_STYLES[laneColor] ?? SOLID_CARD_STYLES.emerald!;
   const [localDescOpen, setLocalDescOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -267,14 +284,16 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
   return (
     <div
       className={cn(
-        "group/node relative rounded-3xl border-[1.5px] border-border dark:border-white/[0.1] bg-white dark:bg-[#0E1018] p-6 shadow-sm hover:shadow-md transition-[border-color,box-shadow] duration-150 hover:border-primary/40 dark:hover:border-violet-500/50",
-        selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_24px_rgba(139,92,246,0.28)]",
+        isSolidZitline
+          ? cn("group/node relative rounded-3xl p-6 transition-[border-color,box-shadow] duration-150", solidCardStyle)
+          : "group/node relative rounded-3xl border-[1.5px] border-border dark:border-white/[0.1] bg-white dark:bg-[#0E1018] p-6 shadow-sm hover:shadow-md transition-[border-color,box-shadow] duration-150 hover:border-primary/40 dark:hover:border-violet-500/50",
+        selected && (isSolidZitline ? "ring-4 ring-white shadow-2xl" : "selected ring-2 ring-violet-500/80 shadow-[0_0_24px_rgba(139,92,246,0.28)]"),
       )}
       style={{ width: STEP_WIDTH }}
     >
       <NodeHandles nodeId={id} />
       <div className="flex items-start justify-between gap-3">
-        <p className="font-display text-[38px] font-extrabold tracking-tight text-foreground dark:text-white leading-[45px] flex-1">
+        <p className={cn("font-display text-[38px] font-extrabold tracking-tight leading-[45px] flex-1", isSolidZitline ? "text-white font-black drop-shadow-sm" : "text-foreground dark:text-white")}>
           {data.title || "Tanpa judul"}
         </p>
         {data.description && !isExporting && (
@@ -288,8 +307,8 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
             className={cn(
               "nodrag nopan shrink-0 mt-1 grid h-9 w-9 place-items-center rounded-xl border transition-colors",
               isDescExpanded
-                ? "border-primary/40 bg-primary/10 text-primary"
-                : "border-border/80 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground",
+                ? (isSolidZitline ? "border-white/50 bg-white/20 text-white" : "border-primary/40 bg-primary/10 text-primary")
+                : (isSolidZitline ? "border-white/30 bg-black/20 text-white/90 hover:bg-black/30" : "border-border/80 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"),
             )}
           >
             {isDescExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
@@ -298,15 +317,23 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
       </div>
 
       {data.description && (isDescExpanded || isExporting) && (
-        <p className="mt-3 line-clamp-4 text-[26px] leading-[36px] text-muted-foreground dark:text-zinc-300 font-medium animate-in fade-in duration-200">
+        <p className={cn("mt-3 line-clamp-4 text-[26px] leading-[36px] font-medium animate-in fade-in duration-200", isSolidZitline ? "text-white/90 drop-shadow-sm" : "text-muted-foreground dark:text-zinc-300")}>
           {data.description}
         </p>
       )}
 
       {(data.owner || data.output) && (
         <div className="mt-4 flex flex-wrap gap-2">
-          {data.owner && <Chip icon={<User2 className="h-6 w-6 text-sky-500 shrink-0" />}>{data.owner}</Chip>}
-          {data.output && <Chip icon={<FileOutput className="h-6 w-6 text-emerald-500 shrink-0" />}>{data.output}</Chip>}
+          {data.owner && (
+            <Chip icon={<User2 className={cn("h-6 w-6 shrink-0", isSolidZitline ? "text-white" : "text-sky-500")} />} isSolidZitline={isSolidZitline}>
+              {data.owner}
+            </Chip>
+          )}
+          {data.output && (
+            <Chip icon={<FileOutput className={cn("h-6 w-6 shrink-0", isSolidZitline ? "text-white" : "text-emerald-500")} />} isSolidZitline={isSolidZitline}>
+              {data.output}
+            </Chip>
+          )}
         </div>
       )}
     </div>
@@ -377,24 +404,36 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
 
 /** Start / End — tanpa backdrop-blur agar GPU compositing 60fps tetap ringan pada ratusan node. */
 function TerminalNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
+  const wallpaper = useCanvasStore((s) => s.wallpaper);
+  const isSolidZitline = wallpaper === "solid-zitline";
+
   return (
     <div
       className={cn(
-        "group/node flex items-center justify-center gap-3.5 rounded-full border-[1.5px] border-border dark:border-white/[0.14] bg-white dark:bg-[#121420] px-9 py-4 text-foreground dark:text-white shadow-sm dark:shadow-[0_6px_20px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow,transform] duration-150 hover:border-violet-500 hover:scale-105",
-        selected && "selected ring-2 ring-violet-500/80 shadow-[0_0_28px_rgba(139,92,246,0.35)]",
+        isSolidZitline
+          ? "group/node flex items-center justify-center gap-3.5 rounded-full px-9 py-4 text-white shadow-xl transition-transform duration-150 bg-gradient-to-r from-[#DC2626] to-[#1E40AF] border-2 border-white/40"
+          : "group/node flex items-center justify-center gap-3.5 rounded-full border-[1.5px] border-border dark:border-white/[0.14] bg-white dark:bg-[#121420] px-9 py-4 text-foreground dark:text-white shadow-sm dark:shadow-[0_6px_20px_rgba(0,0,0,0.5)] transition-[border-color,box-shadow,transform] duration-150 hover:border-violet-500 hover:scale-105",
+        selected && (isSolidZitline ? "ring-4 ring-white" : "selected ring-2 ring-violet-500/80 shadow-[0_0_28px_rgba(139,92,246,0.35)]"),
       )}
       style={{ minWidth: TERMINAL_MIN_W }}
     >
       <NodeHandles nodeId={id} />
-      <span className="h-5 w-5 rounded-full bg-violet-500 shadow-[0_0_12px_#a78bfa] shrink-0" />
-      <p className="text-[31px] leading-[38px] font-extrabold tracking-tight">{data.title || "Mulai / Selesai"}</p>
+      <span className={cn("h-5 w-5 rounded-full shrink-0", isSolidZitline ? "bg-white shadow-sm" : "bg-violet-500 shadow-[0_0_12px_#a78bfa]")} />
+      <p className="text-[31px] leading-[38px] font-extrabold tracking-tight drop-shadow-sm">{data.title || "Mulai / Selesai"}</p>
     </div>
   );
 }
 
-function Chip({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+function Chip({ icon, children, isSolidZitline }: { icon: React.ReactNode; children: React.ReactNode; isSolidZitline?: boolean }) {
   return (
-    <span className="inline-flex max-w-full items-center gap-2 rounded-xl border border-slate-200 dark:border-white/[0.1] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-200 px-4 py-2 text-[23px] font-semibold leading-[30px] shadow-sm transition-all hover:border-primary/40 dark:hover:border-violet-500/40">
+    <span
+      className={cn(
+        "inline-flex max-w-full items-center gap-2 rounded-xl px-4 py-2 text-[23px] font-semibold leading-[30px] shadow-sm transition-all",
+        isSolidZitline
+          ? "border border-white/35 bg-black/25 text-white"
+          : "border border-slate-200 dark:border-white/[0.1] bg-slate-100 text-slate-700 dark:bg-[#161824] dark:text-zinc-200 hover:border-primary/40 dark:hover:border-violet-500/40",
+      )}
+    >
       {icon}
       <span className="truncate">{children}</span>
     </span>

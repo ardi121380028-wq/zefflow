@@ -46,6 +46,7 @@ type Snapshot = {
   companyLogo?: string;
   companyName?: string;
   docCode?: string;
+  wallpaper?: string;
 };
 
 function computeNodeStats(nodes: AppNode[]): { stepCount: number; hasLanes: boolean } {
@@ -71,6 +72,7 @@ interface CanvasState {
   companyLogo: string;
   companyName: string;
   docCode: string;
+  wallpaper: string;
   nodes: AppNode[];
   edges: AppEdge[];
   stepCount: number;
@@ -85,7 +87,8 @@ interface CanvasState {
   past: Snapshot[];
   future: Snapshot[];
 
-  updateBranding: (b: { companyLogo?: string; companyName?: string; docCode?: string }) => void;
+  updateBranding: (b: { companyLogo?: string; companyName?: string; docCode?: string; wallpaper?: string }) => void;
+  setWallpaper: (wallpaper: string) => void;
   setDragging: (dragging: boolean) => void;
   setExporting: (exporting: boolean) => void;
   toggleDescriptions: () => void;
@@ -226,6 +229,7 @@ export function documentToFlow(doc: FlowDocument): Snapshot & { healed?: boolean
       companyLogo: doc.companyLogo ?? "",
       companyName: doc.companyName ?? "",
       docCode: doc.docCode ?? "",
+      wallpaper: doc.wallpaper ?? "default",
       healed: true,
     };
   }
@@ -237,6 +241,7 @@ export function documentToFlow(doc: FlowDocument): Snapshot & { healed?: boolean
     companyLogo: doc.companyLogo ?? "",
     companyName: doc.companyName ?? "",
     docCode: doc.docCode ?? "",
+    wallpaper: doc.wallpaper ?? "default",
     ...(expandedAbbreviations ? { healed: true } : {}),
   };
 }
@@ -249,6 +254,7 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     companyLogo: s.companyLogo,
     companyName: s.companyName,
     docCode: s.docCode,
+    wallpaper: s.wallpaper,
   });
 
   /** Terapkan perubahan konten: simpan history + tandai dirty + sinkronkan statistik O(N) hanya saat mutasi. */
@@ -275,6 +281,7 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
     companyLogo: "",
     companyName: "",
     docCode: "",
+    wallpaper: "default",
     nodes: [],
     edges: [],
     stepCount: 0,
@@ -304,11 +311,16 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
       if (get().showDescriptions !== showDescriptions) set({ showDescriptions });
     },
 
+    setWallpaper: (wallpaper) => {
+      mutate(() => ({ wallpaper }));
+    },
+
     updateBranding: (b) => {
       mutate((s) => ({
         companyLogo: b.companyLogo !== undefined ? b.companyLogo : s.companyLogo,
         companyName: b.companyName !== undefined ? b.companyName : s.companyName,
         docCode: b.docCode !== undefined ? b.docCode : s.docCode,
+        wallpaper: b.wallpaper !== undefined ? b.wallpaper : s.wallpaper,
       }));
     },
 
@@ -409,6 +421,7 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         companyLogo: prev.companyLogo ?? "",
         companyName: prev.companyName ?? "",
         docCode: prev.docCode ?? "",
+        wallpaper: prev.wallpaper ?? "default",
         past: s.past.slice(0, -1),
         future: [snapshot(s), ...s.future].slice(0, HISTORY_LIMIT),
         mutationTick: s.mutationTick + 1,
@@ -429,6 +442,7 @@ export const useCanvasStore = create<CanvasState>()((set, get) => {
         companyLogo: next.companyLogo ?? "",
         companyName: next.companyName ?? "",
         docCode: next.docCode ?? "",
+        wallpaper: next.wallpaper ?? "default",
         past: [...s.past, snapshot(s)].slice(-HISTORY_LIMIT),
         future: s.future.slice(1),
         mutationTick: s.mutationTick + 1,

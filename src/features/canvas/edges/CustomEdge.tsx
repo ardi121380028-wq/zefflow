@@ -34,6 +34,8 @@ function CustomEdgeImpl({
   });
 
   const isExporting = useCanvasStore((s) => s.isExporting);
+  const wallpaper = useCanvasStore((s) => s.wallpaper);
+  const isSolidZitline = wallpaper === "solid-zitline";
   const hideBadgeAtFarZoom = useStore((s) => s.transform[2] < 0.08);
   const labelText = typeof label === "string" ? label.trim() : "";
   const showLabel = Boolean(labelText) && (isExporting || selected || !hideBadgeAtFarZoom);
@@ -43,6 +45,9 @@ function CustomEdgeImpl({
   const badgeHeight = 50;
   const rx = badgeHeight / 2;
 
+  const defaultEdgeStroke = isSolidZitline ? "#1D4ED8" : "hsl(var(--edge-stroke))";
+  const selectedEdgeStroke = isSolidZitline ? "#DC2626" : "hsl(var(--primary))";
+
   return (
     <>
       <BaseEdge
@@ -50,8 +55,8 @@ function CustomEdgeImpl({
         path={edgePath}
         markerEnd={markerEnd}
         style={{
-          strokeWidth: selected ? 4.25 : 3,
-          stroke: selected ? "hsl(var(--primary))" : "hsl(var(--edge-stroke))",
+          strokeWidth: selected ? (isSolidZitline ? 4.5 : 4.25) : (isSolidZitline ? 3.5 : 3),
+          stroke: selected ? selectedEdgeStroke : defaultEdgeStroke,
           ...style,
         }}
       />

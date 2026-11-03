@@ -78,9 +78,11 @@ async function render(
   const width = bounds.width + PADDING * 2;
   const height = bounds.height + PADDING * 2;
 
-  const isLight = document.documentElement.classList.contains("light");
-  const bgColor = isLight ? "#FFFFFF" : "#08090C";
-  const fg = isLight ? "#0F172A" : "#F4F4F5";
+  const wallpaper = useCanvasStore.getState().wallpaper;
+  const isSolidZitline = wallpaper === "solid-zitline";
+  const isLight = isSolidZitline || document.documentElement.classList.contains("light");
+  const bgColor = isSolidZitline ? "#FFFFFF" : (isLight ? "#FFFFFF" : "#08090C");
+  const fg = isSolidZitline ? "#0B1F4A" : (isLight ? "#0F172A" : "#F4F4F5");
   const muted = isLight ? "#64748B" : "#8B8D98";
   const line = isLight ? "#E2E8F0" : "#23252D";
 

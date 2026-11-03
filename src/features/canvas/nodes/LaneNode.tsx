@@ -18,6 +18,15 @@ export function normalizeLaneTitle(rawTitle: string): string {
   return rawTitle;
 }
 
+const SOLID_HEADERS: Record<string, { bg: string; dot: string; text: string }> = {
+  rose: { bg: "bg-[#DC2626] text-white", dot: "bg-white", text: "text-white" },
+  amber: { bg: "bg-[#EA580C] text-white", dot: "bg-white", text: "text-white" },
+  violet: { bg: "bg-[#7E22CE] text-white", dot: "bg-white", text: "text-white" },
+  emerald: { bg: "bg-[#0284C7] text-white", dot: "bg-white", text: "text-white" },
+  sky: { bg: "bg-[#1E40AF] text-white", dot: "bg-white", text: "text-white" },
+  slate: { bg: "bg-[#0F172A] text-white", dot: "bg-white", text: "text-white" },
+};
+
 /**
  * Satu lane = satu divisi/departemen (Parent node di React Flow).
  * - horizontal: header di kiri, alur ke samping.
@@ -27,6 +36,11 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
   const readOnly = useCanvasStore((s) => s.readOnly);
   const selected = useCanvasStore((s) => s.selectedId === id);
   const vertical = useCanvasStore((s) => s.orientation === "vertical");
+  const wallpaper = useCanvasStore((s) => s.wallpaper);
+  const isSolidZitline = wallpaper === "solid-zitline";
+  const laneIndex = parseInt(id.replace("lane_", ""), 10) || 0;
+  const solidBand = laneIndex % 2 === 0 ? "bg-[#D6E8FA] border-b-2 border-white" : "bg-[#BDDCF8] border-b-2 border-white";
+  const solidHeader = SOLID_HEADERS[data.color] ?? SOLID_HEADERS.rose!;
   const select = useCanvasStore((s) => s.select);
   const { moveLane, removeLane, resizeLane } = useCanvasStore.getState();
   const style = LANE_STYLES[data.color];
@@ -40,13 +54,13 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
     <>
       <div className="min-w-0">
         <div className="flex items-start gap-3">
-          <span className={cn("mt-2.5 h-5 w-5 shrink-0 rounded-full", style.dot)} />
-          <p className="line-clamp-2 break-words font-display text-[36px] font-extrabold leading-[41px] tracking-tight text-foreground">
+          <span className={cn("mt-2.5 h-5 w-5 shrink-0 rounded-full", isSolidZitline ? "bg-white shadow-sm" : style.dot)} />
+          <p className={cn("line-clamp-2 break-words font-display text-[36px] font-extrabold leading-[41px] tracking-tight", isSolidZitline ? "text-white uppercase tracking-wider font-black drop-shadow-sm" : "text-foreground")}>
             {displayTitle}
           </p>
         </div>
         {data.division && (
-          <p className="mt-2.5 line-clamp-2 font-mono text-[21px] leading-[27px] font-bold uppercase tracking-wider text-muted-foreground">
+          <p className={cn("mt-2.5 line-clamp-2 font-mono text-[21px] leading-[27px] font-bold uppercase tracking-wider", isSolidZitline ? "text-white/90 font-extrabold" : "text-muted-foreground")}>
             {data.division}
           </p>
         )}
@@ -57,7 +71,10 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
   if (vertical) {
     return (
       <div
-        className={cn("group relative flex h-full w-full flex-col overflow-visible border-r border-border/70 transition-colors", style.band)}
+        className={cn(
+          "group relative flex h-full w-full flex-col overflow-visible border-r border-border/70 transition-colors",
+          isSolidZitline ? (laneIndex % 2 === 0 ? "bg-[#D6E8FA] border-r-2 border-white" : "bg-[#BDDCF8] border-r-2 border-white") : style.band,
+        )}
         style={{ width, height }}
       >
         {/* Header kolom (atas) */}
@@ -69,12 +86,12 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
           className={cn(
             "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-center overflow-hidden px-7 pb-4 pt-6 outline-none transition-colors duration-150",
             selected && "bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary))]",
-            style.headerV,
+            isSolidZitline ? solidHeader.bg : style.headerV,
           )}
           style={{ height: LANE_V_HEADER_HEIGHT }}
         >
           {/* Aksen warna solid di sisi atas */}
-          <div className={cn("absolute left-0 right-0 top-0 h-2.5", style.accentBar)} />
+          {!isSolidZitline && <div className={cn("absolute left-0 right-0 top-0 h-2.5", style.accentBar)} />}
           {headerContent}
 
           {!readOnly && (
@@ -117,7 +134,10 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
 
   return (
     <div
-      className={cn("group relative flex h-full w-full overflow-visible border-b border-border/60 transition-colors", style.band)}
+      className={cn(
+        "group relative flex h-full w-full overflow-visible border-b border-border/60 transition-colors",
+        isSolidZitline ? solidBand : style.band,
+      )}
       style={{ width, height }}
     >
       {/* Header lane (kiri) */}
@@ -129,12 +149,12 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
         className={cn(
           "pointer-events-auto relative flex shrink-0 cursor-pointer flex-col justify-between overflow-hidden py-6 pl-7 pr-5 outline-none transition-colors duration-150",
           selected && "bg-primary/10 shadow-[inset_0_0_0_2px_hsl(var(--primary))]",
-          style.header,
+          isSolidZitline ? solidHeader.bg : style.header,
         )}
         style={{ width: LANE_HEADER_WIDTH }}
       >
         {/* Aksen warna solid di sisi kiri */}
-        <div className={cn("absolute bottom-0 left-0 top-0 w-2.5", style.accentBar)} />
+        {!isSolidZitline && <div className={cn("absolute bottom-0 left-0 top-0 w-2.5", style.accentBar)} />}
         {headerContent}
 
         {!readOnly && (

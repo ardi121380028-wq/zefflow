@@ -34,6 +34,7 @@ export function useAutosave() {
           companyLogo: s.companyLogo,
           companyName: s.companyName,
           docCode: s.docCode,
+          wallpaper: s.wallpaper,
         }),
         expectedVersion: s.version,
       });

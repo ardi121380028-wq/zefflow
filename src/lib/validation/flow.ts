@@ -71,6 +71,7 @@ export const flowDocumentSchema = z
     companyLogo: z.string().max(1000000).optional(),
     companyName: z.string().max(120).optional(),
     docCode: z.string().max(60).optional(),
+    wallpaper: z.string().max(32).optional(),
     nodes: z
       .array(
         z.discriminatedUnion("type", [
@@ -119,6 +120,7 @@ export const EMPTY_DOCUMENT: FlowDocument = {
   companyLogo: "",
   companyName: "",
   docCode: "",
+  wallpaper: "default",
   nodes: [],
   edges: [],
 };

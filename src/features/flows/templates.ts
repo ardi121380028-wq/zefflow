@@ -14,6 +14,7 @@ export interface FlowTemplate {
   companyName?: string;
   docCode?: string;
   companyLogo?: string;
+  wallpaper?: string;
   lanes: { title: string; division: string; color: LaneColor }[];
   steps: StepSpec[];
   links: LinkSpec[];
@@ -74,25 +75,26 @@ export const TEMPLATES: FlowTemplate[] = [
     companyName: "ZITLINE Internet Service Provider",
     companyLogo: "/brand/zitline-logo.svg",
     docCode: "SOP-RETAIL-01",
+    wallpaper: "solid-zitline",
     lanes: [
       { title: "Customer", division: "Pelanggan Residensial", color: "rose" },
       { title: "Sales", division: "Tim Penjualan / Pemasaran", color: "amber" },
-      { title: "Technical Support", division: "Teknisi Lapangan (Field Engineer)", color: "emerald" },
       { title: "Customer Service", division: "Customer Service & Helpdesk", color: "violet" },
-      { title: "Finance", division: "Keuangan & Billing", color: "slate" },
+      { title: "Technical Support", division: "Teknisi Lapangan (Field Engineer)", color: "emerald" },
       { title: "NOC", division: "Network Operations Center", color: "sky" },
+      { title: "Finance", division: "Keuangan & Billing", color: "slate" },
     ],
     steps: [
       { id: "r1", lane: 0, col: 0, type: "step", title: "Registrasi Pelanggan Baru", description: "Pelanggan mengajukan pendaftaran pasang baru dan melengkapi data KTP serta share location rumah.", output: "Formulir Registrasi & KTP", owner: "Pelanggan" },
       { id: "r2", lane: 1, col: 0, type: "step", title: "Input Waiting List CRM", description: "Sales memvalidasi jangkauan ODP dan mencatat data pelanggan ke sistem CRM serta antrean instalasi.", output: "Tiket Waiting List CRM", owner: "Sales Officer" },
-      { id: "r3", lane: 2, col: 0, type: "step", title: "Penjadwalan Kunjungan", description: "Technical Support mengonfirmasi kesediaan waktu pelanggan dan mengatur jadwal teknisi lapangan.", output: "Jadwal Kunjungan Teknisi", owner: "Technical Support" },
-      { id: "r4", lane: 2, col: 1, type: "step", title: "Instalasi Drop Core & ONT", description: "Teknisi lapangan menarik kabel fiber optik drop core dari ODP ke rumah dan memasang perangkat ONT/modem.", output: "Kabel Drop Core & ONT Terpasang", owner: "Teknisi Lapangan" },
-      { id: "r5", lane: 3, col: 2, type: "step", title: "Create Customer ID", description: "Customer Service menerbitkan Customer ID resmi di sistem billing & CRM berdasarkan barcode serial number ONT terpasang.", output: "Customer ID Resmi", owner: "Customer Service" },
-      { id: "r6", lane: 4, col: 2, type: "step", title: "Penerbitan Tagihan", description: "Bagian Finance menerbitkan invoice pembayaran biaya registrasi/instalasi dan iuran paket internet pertama.", output: "Invoice Tagihan", owner: "Finance Billing" },
-      { id: "r7", lane: 5, col: 3, type: "step", title: "Aktivasi Port & PPPoE", description: "NOC Engineer mendaftarkan serial number ONT di OLT serta mengaktifkan profil akun PPPoE dan alokasi IP.", output: "Port OLT & PPPoE Aktif", owner: "NOC Engineer" },
-      { id: "r8", lane: 2, col: 3, type: "step", title: "Cek Redaman & Koneksi", description: "Teknisi mengukur optical loss (redaman optik) dan melakukan uji kecepatan serta kestabilan internet di lokasi.", output: "Hasil Redaman & Speedtest OK", owner: "Teknisi Lapangan" },
-      { id: "r9", lane: 2, col: 4, type: "step", title: "Berita Acara (BAST)", description: "Teknisi dan pelanggan bersama-sama menandatangani Berita Acara Serah Terima (BAST) pekerjaan instalasi.", output: "BAST Fisik / Digital", owner: "Teknisi & Pelanggan" },
-      { id: "r10", lane: 3, col: 4, type: "step", title: "Arsip Dokumen BAST", description: "Customer Service mengarsipkan salinan dokumen BAST dan memperbarui status layanan pelanggan menjadi Active.", output: "Dokumen BAST Terarsip", owner: "Customer Service" },
+      { id: "r3", lane: 3, col: 0, type: "step", title: "Penjadwalan Kunjungan", description: "Technical Support mengonfirmasi kesediaan waktu pelanggan dan mengatur jadwal teknisi lapangan.", output: "Jadwal Kunjungan Teknisi", owner: "Technical Support" },
+      { id: "r4", lane: 3, col: 1, type: "step", title: "Instalasi Drop Core & ONT", description: "Teknisi lapangan menarik kabel fiber optik drop core dari ODP ke rumah dan memasang perangkat ONT/modem.", output: "Kabel Drop Core & ONT Terpasang", owner: "Teknisi Lapangan" },
+      { id: "r5", lane: 2, col: 2, type: "step", title: "Create Customer ID", description: "Customer Service menerbitkan Customer ID resmi di sistem billing & CRM berdasarkan barcode serial number ONT terpasang.", output: "Customer ID Resmi", owner: "Customer Service" },
+      { id: "r6", lane: 5, col: 2, type: "step", title: "Penerbitan Tagihan", description: "Bagian Finance menerbitkan invoice pembayaran biaya registrasi/instalasi dan iuran paket internet pertama.", output: "Invoice Tagihan", owner: "Finance Billing" },
+      { id: "r7", lane: 4, col: 3, type: "step", title: "Aktivasi Port & PPPoE", description: "NOC Engineer mendaftarkan serial number ONT di OLT serta mengaktifkan profil akun PPPoE dan alokasi IP.", output: "Port OLT & PPPoE Aktif", owner: "NOC Engineer" },
+      { id: "r8", lane: 3, col: 3, type: "step", title: "Cek Redaman & Koneksi", description: "Teknisi mengukur optical loss (redaman optik) dan melakukan uji kecepatan serta kestabilan internet di lokasi.", output: "Hasil Redaman & Speedtest OK", owner: "Teknisi Lapangan" },
+      { id: "r9", lane: 3, col: 4, type: "step", title: "Berita Acara (BAST)", description: "Teknisi dan pelanggan bersama-sama menandatangani Berita Acara Serah Terima (BAST) pekerjaan instalasi.", output: "BAST Fisik / Digital", owner: "Teknisi & Pelanggan" },
+      { id: "r10", lane: 2, col: 4, type: "step", title: "Arsip Dokumen BAST", description: "Customer Service mengarsipkan salinan dokumen BAST dan memperbarui status layanan pelanggan menjadi Active.", output: "Dokumen BAST Terarsip", owner: "Customer Service" },
       { id: "r11", lane: 0, col: 4, type: "step", title: "Serah Terima Kredensial", description: "Customer Service menyerahkan informasi akun login pelanggan, kredensial WiFi, dan nomor kontak helpdesk resmi.", output: "Kredensial & Panduan Layanan", owner: "Customer Service" },
       { id: "r12", lane: 0, col: 5, type: "terminal", title: "Done (Internet Aktif)", description: "Layanan internet FTTH resmi beroperasi penuh dan siap dinikmati pelanggan.", output: "Layanan Internet Aktif", owner: "Pelanggan" },
     ],
@@ -100,12 +102,12 @@ export const TEMPLATES: FlowTemplate[] = [
       ["r1", "r2", undefined, "b", "t"],
       ["r2", "r3", undefined, "b", "t"],
       ["r3", "r4", undefined, "r", "l"],
-      ["r4", "r5", undefined, "r", "l"],
+      ["r4", "r5", undefined, "t", "l"],
       ["r5", "r6", undefined, "b", "t"],
-      ["r6", "r7", undefined, "r", "l"],
+      ["r6", "r7", undefined, "r", "b"],
       ["r7", "r8", undefined, "t", "b"],
       ["r8", "r9", undefined, "r", "l"],
-      ["r9", "r10", undefined, "b", "t"],
+      ["r9", "r10", undefined, "t", "b"],
       ["r10", "r11", undefined, "t", "b"],
       ["r11", "r12", undefined, "r", "l"],
     ],
@@ -472,6 +474,7 @@ function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vert
     companyLogo: t.companyLogo ?? "",
     companyName: t.companyName ?? "",
     docCode: t.docCode ?? "",
+    wallpaper: t.wallpaper ?? "default",
   };
   if (orientation === "horizontal") return { version: 1, orientation, ...horizontal } as FlowDocument;
 
@@ -482,6 +485,7 @@ function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vert
     companyLogo: t.companyLogo ?? "",
     companyName: t.companyName ?? "",
     docCode: t.docCode ?? "",
+    wallpaper: t.wallpaper ?? "default",
     ...converted,
   } as FlowDocument;
 }

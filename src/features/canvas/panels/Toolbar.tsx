@@ -11,6 +11,7 @@ import {
   GitBranch,
   Maximize2,
   Network,
+  Paintbrush,
   Plus,
   Radio,
   Redo2,
@@ -39,7 +40,8 @@ export function Toolbar() {
   const canRedo = useCanvasStore((s) => s.future.length > 0);
   const orientation = useCanvasStore((s) => s.orientation);
   const showDescriptions = useCanvasStore((s) => s.showDescriptions);
-  const { addLane, addStep, undo, redo, widenLanes, setOrientation, tidyLayout, toggleDescriptions } =
+  const wallpaper = useCanvasStore((s) => s.wallpaper);
+  const { addLane, addStep, undo, redo, widenLanes, setOrientation, tidyLayout, toggleDescriptions, setWallpaper } =
     useCanvasStore.getState();
   const vertical = orientation === "vertical";
 
@@ -123,6 +125,24 @@ export function Toolbar() {
           <EyeOff className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
         )}
         <span>Deskripsi</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          const next = wallpaper === "solid-zitline" ? "default" : "solid-zitline";
+          setWallpaper(next);
+        }}
+        aria-pressed={wallpaper === "solid-zitline"}
+        title={wallpaper === "solid-zitline" ? "Kembali ke Tema Modern Studio" : "Ganti ke Tema Solid Cetak (Kontras Tinggi seperti Contoh)"}
+        className={cn(
+          "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 sm:px-3 text-xs font-semibold transition-all duration-150 active:scale-95",
+          wallpaper === "solid-zitline"
+            ? "bg-sky-500/20 text-sky-700 dark:bg-sky-500/30 dark:text-sky-200 ring-1 ring-sky-500/50 shadow-sm"
+            : "text-foreground/80 dark:text-zinc-300 hover:bg-muted dark:hover:bg-white/[0.08] hover:text-foreground dark:hover:text-white",
+        )}
+      >
+        <Paintbrush className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+        <span>{wallpaper === "solid-zitline" ? "Solid Cetak" : "Wallpaper"}</span>
       </button>
       <Divider />
       <PaletteTool type="step" icon={<Square className="h-3.5 w-3.5 text-sky-500" />} label="Langkah" disabled={!hasLanes} onAdd={() => addStep("step")} />

@@ -402,6 +402,11 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
     inQueue.add(first.node.id);
   }
 
+  const edgeByKey = new Map<string, E>();
+  for (const edge of edges) {
+    edgeByKey.set(`${edge.source}->${edge.target}`, edge);
+  }
+
   // Traversal topological O(N + E) murni dengan pointer head & Set (tanpa shift/includes O(N^2))
   const maxIterations = Math.max(10, infos.length * 4);
   let iterations = 0;
@@ -414,12 +419,64 @@ export function convertLayout<N extends LayoutNodeLike, E extends LayoutEdgeLike
     const nexts = forwardAdj.get(currId) ?? [];
     for (const nextId of nexts) {
       const existingRank = ranks.get(nextId);
-      const newRank = Math.max(existingRank ?? 0, currRank + 1);
+      const edge = edgeByKey.get(`${currId}->${nextId}`);
+      const infoCurr = infos.find((n) => n.node.id === currId);
+      const infoNext = infos.find((n) => n.node.id === nextId);
+
+      // Pada orientasi horizontal, koneksi vertikal antar lane berbeda (b->t atau t->b)
+      // atau node yang awalnya sudah sejajar di kolom yang sama tidak perlu dipaksa maju kolom (+1).
+      let stepIncrement = 1;
+      if (to === "horizontal" && lanes.length > 0) {
+        const isDiffLane = Boolean(infoCurr && infoNext && infoCurr.laneId && infoNext.laneId && infoCurr.laneId !== infoNext.laneId);
+        const isVerticalEdge = Boolean(edge && ((edge.sourceHandle === "b" && edge.targetHandle === "t") || (edge.sourceHandle === "t" && edge.targetHandle === "b")));
+        const isOriginalSameCol = Boolean(from === "horizontal" && infoCurr && infoNext && Math.abs(infoCurr.cx - infoNext.cx) < COL_GAP * 0.45);
+        if (isDiffLane && (isVerticalEdge || isOriginalSameCol)) {
+          stepIncrement = 0;
+        }
+      }
+
+      const newRank = Math.max(existingRank ?? 0, currRank + stepIncrement);
       if (existingRank === undefined || newRank > existingRank) {
         ranks.set(nextId, newRank);
         if (!inQueue.has(nextId)) {
           queue.push(nextId);
           inQueue.add(nextId);
+        }
+      }
+    }
+  }
+
+  // Mencegah tabrakan 2 node di lane yang sama pada orientasi horizontal
+  if (to === "horizontal" && lanes.length > 0) {
+    let changed = true;
+    let guard = 0;
+    while (changed && guard++ < 20) {
+      changed = false;
+      const occupied = new Set<string>();
+      const sortedByRank = [...infos].sort((a, b) => (ranks.get(a.node.id) ?? 0) - (ranks.get(b.node.id) ?? 0));
+      for (const it of sortedByRank) {
+        if (!it.laneId) continue;
+        const r = ranks.get(it.node.id) ?? 0;
+        const key = `${it.laneId}:${r}`;
+        if (occupied.has(key)) {
+          changed = true;
+          ranks.set(it.node.id, r + 1);
+          const queueShift = [it.node.id];
+          while (queueShift.length > 0) {
+            const cur = queueShift.shift()!;
+            const curR = ranks.get(cur)!;
+            const downstream = forwardAdj.get(cur) ?? [];
+            for (const dn of downstream) {
+              const dnR = ranks.get(dn) ?? 0;
+              if (dnR <= curR) {
+                ranks.set(dn, curR + 1);
+                queueShift.push(dn);
+              }
+            }
+          }
+          break;
+        } else {
+          occupied.add(key);
         }
       }
     }
@@ -672,7 +729,7 @@ export function serializeDocument(
   nodes: AppNode[],
   edges: AppEdge[],
   orientation: Orientation,
-  branding?: { companyLogo?: string; companyName?: string; docCode?: string },
+  branding?: { companyLogo?: string; companyName?: string; docCode?: string; wallpaper?: string },
 ) {
   return {
     version: 1 as const,
@@ -680,6 +737,7 @@ export function serializeDocument(
     ...(branding?.companyLogo ? { companyLogo: branding.companyLogo } : {}),
     ...(branding?.companyName ? { companyName: branding.companyName } : {}),
     ...(branding?.docCode ? { docCode: branding.docCode } : {}),
+    ...(branding?.wallpaper ? { wallpaper: branding.wallpaper } : {}),
     nodes: nodes.map((n) => ({
       id: n.id,
       type: n.type,

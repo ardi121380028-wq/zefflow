@@ -70,6 +70,8 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
   const edges = useCanvasStore((s) => s.edges);
   const hydrated = useCanvasStore((s) => s.flowId === flowId);
   const orientation = useCanvasStore((s) => s.orientation);
+  const wallpaper = useCanvasStore((s) => s.wallpaper);
+  const isSolidZitline = wallpaper === "solid-zitline";
   const isExporting = useCanvasStore((s) => s.isExporting);
   const [forceMiniMap, setForceMiniMap] = useState(false);
   const { screenToFlowPosition, fitView, zoomIn, zoomOut, getZoom, zoomTo } = useReactFlow();
@@ -283,13 +285,13 @@ function CanvasInner({ flowId, initialDocument, initialVersion, kind, readOnly =
       selectionOnDrag={false}
       proOptions={{ hideAttribution: true }}
       colorMode={theme}
-      className={cn("!bg-[hsl(var(--canvas-bg))]", theme === "dark" ? "dark" : "light")}
+      className={cn(isSolidZitline ? "!bg-[#F0F7FF]" : "!bg-[hsl(var(--canvas-bg))]", theme === "dark" ? "dark" : "light")}
     >
       <Background
-        variant={BackgroundVariant.Dots}
-        gap={28}
-        size={1.6}
-        color={theme === "dark" ? "rgba(255, 255, 255, 0.09)" : "rgba(15, 23, 42, 0.12)"}
+        variant={isSolidZitline ? BackgroundVariant.Lines : BackgroundVariant.Dots}
+        gap={isSolidZitline ? 36 : 28}
+        size={isSolidZitline ? 1 : 1.6}
+        color={isSolidZitline ? "rgba(147, 197, 253, 0.35)" : (theme === "dark" ? "rgba(255, 255, 255, 0.09)" : "rgba(15, 23, 42, 0.12)")}
       />
       <Controls
         showInteractive={false}
