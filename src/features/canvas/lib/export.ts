@@ -6,7 +6,7 @@ import { LANE_DEFAULT_HEIGHT, LANE_DEFAULT_WIDTH, LANE_V_DEFAULT_LENGTH, LANE_V_
 
 export type ExportFormat = "png" | "pdf";
 
-const PADDING = 80;
+const PADDING = 36;
 const MAX_SIDE = 16000;
 const MAX_PIXELS = 48_000_000;
 
@@ -132,7 +132,7 @@ async function render(
   });
 
   // Banner judul beresolusi proporsional (skala 3x lebih besar untuk presentasi & cetak eksekutif).
-  const bannerH = Math.max(340, Math.round(Math.min(width, 7000) * 0.088));
+  const bannerH = Math.max(360, Math.round(Math.min(width, 7000) * 0.092));
   const totalH = height + bannerH;
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(width * pixelRatio);
@@ -144,26 +144,38 @@ async function render(
   ctx.fillStyle = bgColor;
   ctx.fillRect(0, 0, width, totalH);
 
-  const family = getComputedStyle(document.body).fontFamily || "system-ui, sans-serif";
-  // Judul 3x lipat lebih besar (~95px - 115px) & deskripsi bawah 3x lipat (~42px - 48px)
-  const titleSize = Math.max(90, Math.round(bannerH * 0.32));
-  const subSize = Math.max(38, Math.round(titleSize * 0.42));
+  const family =
+    "'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+  // Judul modern proporsional (~90px - 110px), font weight 650 (modern semi-bold, tidak terlalu bold tebal), letter-spacing -1.5px rapat
+  const titleSize = Math.max(88, Math.round(bannerH * 0.30));
+  const subSize = Math.max(36, Math.round(titleSize * 0.40));
 
   // Tentukan alokasi lebar logo kanan agar teks judul tidak menabrak
-  // Skala logo 3x lipat lebih besar: tinggi hingga 250px (proporsi natural), lebar hingga 850px
-  const maxLogoH = Math.min(250, Math.round(bannerH * 0.72));
-  const maxLogoW = Math.round(bannerH * 3.2);
-  const reservedLogoRight = Math.max(650, maxLogoW + 60);
+  // Skala logo Zitline diperbesar ekstra (~280px tinggi, ~920px lebar) agar tampil gagah dan terbaca jelas
+  const maxLogoH = Math.min(285, Math.round(bannerH * 0.78));
+  const maxLogoW = Math.round(bannerH * 3.6);
+  const reservedLogoRight = Math.max(780, maxLogoW + 60);
 
   ctx.textBaseline = "middle";
   ctx.fillStyle = fg;
-  ctx.font = `800 ${titleSize}px ${family}`;
+  if ("letterSpacing" in ctx) {
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "-1.5px";
+  }
+  ctx.font = `650 ${titleSize}px ${family}`;
   ctx.fillText(title || "Diagram SOP", PADDING, bannerH * 0.38, width - PADDING * 2 - reservedLogoRight);
 
   ctx.fillStyle = muted;
-  ctx.font = `600 ${subSize}px ${family}`;
+  if ("letterSpacing" in ctx) {
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "-0.5px";
+  }
+  ctx.font = `500 ${subSize}px ${family}`;
   const date = new Date().toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" });
   ctx.fillText(`Dibuat dengan Zefflow  ·  ${date}`, PADDING, bannerH * 0.74, width - PADDING * 2 - reservedLogoRight);
+
+  // Reset letter spacing untuk rendering berikutnya
+  if ("letterSpacing" in ctx) {
+    (ctx as unknown as { letterSpacing: string }).letterSpacing = "0px";
+  }
 
   // Gambar Logo dan Identitas Perusahaan di sisi kanan banner (skala 3x lebih besar)
   if (branding?.companyLogo) {
@@ -187,17 +199,7 @@ async function render(
         const logoX = width - PADDING - logoW;
         const logoY = Math.round((bannerH - logoH) / 2);
         ctx.drawImage(logoImg, logoX, logoY, logoW, logoH);
-
-        if (branding.companyName || branding.docCode) {
-          ctx.textAlign = "right";
-          ctx.textBaseline = "middle";
-          ctx.font = `600 ${Math.round(subSize * 0.8)}px ${family}`;
-          ctx.fillStyle = muted;
-          if (branding.docCode) {
-            ctx.fillText(branding.docCode, width - PADDING, bannerH - 20);
-          }
-          ctx.textAlign = "left";
-        }
+        // Catatan: Teks kode dokumen (misal SOP-RETAIL-01) sengaja dihilangkan sesuai permintaan agar kop banner bersih
       }
     } catch {
       // Abaikan jika gambar gagal

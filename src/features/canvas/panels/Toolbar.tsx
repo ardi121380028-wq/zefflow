@@ -129,20 +129,20 @@ export function Toolbar() {
       <button
         type="button"
         onClick={() => {
-          const next = wallpaper === "solid-zitline" ? "default" : "solid-zitline";
+          const next = wallpaper === "solid-zitline" ? "modern-glass" : "solid-zitline";
           setWallpaper(next);
         }}
         aria-pressed={wallpaper === "solid-zitline"}
-        title={wallpaper === "solid-zitline" ? "Kembali ke Tema Modern Studio" : "Ganti ke Tema Solid Cetak (Kontras Tinggi seperti Contoh)"}
+        title={wallpaper === "solid-zitline" ? "Ganti ke Tema Modern Glass Gradient" : "Ganti ke Tema Solid Cetak (Kontras Tinggi)"}
         className={cn(
           "flex h-8 shrink-0 items-center gap-1.5 rounded-full px-2.5 sm:px-3 text-xs font-semibold transition-all duration-150 active:scale-95",
           wallpaper === "solid-zitline"
-            ? "bg-sky-500/20 text-sky-700 dark:bg-sky-500/30 dark:text-sky-200 ring-1 ring-sky-500/50 shadow-sm"
-            : "text-foreground/80 dark:text-zinc-300 hover:bg-muted dark:hover:bg-white/[0.08] hover:text-foreground dark:hover:text-white",
+            ? "bg-red-500/15 text-red-700 dark:bg-red-500/25 dark:text-red-200 ring-1 ring-red-500/40 shadow-sm"
+            : "bg-sky-500/15 text-sky-700 dark:bg-sky-500/25 dark:text-sky-200 ring-1 ring-sky-500/40 shadow-sm",
         )}
       >
         <Paintbrush className="h-3.5 w-3.5 text-sky-500 shrink-0" />
-        <span>{wallpaper === "solid-zitline" ? "Solid Cetak" : "Wallpaper"}</span>
+        <span>{wallpaper === "solid-zitline" ? "Solid Cetak" : "Modern Glass"}</span>
       </button>
       <Divider />
       <PaletteTool type="step" icon={<Square className="h-3.5 w-3.5 text-sky-500" />} label="Langkah" disabled={!hasLanes} onAdd={() => addStep("step")} />
