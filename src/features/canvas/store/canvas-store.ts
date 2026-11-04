@@ -152,6 +152,11 @@ const LEGACY_LANE_TITLE_MAP: Record<string, string> = {
   "CS & Finance": "Customer Service & Finance",
   "CS / Finance": "Customer Service & Finance",
   "CS/Finance": "Customer Service & Finance",
+  "NOC": "Network Operation Center",
+  "noc": "Network Operation Center",
+  "Noc": "Network Operation Center",
+  "N.O.C.": "Network Operation Center",
+  "N.O.C": "Network Operation Center",
 };
 
 /** Ubah dokumen tersimpan -> node/edge React Flow. */
@@ -163,15 +168,24 @@ export function documentToFlow(doc: FlowDocument): Snapshot & { healed?: boolean
     if (n.type === "lane") {
       const normalizedTitle = LEGACY_LANE_TITLE_MAP[n.data.title] ?? n.data.title;
       if (normalizedTitle !== n.data.title) expandedAbbreviations = true;
-      const normalizedData = normalizedTitle !== n.data.title ? { ...n.data, title: normalizedTitle } : n.data;
+      let laneData = normalizedTitle !== n.data.title ? { ...n.data, title: normalizedTitle } : n.data;
+      if (
+        laneData.division &&
+        (laneData.division.trim().toLowerCase() === "network operations center" ||
+          laneData.division.trim().toLowerCase() === "network operation center" ||
+          laneData.division.trim().toLowerCase() === "noc")
+      ) {
+        laneData = { ...laneData, division: "Monitoring & Core Network" };
+        expandedAbbreviations = true;
+      }
       const base = createLaneNode(
         n.id,
         normalizedTitle,
-        n.data.color,
+        laneData.color,
         n.width ?? (vertical ? LANE_V_WIDTH : LANE_DEFAULT_WIDTH),
         n.height ?? (vertical ? LANE_V_DEFAULT_LENGTH : LANE_DEFAULT_HEIGHT),
       );
-      return { ...base, position: n.position, data: normalizedData };
+      return { ...base, position: n.position, data: laneData };
     }
     const est = estimateNodeSize(n.type, n.data);
     return {

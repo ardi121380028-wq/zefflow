@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import type { StepNodeType } from "../types";
 import { DECISION_H, DECISION_W, STEP_WIDTH, TERMINAL_H, TERMINAL_MIN_W } from "../lib/layout";
 import { useCanvasStore } from "../store/canvas-store";
+import { normalizeLaneTitle } from "./LaneNode";
 
 /**
  * Handle koneksi dengan deteksi klik vs drag:
@@ -297,17 +298,27 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
       <NodeHandles nodeId={id} />
 
       {/* Aksen visual atas kartu (Glass styling dengan lane indicator) */}
-      {isSolidZitline && (
-        <div className="flex items-center gap-2 mb-3">
-          <div className={cn("h-2.5 w-14 rounded-full", solidAccent.bar)} />
-          <span className="font-mono text-[16px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-            {parentLane?.data.title || "Step"}
+      {parentLane?.data.title && (
+        <div className="flex items-center gap-2.5 mb-3.5">
+          <div className={cn("h-3.5 w-16 rounded-full shrink-0", solidAccent.bar)} />
+          <span
+            className={cn(
+              "font-mono text-[21px] font-extrabold uppercase tracking-wider",
+              isSolidZitline ? "text-slate-700 dark:text-slate-200" : solidAccent.text,
+            )}
+          >
+            {normalizeLaneTitle(parentLane.data.title)}
           </span>
         </div>
       )}
 
       <div className="flex items-start justify-between gap-3">
-        <p className={cn("font-sans text-[31px] font-semibold tracking-[-0.015em] leading-[39px] flex-1", isSolidZitline ? "text-slate-900 dark:text-white" : "text-foreground dark:text-white")}>
+        <p
+          className={cn(
+            "font-sans text-[36px] font-bold tracking-tight leading-[44px] flex-1",
+            isSolidZitline ? "text-slate-950 dark:text-white" : "text-foreground dark:text-white",
+          )}
+        >
           {data.title || "Tanpa judul"}
         </p>
         {data.description && !isExporting && (
@@ -319,32 +330,37 @@ function StepNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
             }}
             title={isDescExpanded ? "Sembunyikan detail deskripsi" : "Tampilkan detail deskripsi"}
             className={cn(
-              "nodrag nopan shrink-0 mt-0.5 grid h-9 w-9 place-items-center rounded-xl border transition-colors",
+              "nodrag nopan shrink-0 mt-0.5 grid h-10 w-10 place-items-center rounded-xl border transition-colors",
               isDescExpanded
                 ? (isSolidZitline ? "border-blue-300 bg-blue-50 text-blue-700 dark:border-blue-700 dark:bg-blue-950/40 dark:text-blue-300" : "border-primary/40 bg-primary/10 text-primary")
                 : (isSolidZitline ? "border-slate-200 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300" : "border-border/80 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"),
             )}
           >
-            {isDescExpanded ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+            {isDescExpanded ? <ChevronUp className="h-6 w-6" /> : <ChevronDown className="h-6 w-6" />}
           </button>
         )}
       </div>
 
       {data.description && (isDescExpanded || isExporting) && (
-        <p className={cn("mt-3 line-clamp-4 text-[23px] leading-[32px] font-normal animate-in fade-in duration-200", isSolidZitline ? "text-slate-600 dark:text-slate-300" : "text-muted-foreground dark:text-zinc-300")}>
+        <p
+          className={cn(
+            "mt-3 line-clamp-4 text-[24px] leading-[34px] font-normal animate-in fade-in duration-200",
+            isSolidZitline ? "text-slate-600 dark:text-slate-300" : "text-muted-foreground dark:text-zinc-300",
+          )}
+        >
           {data.description}
         </p>
       )}
 
       {(data.owner || data.output) && (
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mt-4 flex flex-wrap gap-2.5">
           {data.owner && (
-            <Chip icon={<User2 className={cn("h-5 w-5 shrink-0", isSolidZitline ? "text-slate-500 dark:text-slate-400" : "text-sky-500")} />} isSolidZitline={isSolidZitline}>
+            <Chip icon={<User2 className={cn("h-6 w-6 shrink-0", isSolidZitline ? "text-slate-500 dark:text-slate-400" : "text-sky-500")} />} isSolidZitline={isSolidZitline}>
               {data.owner}
             </Chip>
           )}
           {data.output && (
-            <Chip icon={<FileOutput className={cn("h-5 w-5 shrink-0", isSolidZitline ? "text-blue-600 dark:text-blue-400" : "text-emerald-500")} />} isSolidZitline={isSolidZitline} isOutput={isSolidZitline}>
+            <Chip icon={<FileOutput className={cn("h-6 w-6 shrink-0", isSolidZitline ? "text-blue-600 dark:text-blue-400" : "text-emerald-500")} />} isSolidZitline={isSolidZitline} isOutput={isSolidZitline}>
               {data.output}
             </Chip>
           )}
@@ -408,7 +424,7 @@ function DecisionNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
         <span className="mb-2.5 grid h-10 w-10 place-items-center rounded-xl border border-amber-500/40 bg-gradient-to-b from-amber-400/25 to-amber-600/15 text-amber-600 dark:text-amber-400 shadow-[inset_0_1px_1px_rgba(255,255,255,0.3),0_0_14px_rgba(245,158,11,0.25)]">
           <GitBranch className="h-5 w-5" />
         </span>
-        <p className="font-sans text-[26px] font-semibold tracking-tight text-[var(--diamond-text)] leading-[33px]">
+        <p className="font-sans text-[29px] font-bold tracking-tight text-[var(--diamond-text)] leading-[37px]">
           {data.title || "Keputusan?"}
         </p>
       </div>
@@ -433,7 +449,7 @@ function TerminalNodeImpl({ id, data, selected }: NodeProps<StepNodeType>) {
     >
       <NodeHandles nodeId={id} />
       <span className={cn("h-5 w-5 rounded-full shrink-0", isSolidZitline ? "bg-white shadow-[0_0_12px_rgba(255,255,255,0.9)]" : "bg-violet-500 shadow-[0_0_14px_#a78bfa]")} />
-      <p className="text-[29px] leading-[36px] font-bold tracking-tight text-center">{data.title || "Mulai / Selesai"}</p>
+      <p className="text-[34px] leading-[42px] font-extrabold tracking-tight text-center">{data.title || "Mulai / Selesai"}</p>
     </div>
   );
 }
@@ -452,7 +468,7 @@ function Chip({
   return (
     <span
       className={cn(
-        "inline-flex max-w-full items-center gap-2 rounded-xl px-3.5 py-1.5 text-[21px] font-medium leading-[28px] transition-all",
+        "inline-flex max-w-full items-center gap-2.5 rounded-xl px-4 py-2 text-[22px] font-semibold leading-[28px] transition-all",
         isSolidZitline
           ? isOutput
             ? "border border-blue-200 dark:border-blue-800/40 bg-blue-50/90 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 font-semibold"

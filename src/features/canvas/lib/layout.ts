@@ -18,7 +18,7 @@ export const FIRST_COL_X = LANE_HEADER_WIDTH + 64;
 // Vertical
 export const LANE_V_WIDTH = 580;
 export const LANE_V_MIN_WIDTH = 500;
-export const LANE_V_HEADER_HEIGHT = 176;
+export const LANE_V_HEADER_HEIGHT = 188;
 export const LANE_V_MIN_LENGTH = 860;
 export const LANE_V_DEFAULT_LENGTH = 1800;
 export const ROW_GAP = 128;
@@ -149,9 +149,9 @@ export function estimateNodeSize(
 
   const inner = STEP_WIDTH - 48;
   const title = d.title || "Tanpa judul";
-  const titleLines = Math.max(1, Math.ceil((title.length * 19.5) / inner));
+  const titleLines = Math.max(1, Math.ceil((title.length * 22) / inner));
   const descLines =
-    includeDescription && d.description ? Math.min(3, Math.max(1, Math.ceil((d.description.length * 13.8) / inner))) : 0;
+    includeDescription && d.description ? Math.min(3, Math.max(1, Math.ceil((d.description.length * 14.5) / inner))) : 0;
 
   const chips: string[] = [];
   if (d.owner) chips.push(d.owner);
@@ -161,19 +161,19 @@ export function estimateNodeSize(
     chipRows = 1;
     let used = 0;
     for (const c of chips) {
-      const cw = Math.min(inner, 68 + c.length * 13.5);
+      const cw = Math.min(inner, 74 + c.length * 14);
       if (used > 0 && used + cw > inner) {
         chipRows++;
         used = 0;
       }
-      used += cw + 8;
+      used += cw + 10;
     }
   }
   const h =
-    48 +
-    titleLines * 45 +
-    (descLines ? 10 + descLines * 36 : 0) +
-    (chipRows ? 16 + chipRows * 46 + (chipRows - 1) * 8 : 0);
+    54 +
+    titleLines * 48 +
+    (descLines ? 12 + descLines * 38 : 0) +
+    (chipRows ? 18 + chipRows * 50 + (chipRows - 1) * 8 : 0);
   return { w: STEP_WIDTH, h: Math.ceil(h) };
 }
 

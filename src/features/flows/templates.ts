@@ -81,7 +81,7 @@ export const TEMPLATES: FlowTemplate[] = [
       { title: "Sales", division: "Tim Penjualan / Pemasaran", color: "amber" },
       { title: "Customer Service", division: "Customer Service & Helpdesk", color: "violet" },
       { title: "Technical Support", division: "Teknisi Lapangan (Field Engineer)", color: "emerald" },
-      { title: "NOC", division: "Network Operations Center", color: "sky" },
+      { title: "Network Operation Center", division: "Monitoring & Core Network", color: "sky" },
       { title: "Finance", division: "Keuangan & Billing", color: "slate" },
     ],
     steps: [
@@ -129,7 +129,7 @@ export const TEMPLATES: FlowTemplate[] = [
       { title: "Management", division: "Direksi / Commercial Approval", color: "slate" },
       { title: "Warehouse", division: "Logistik & Pengadaan Perangkat", color: "slate" },
       { title: "Customer Service & Finance", division: "Admin Kontrak & Penagihan", color: "violet" },
-      { title: "NOC", division: "Network Operations Center", color: "sky" },
+      { title: "Network Operation Center", division: "Monitoring & Core Network", color: "sky" },
     ],
     steps: [
       { id: "c1", lane: 0, col: 0, type: "terminal", title: "Permintaan Pasang Baru", description: "PIC Korporasi mengirim formulir permohonan bandwidth dedicated (1:1), alokasi IP Publik, dan kebutuhan SLA 99.5%.", output: "Formulir Permohonan & KTP PIC", owner: "PIC Korporasi" },
@@ -193,7 +193,7 @@ export const TEMPLATES: FlowTemplate[] = [
     lanes: [
       { title: "Customer", division: "Pelanggan Residensial & Korporat", color: "rose" },
       { title: "Customer Service", division: "Helpdesk & Customer Support", color: "amber" },
-      { title: "NOC", division: "Network Operations Center", color: "sky" },
+      { title: "Network Operation Center", division: "Monitoring & Core Network", color: "sky" },
       { title: "Backbone", division: "Tim Splicer & FO Cut Backbone", color: "violet" },
       { title: "Fishbone", division: "Tim Feeder & Distribusi Last-Mile LOS", color: "emerald" },
       { title: "Network Engineer", division: "Tim Engineer POP & Corporate Dedicated", color: "sky" },

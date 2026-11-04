@@ -38,11 +38,27 @@ import type { LaneNodeType } from "../types";
 export function normalizeLaneTitle(rawTitle: string): string {
   const trimmed = rawTitle.trim();
   const lower = trimmed.toLowerCase();
+  if (lower === "noc" || lower === "n.o.c" || lower === "n.o.c." || lower === "n o c") return "Network Operation Center";
   if (lower === "cust. service" || lower === "cust.service" || lower === "cust service") return "Customer Service";
   if (lower === "t. support" || lower === "t.support" || lower === "t support") return "Technical Support";
   if (lower === "cs & finance" || lower === "cs & fin" || lower === "cs / finance" || lower === "cs/finance") return "Customer Service & Finance";
   if (lower === "cs") return "Customer Success";
   return rawTitle;
+}
+
+export function normalizeLaneDivision(rawDivision?: string, laneTitle?: string): string | undefined {
+  if (!rawDivision) return undefined;
+  const trimmed = rawDivision.trim();
+  const lower = trimmed.toLowerCase();
+  if (
+    lower === "network operations center" ||
+    lower === "network operation center" ||
+    lower === "noc" ||
+    (laneTitle && lower === laneTitle.toLowerCase().trim())
+  ) {
+    return "Monitoring & Core Network";
+  }
+  return rawDivision;
 }
 
 /** Resolusi otomatis icon modern berdasarkan nama lane, divisi, atau icon eksplisit */
@@ -187,6 +203,7 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
   const select = useCanvasStore((s) => s.select);
   const { moveLane, removeLane, resizeLane } = useCanvasStore.getState();
   const displayTitle = normalizeLaneTitle(data.title || "Tanpa nama");
+  const displayDivision = normalizeLaneDivision(data.division, displayTitle);
 
   const confirmRemove = () => {
     if (window.confirm(`Hapus lane "${displayTitle}" beserta semua langkah di dalamnya?`)) removeLane(id);
@@ -196,36 +213,36 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
 
   const headerContent = (
     <div className="min-w-0 flex-1">
-      <div className="flex items-center gap-3.5">
+      <div className="flex items-center gap-4">
         <div
           className={cn(
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
+            "flex h-13 w-13 shrink-0 items-center justify-center rounded-2xl transition-transform group-hover:scale-105",
             isSolidZitline
               ? "bg-white/20 text-white shadow-sm border border-white/30 backdrop-blur-md"
               : "bg-white/85 dark:bg-zinc-800/85 text-foreground shadow-sm border border-border/50 backdrop-blur-md",
           )}
         >
-          <LaneIcon className={cn("h-6 w-6 stroke-[2.2]", isSolidZitline ? "text-white" : glass.text)} />
+          <LaneIcon className={cn("h-7 w-7 stroke-[2.4]", isSolidZitline ? "text-white" : glass.text)} />
         </div>
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "line-clamp-2 break-words font-sans text-[28px] font-bold leading-[34px] tracking-tight",
-              isSolidZitline ? "text-white uppercase tracking-wide" : glass.text,
+              "line-clamp-3 break-words font-sans text-[34px] font-extrabold leading-[40px] tracking-tight",
+              isSolidZitline ? "text-white uppercase tracking-wide drop-shadow-sm" : glass.text,
             )}
           >
             {displayTitle}
           </p>
         </div>
       </div>
-      {data.division && (
+      {displayDivision && (
         <p
           className={cn(
-            "mt-2 line-clamp-2 pl-[58px] font-mono text-[16px] leading-[22px] font-medium uppercase tracking-wider",
-            isSolidZitline ? "text-white/85" : glass.division,
+            "mt-2.5 line-clamp-2 pl-[68px] font-mono text-[19px] leading-[26px] font-bold uppercase tracking-wider",
+            isSolidZitline ? "text-white/95" : glass.division,
           )}
         >
-          {data.division}
+          {displayDivision}
         </p>
       )}
     </div>
