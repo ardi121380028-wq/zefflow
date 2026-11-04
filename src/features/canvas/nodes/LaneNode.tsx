@@ -51,7 +51,7 @@ export function getLaneIcon(title?: string, division?: string, explicitIcon?: st
   const t = `${title || ""} ${division || ""} ${explicitIcon || ""}`.toLowerCase();
 
   // 1. Customer Service / Helpdesk
-  if (t.includes("customer service") || t.includes("helpdesk") || t.includes("cs ")) return Headphones;
+  if (t.includes("customer service") || t.includes("helpdesk") || t.includes("cs ") || t === "cs" || t.startsWith("cs")) return Headphones;
   // 2. Customer / Pelanggan
   if (t.includes("customer") || t.includes("pelanggan") || t.includes("klien") || t.includes("client") || t.includes("residensial")) return Users;
   // 3. Sales / Pemasaran / Penjualan
@@ -70,8 +70,8 @@ export function getLaneIcon(title?: string, division?: string, explicitIcon?: st
   if (t.includes("finance") || t.includes("keuangan") || t.includes("billing") || t.includes("invoice") || t.includes("pembayaran")) return Receipt;
   // 10. Management / Direksi / Eksekutif / Approval
   if (t.includes("management") || t.includes("direksi") || t.includes("direktur") || t.includes("manajemen") || t.includes("commercial")) return Building2;
-  // 11. Warehouse / Logistik / Gudang / Perangkat
-  if (t.includes("warehouse") || t.includes("logistik") || t.includes("gudang") || t.includes("perangkat") || t.includes("pengadaan")) return Boxes;
+  // 11. Warehouse / Logistik / Gudang / Perangkat / Persediaan
+  if (t.includes("warehouse") || t.includes("logistik") || t.includes("gudang") || t.includes("perangkat") || t.includes("pengadaan") || t.includes("persediaan") || t.includes("inventory")) return Boxes;
   // 12. SPV / Supervisor
   if (t.includes("spv") || t.includes("supervisor") || t.includes("lead")) return UserCog;
   // 13. HRD / Human Resources / SDM

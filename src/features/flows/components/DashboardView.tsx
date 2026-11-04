@@ -248,7 +248,7 @@ export function DashboardView({ flows, workspaceName }: DashboardViewProps) {
       TEMPLATES.find((t) => t.id === "isp-retail-flow") ?? TEMPLATES[0]!,
       TEMPLATES.find((t) => t.id === "isp-corporate-flow") ?? TEMPLATES[1]!,
       TEMPLATES.find((t) => t.id === "isp-trouble-ticket-flow") ?? TEMPLATES[2]!,
-      TEMPLATES.find((t) => t.id === "billing-subscription-erd") ?? TEMPLATES[3]!,
+      TEMPLATES.find((t) => t.id === "isp-dismantle-flow") ?? TEMPLATES[3]!,
     ].filter(Boolean) as FlowTemplate[];
   }, []);
 

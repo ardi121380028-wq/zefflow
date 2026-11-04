@@ -1,7 +1,19 @@
 import type { FlowDocument, LaneColor, Orientation } from "@/lib/validation/flow";
 import { COL_GAP, FIRST_COL_X, LANE_DEFAULT_HEIGHT, LANE_DEFAULT_WIDTH, STEP_WIDTH, convertLayout, estimateNodeSize } from "@/features/canvas/lib/layout";
 
-type StepSpec = { id: string; lane: number; col: number; type?: "step" | "decision" | "terminal"; title: string; description?: string; duration?: [number, "menit" | "jam" | "hari"]; output?: string; owner?: string };
+type StepSpec = {
+  id: string;
+  lane: number;
+  col: number;
+  type?: "step" | "decision" | "terminal";
+  title: string;
+  description?: string;
+  duration?: [number, "menit" | "jam" | "hari"];
+  output?: string;
+  owner?: string;
+  offsetY?: number;
+  offsetX?: number;
+};
 
 type LinkSpec = [string, string, string?, ("l" | "r" | "t" | "b")?, ("l" | "r" | "t" | "b")?];
 
@@ -15,7 +27,7 @@ export interface FlowTemplate {
   docCode?: string;
   companyLogo?: string;
   wallpaper?: string;
-  lanes: { title: string; division: string; color: LaneColor; icon?: string }[];
+  lanes: { title: string; division: string; color: LaneColor; icon?: string; minHeight?: number }[];
   steps: StepSpec[];
   links: LinkSpec[];
 }
@@ -573,6 +585,193 @@ export const TEMPLATES: FlowTemplate[] = [
     ],
   },
   {
+    id: "isp-dismantle-flow",
+    title: "Alur Dismantle Customers FTTH",
+    description: "SOP resmi proses penonaktifan dan penarikan perangkat (dismantle) pelanggan FTTH: pengajuan dari customer atau jadwal penertiban CS, input waiting list CRM, verifikasi SPV, eksekusi teknisi di lokasi, serah terima Berita Acara & ONT ke Tim Persediaan, dan update status customer.",
+    kind: "sop",
+    orientation: "horizontal",
+    companyName: "ZITLINE Internet Service Provider",
+    companyLogo: "/brand/zitline-logo.svg",
+    docCode: "SOP-DISMANTLE-01",
+    wallpaper: "solid-zitline",
+    lanes: [
+      { title: "Customer", division: "Pelanggan FTTH", color: "rose", minHeight: 560 },
+      { title: "CS", division: "Customer Service", color: "amber" },
+      { title: "SPV TS", division: "Supervisor Technical Support", color: "violet" },
+      { title: "Teknisi", division: "Tim Teknisi Lapangan", color: "emerald" },
+      { title: "Tim Persediaan", division: "Gudang & Logistik Perangkat", color: "sky" },
+    ],
+    steps: [
+      // Lane 0: Customer
+      {
+        id: "d1",
+        lane: 0,
+        col: 0,
+        type: "terminal",
+        title: "Permintaan Dismantle?",
+        description: "Identifikasi asal permintaan dismantle: inisiatif permohonan berhenti langganan dari pelanggan, atau jadwal penertiban isolir permanen dari CS.",
+        owner: "Customer / CS",
+      },
+      {
+        id: "d2_cust",
+        lane: 0,
+        col: 1,
+        type: "step",
+        title: "Customer Mengajukan Dismantle",
+        description: "Pelanggan menghubungi helpdesk/CS untuk mengajukan permohonan berhenti berlangganan internet dan pengembalian perangkat ONT.",
+        output: "Formulir Pengajuan Dismantle",
+        owner: "Pelanggan",
+        offsetY: -130,
+      },
+      {
+        id: "d2_cs",
+        lane: 0,
+        col: 1,
+        type: "step",
+        title: "Jadwal Dismantle dari CS",
+        description: "CS menerbitkan jadwal penarikan perangkat untuk pelanggan yang telah melewati batas tenggat masa isolir atau kontrak berakhir.",
+        output: "Daftar Penertiban CS",
+        owner: "Customer Service",
+        offsetY: 130,
+      },
+
+      // Lane 1: CS
+      {
+        id: "d3_wl",
+        lane: 1,
+        col: 2,
+        type: "step",
+        title: "Input Waitinglist Dismantle",
+        description: "Customer Service mencatat data pelanggan dan nomor seri perangkat ONT ke antrean waiting list dismantle di sistem CRM.",
+        output: "Tiket Waiting List CRM",
+        owner: "Customer Service",
+      },
+      {
+        id: "d4_konfirm",
+        lane: 1,
+        col: 3,
+        type: "step",
+        title: "Konfirmasi Customer",
+        description: "CS menghubungi pelanggan untuk konfirmasi kesediaan waktu kunjungan teknisi dan pencocokan data perangkat modem.",
+        output: "Konfirmasi Kontak & Jadwal",
+        owner: "Customer Service",
+      },
+
+      // Lane 2: SPV TS
+      {
+        id: "d5_verif",
+        lane: 2,
+        col: 2,
+        type: "step",
+        title: "Verifikasi Data",
+        description: "Supervisor Technical Support memverifikasi kelengkapan data alamat, ODP rujukan, dan ketersediaan slot teknisi area.",
+        output: "Disposisi SPV TS",
+        owner: "SPV TS",
+      },
+      {
+        id: "d6_jadwal",
+        lane: 2,
+        col: 3,
+        type: "step",
+        title: "Penjadwalan Teknisi",
+        description: "SPV TS menunjuk tim teknisi lapangan yang bertugas dan menerbitkan Surat Perintah Kerja (SPK) kunjungan dismantle.",
+        output: "SPK Kunjungan Teknisi",
+        owner: "SPV TS",
+      },
+
+      // Lane 3: Teknisi
+      {
+        id: "d7_eksekusi",
+        lane: 3,
+        col: 2,
+        type: "step",
+        title: "Melakukan Dismantle",
+        description: "Teknisi mendatangi lokasi pelanggan, mencabut konektor drop core fiber optik, dan membongkar perangkat ONT beserta adaptor daya.",
+        output: "Perangkat ONT & Adaptor",
+        owner: "Teknisi Lapangan",
+      },
+      {
+        id: "d8_ba",
+        lane: 3,
+        col: 3,
+        type: "step",
+        title: "Pengisian BA Dismantle",
+        description: "Teknisi dan pelanggan bersama-sama menandatangani Berita Acara (BA) Dismantle sebagai bukti sah penarikan fisik perangkat.",
+        output: "BA Dismantle Bertanda Tangan",
+        owner: "Teknisi & Pelanggan",
+      },
+      {
+        id: "d9_serah",
+        lane: 3,
+        col: 4,
+        type: "step",
+        title: "Penyerahan BA dan Perangkat ke Tim Persediaan",
+        description: "Teknisi membawa perangkat ONT hasil dismantle beserta fisik lembar Berita Acara ke bagian gudang logistik.",
+        output: "BA & ONT Diserahkan",
+        owner: "Teknisi Lapangan",
+      },
+
+      // Lane 4: Tim Persediaan
+      {
+        id: "d10_terima",
+        lane: 4,
+        col: 4,
+        type: "step",
+        title: "Menerima BA dan Perangkat",
+        description: "Tim Persediaan memeriksa kondisi fisik ONT, mencocokkan MAC address & serial number dengan BA, serta menginput stok masuk inventaris gudang.",
+        output: "Stok Logistik Masuk",
+        owner: "Tim Persediaan",
+      },
+      {
+        id: "d11_konfirm_cs",
+        lane: 4,
+        col: 5,
+        type: "step",
+        title: "Konfirmasi ke Tim CS",
+        description: "Tim Persediaan mengonfirmasi penerimaan perangkat ke sistem agar Customer Service dapat memproses penutupan akun pelanggan.",
+        output: "Notifikasi Verifikasi Logistik",
+        owner: "Tim Persediaan",
+      },
+
+      // Lane 1: CS (Closing)
+      {
+        id: "d12_status",
+        lane: 1,
+        col: 6,
+        type: "step",
+        title: "Update Status Customer",
+        description: "Customer Service memperbarui status pelanggan menjadi Terminated / Closed di billing CRM, serta melepaskan alokasi port OLT.",
+        output: "Status Terminated Resmi CRM",
+        owner: "Customer Service",
+      },
+      {
+        id: "d13_done",
+        lane: 1,
+        col: 7,
+        type: "terminal",
+        title: "Done",
+        description: "Proses dismantle pelanggan FTTH selesai sepenuhnya. Layanan dinonaktifkan dan perangkat kembali ke inventaris perusahaan.",
+        owner: "CS & Pelanggan",
+      },
+    ],
+    links: [
+      ["d1", "d2_cust", undefined, "r", "l"],
+      ["d1", "d2_cs", undefined, "r", "l"],
+      ["d2_cust", "d3_wl", undefined, "r", "t"],
+      ["d2_cs", "d3_wl", undefined, "r", "t"],
+      ["d3_wl", "d4_konfirm", undefined, "r", "l"],
+      ["d4_konfirm", "d5_verif", undefined, "b", "t"],
+      ["d5_verif", "d6_jadwal", undefined, "r", "l"],
+      ["d6_jadwal", "d7_eksekusi", undefined, "b", "t"],
+      ["d7_eksekusi", "d8_ba", undefined, "r", "l"],
+      ["d8_ba", "d9_serah", undefined, "r", "l"],
+      ["d9_serah", "d10_terima", undefined, "b", "t"],
+      ["d10_terima", "d11_konfirm_cs", undefined, "r", "l"],
+      ["d11_konfirm_cs", "d12_status", undefined, "r", "b"],
+      ["d12_status", "d13_done", undefined, "r", "l"],
+    ],
+  },
+  {
     id: "hr-overshift-flow",
     title: "Alur Pengajuan Over Shift (Zitline Talenta)",
     description: "SOP resmi pengajuan tukar shift/lembur over shift: konfirmasi awal ke SPV, input pengajuan di Talenta (wajib menyertakan rekan pengganti), peninjauan SPV, validasi HRD, dan approval Direksi.",
@@ -963,7 +1162,7 @@ function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vert
   let currentLaneY = 0;
   const laneHeights: number[] = [];
   const lanes = t.lanes.map((l, i) => {
-    const laneH = Math.max(LANE_DEFAULT_HEIGHT, (maxStepHeightByLane.get(i) ?? 0) + 56);
+    const laneH = Math.max(l.minHeight ?? LANE_DEFAULT_HEIGHT, (maxStepHeightByLane.get(i) ?? 0) + 56);
     laneHeights[i] = laneH;
     const node = {
       id: `lane_${i}`,
@@ -984,8 +1183,8 @@ function buildDocumentUncached(t: FlowTemplate, orientation: Orientation = "vert
       type: s.type ?? ("step" as const),
       parentId: `lane_${s.lane}`,
       position: {
-        x: FIRST_COL_X + s.col * COL_GAP + Math.round((STEP_WIDTH - w) / 2),
-        y: Math.max(20, Math.round((laneH - h) / 2)),
+        x: FIRST_COL_X + s.col * COL_GAP + Math.round((STEP_WIDTH - w) / 2) + (s.offsetX ?? 0),
+        y: Math.max(20, Math.round((laneH - h) / 2) + (s.offsetY ?? 0)),
       },
       data: {
         ...data,
