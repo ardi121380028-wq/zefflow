@@ -46,21 +46,6 @@ export function normalizeLaneTitle(rawTitle: string): string {
   return rawTitle;
 }
 
-export function normalizeLaneDivision(rawDivision?: string, laneTitle?: string): string | undefined {
-  if (!rawDivision) return undefined;
-  const trimmed = rawDivision.trim();
-  const lower = trimmed.toLowerCase();
-  if (
-    lower === "network operations center" ||
-    lower === "network operation center" ||
-    lower === "noc" ||
-    (laneTitle && lower === laneTitle.toLowerCase().trim())
-  ) {
-    return "Monitoring & Core Network";
-  }
-  return rawDivision;
-}
-
 /** Resolusi otomatis icon modern berdasarkan nama lane, divisi, atau icon eksplisit */
 export function getLaneIcon(title?: string, division?: string, explicitIcon?: string): LucideIcon {
   const t = `${title || ""} ${division || ""} ${explicitIcon || ""}`.toLowerCase();
@@ -203,7 +188,6 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
   const select = useCanvasStore((s) => s.select);
   const { moveLane, removeLane, resizeLane } = useCanvasStore.getState();
   const displayTitle = normalizeLaneTitle(data.title || "Tanpa nama");
-  const displayDivision = normalizeLaneDivision(data.division, displayTitle);
 
   const confirmRemove = () => {
     if (window.confirm(`Hapus lane "${displayTitle}" beserta semua langkah di dalamnya?`)) removeLane(id);
@@ -227,7 +211,7 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              "line-clamp-3 break-words font-sans text-[34px] font-extrabold leading-[40px] tracking-tight",
+              "line-clamp-3 break-words font-sans text-[36px] font-extrabold leading-[42px] tracking-tight",
               isSolidZitline ? "text-white uppercase tracking-wide drop-shadow-sm" : glass.text,
             )}
           >
@@ -235,16 +219,6 @@ function LaneNodeImpl({ id, data, width, height }: NodeProps<LaneNodeType>) {
           </p>
         </div>
       </div>
-      {displayDivision && (
-        <p
-          className={cn(
-            "mt-2.5 line-clamp-2 pl-[68px] font-mono text-[19px] leading-[26px] font-bold uppercase tracking-wider",
-            isSolidZitline ? "text-white/95" : glass.division,
-          )}
-        >
-          {displayDivision}
-        </p>
-      )}
     </div>
   );
 
